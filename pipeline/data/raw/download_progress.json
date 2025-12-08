@@ -1,0 +1,64 @@
+{
+  "started_at": "2025-12-08T22:49:29.505206+00:00",
+  "updated_at": "2025-12-08T22:49:29.912398+00:00",
+  "status": "in_progress",
+  "total_items": 17,
+  "completed_items": 0,
+  "failed_items": 1,
+  "skipped_items": 0,
+  "items": {
+    "ucdb": {
+      "status": "failed",
+      "failed_at": "2025-12-08T22:49:29.912275+00:00",
+      "error": "File not found: https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_STAT_UCDB2015MT_GLOBE_R2024A/GHS_STAT_UCDB2015MT_GLOBE_R2024A_V1_0.zip"
+    },
+    "E2020_R5_C11": {
+      "status": "pending"
+    },
+    "E2020_R5_C12": {
+      "status": "pending"
+    },
+    "E2020_R5_C18": {
+      "status": "pending"
+    },
+    "E2020_R7_C18": {
+      "status": "pending"
+    },
+    "E2020_R8_C13": {
+      "status": "pending"
+    },
+    "E2020_R8_C27": {
+      "status": "pending"
+    },
+    "global_E1975_1000m": {
+      "status": "pending"
+    },
+    "global_E1980_1000m": {
+      "status": "pending"
+    },
+    "global_E1985_1000m": {
+      "status": "pending"
+    },
+    "global_E1990_1000m": {
+      "status": "pending"
+    },
+    "global_E1995_1000m": {
+      "status": "pending"
+    },
+    "global_E2000_1000m": {
+      "status": "pending"
+    },
+    "global_E2005_1000m": {
+      "status": "pending"
+    },
+    "global_E2010_1000m": {
+      "status": "pending"
+    },
+    "global_E2015_1000m": {
+      "status": "pending"
+    },
+    "global_E2020_1000m": {
+      "status": "pending"
+    }
+  }
+}
