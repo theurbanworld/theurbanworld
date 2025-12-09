@@ -13,10 +13,10 @@
 #   - test-only flag enables fast iteration during development
 # Date: 2024-12-08
 
-.PHONY: all clean download extract convert-100m convert-1km boundaries radial export test-cities status lint test help
+.PHONY: all clean download extract convert-100m convert-1km boundaries radial export test-cities status lint test help basemap basemap-force basemap-info upload upload-dry upload-force upload-basemap upload-data r2-cors
 
 # Default target
-all: export
+all: export basemap
 
 # Python environment
 PYTHON := uv run python
@@ -26,6 +26,11 @@ UV := uv
 RAW_DIR := data/raw
 INTERIM_DIR := data/interim
 PROCESSED_DIR := data/processed
+
+# Basemap files
+BASEMAP_DIR := $(PROCESSED_DIR)/basemap
+BASEMAP_FILE := $(BASEMAP_DIR)/planet.pmtiles
+BASEMAP_META := $(BASEMAP_DIR)/metadata.json
 
 # ============================================================================
 # ENVIRONMENT SETUP
@@ -116,6 +121,53 @@ export: $(PROCESSED_DIR)/city_index.json
 	@echo "Web export complete. Data ready in $(PROCESSED_DIR)/"
 
 # ============================================================================
+# BASEMAP PHASE
+# ============================================================================
+
+# Download Protomaps planet basemap (~70GB)
+$(BASEMAP_FILE): .venv
+	$(PYTHON) -m src.s10_download_basemap
+
+basemap: $(BASEMAP_FILE)
+	@echo "Basemap ready."
+
+# Force re-download even if file exists
+basemap-force: .venv
+	$(PYTHON) -m src.s10_download_basemap --force
+
+# Show basemap metadata
+basemap-info:
+	@test -f $(BASEMAP_META) && cat $(BASEMAP_META) || echo "No metadata found. Run 'make basemap' first."
+
+# ============================================================================
+# R2 UPLOAD PHASE
+# ============================================================================
+
+# Upload all processed data to R2 (requires .env with R2 credentials)
+upload: all .venv
+	$(PYTHON) -m src.s20_upload_to_r2
+
+# Preview what would be uploaded (dry run)
+upload-dry: .venv
+	$(PYTHON) -m src.s20_upload_to_r2 --dry-run
+
+# Force full re-upload (ignore cache)
+upload-force: .venv
+	$(PYTHON) -m src.s20_upload_to_r2 --force
+
+# Upload only basemap
+upload-basemap: basemap .venv
+	$(PYTHON) -m src.s20_upload_to_r2 --only basemap
+
+# Upload only H3 and city data
+upload-data: export .venv
+	$(PYTHON) -m src.s20_upload_to_r2 --only h3 --only cities
+
+# One-time CORS setup for R2 bucket
+r2-cors: .venv
+	$(PYTHON) -m src.s21_configure_r2_cors
+
+# ============================================================================
 # TEST CITIES (Fast iteration)
 # ============================================================================
 
@@ -144,6 +196,7 @@ status:
 	@echo "Boundaries: $$(test -f $(INTERIM_DIR)/city_boundaries/.complete && echo 'COMPLETE' || echo 'PENDING')"
 	@echo "Radial:     $$(test -f $(INTERIM_DIR)/radial_profiles/.complete && echo 'COMPLETE' || echo 'PENDING')"
 	@echo "Export:     $$(test -f $(PROCESSED_DIR)/city_index.json && echo 'COMPLETE' || echo 'PENDING')"
+	@echo "Basemap:    $$(test -f $(BASEMAP_FILE) && echo 'COMPLETE' || echo 'PENDING')"
 
 # Run tests
 test: .venv
@@ -197,6 +250,19 @@ help:
 	@echo "    boundaries   - Extract city boundary H3 cells"
 	@echo "    radial       - Compute radial density profiles"
 	@echo "    export       - Export web-ready JSON/GeoParquet"
+	@echo ""
+	@echo "  Basemap:"
+	@echo "    basemap       - Download Protomaps planet PMTiles (~70GB)"
+	@echo "    basemap-force - Force re-download basemap"
+	@echo "    basemap-info  - Show basemap metadata"
+	@echo ""
+	@echo "  R2 Upload:"
+	@echo "    upload        - Upload all processed data to R2"
+	@echo "    upload-dry    - Preview what would be uploaded"
+	@echo "    upload-force  - Force full re-upload (ignore cache)"
+	@echo "    upload-basemap - Upload only basemap"
+	@echo "    upload-data   - Upload only H3 and city data"
+	@echo "    r2-cors       - One-time CORS setup for R2 bucket"
 	@echo ""
 	@echo "  Shortcuts:"
 	@echo "    all          - Run full pipeline (default)"
