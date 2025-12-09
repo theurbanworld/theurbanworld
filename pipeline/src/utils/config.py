@@ -27,11 +27,14 @@ class PipelineConfig(BaseSettings):
     PROCESSED_DIR: ClassVar[Path] = DATA_DIR / "processed"
 
     # GHSL settings
-    GHSL_BASE_URL: str = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL"
-    GHSL_POP_RELEASE: str = "R2023A"
-    GHSL_UCDB_RELEASE: str = "R2024A"
     GHSL_POP_EPOCHS: list[int] = [1975, 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020]
-    GHSL_PROJECTION: int = 54009  # World Mollweide
+
+    # Download URLs (centralized for easy updates when JRC changes structure)
+    GHSL_UCDB_URL: str = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_UCDB_GLOBE_R2024A/GHS_UCDB_GLOBE_R2024A/V1-1/GHS_UCDB_GLOBE_R2024A_V1_1.zip"
+
+    # URL templates (use {epoch}, {resolution}, {row}, {col} placeholders)
+    GHSL_POP_TILE_URL_TEMPLATE: str = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GLOBE_R2023A/GHS_POP_E{epoch}_GLOBE_R2023A_54009_{resolution}/V1-0/tiles/GHS_POP_E{epoch}_GLOBE_R2023A_54009_{resolution}_V1_0_R{row}_C{col}.zip"
+    GHSL_POP_GLOBAL_URL_TEMPLATE: str = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GLOBE_R2023A/GHS_POP_E{epoch}_GLOBE_R2023A_54009_{resolution}/V1-0/GHS_POP_E{epoch}_GLOBE_R2023A_54009_{resolution}_V1_0.zip"
 
     # H3 settings
     H3_RESOLUTION_MAP: int = 9  # ~0.105 km² per cell - for map tiles
@@ -103,45 +106,19 @@ def get_processed_path(subdir: str = "") -> Path:
 
 # GHSL URL builders
 def get_ghsl_pop_tile_url(epoch: int, resolution: int, row: int, col: int) -> str:
-    """
-    Build GHSL-POP tile download URL.
-
-    Example output:
-    https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GLOBE_R2023A/
-    GHS_POP_E2020_GLOBE_R2023A_54009_100_V1_0/V1-0/tiles/
-    GHS_POP_E2020_GLOBE_R2023A_54009_100_V1_0_R5_C19.zip
-    """
-    release = config.GHSL_POP_RELEASE
-    proj = config.GHSL_PROJECTION
-    res_str = str(resolution)
-
-    product_dir = f"GHS_POP_GLOBE_{release}"
-    file_base = f"GHS_POP_E{epoch}_GLOBE_{release}_{proj}_{res_str}_V1_0"
-    tile_id = f"R{row}_C{col}"
-
-    return f"{config.GHSL_BASE_URL}/{product_dir}/{file_base}/V1-0/tiles/{file_base}_{tile_id}.zip"
+    """Build GHSL-POP tile download URL."""
+    return config.GHSL_POP_TILE_URL_TEMPLATE.format(
+        epoch=epoch, resolution=resolution, row=row, col=col
+    )
 
 
 def get_ghsl_pop_global_url(epoch: int, resolution: int) -> str:
-    """
-    Build GHSL-POP global file download URL (for 1km data).
-
-    The 1km data comes as a single global file, not tiles.
-    """
-    release = config.GHSL_POP_RELEASE
-    proj = config.GHSL_PROJECTION
-    res_str = str(resolution)
-
-    product_dir = f"GHS_POP_GLOBE_{release}"
-    file_base = f"GHS_POP_E{epoch}_GLOBE_{release}_{proj}_{res_str}_V1_0"
-
-    return f"{config.GHSL_BASE_URL}/{product_dir}/{file_base}/V1-0/{file_base}.zip"
+    """Build GHSL-POP global file download URL (for 1km data)."""
+    return config.GHSL_POP_GLOBAL_URL_TEMPLATE.format(
+        epoch=epoch, resolution=resolution
+    )
 
 
 def get_ghsl_ucdb_url() -> str:
-    """Build GHSL-UCDB download URL."""
-    release = config.GHSL_UCDB_RELEASE
-    return (
-        f"{config.GHSL_BASE_URL}/GHS_STAT_UCDB2015MT_GLOBE_{release}/"
-        f"GHS_STAT_UCDB2015MT_GLOBE_{release}_V1_0.zip"
-    )
+    """Return UCDB download URL."""
+    return config.GHSL_UCDB_URL
