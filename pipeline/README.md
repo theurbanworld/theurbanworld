@@ -31,13 +31,16 @@ make status
 
 | Stage | Script | Description |
 |-------|--------|-------------|
-| 1. Download | `01_download_ghsl.py` | Download GHSL-POP tiles and UCDB |
-| 2. Extract | `02_extract_urban_centers.py` | Parse urban center metadata |
-| 3. H3 100m | `03_raster_to_h3_100m.py` | Convert 100m raster to H3 res-9 |
-| 4. H3 1km | `04_raster_to_h3_1km.py` | Convert 1km rasters for time series |
-| 5. Boundaries | `05_extract_city_boundaries.py` | Extract city extents as H3 cells |
-| 6. Profiles | `06_compute_radial_profiles.py` | Compute Bertaud radial profiles |
-| 7. Export | `07_export_web_formats.py` | Generate web-ready JSON/Parquet |
+| 1. Download | `s01_download_ghsl.py` | Download GHSL-POP tiles and UCDB |
+| 2. Extract | `s02_extract_urban_centers.py` | Parse urban center metadata |
+| 3. H3 100m | `s03_raster_to_h3_100m.py` | Convert 100m raster to H3 res-9 |
+| 4. H3 1km | `s04_raster_to_h3_1km.py` | Convert 1km rasters for time series |
+| 5. Boundaries | `s05_extract_city_boundaries.py` | Extract city extents as H3 cells |
+| 6. Profiles | `s06_compute_radial_profiles.py` | Compute Bertaud radial profiles |
+| 7. Export | `s07_export_web_formats.py` | Generate web-ready JSON/Parquet |
+| 10. Basemap | `s10_download_basemap.py` | Download Protomaps planet PMTiles |
+| 20. Upload | `s20_upload_to_r2.py` | Upload processed data to R2 |
+| 21. CORS | `s21_configure_r2_cors.py` | Configure R2 bucket CORS |
 
 ## Data Sources
 
@@ -83,6 +86,26 @@ Override via environment variables with `URBAN_` prefix:
 URBAN_H3_RESOLUTION_MAP=8 make all
 ```
 
+## R2 Upload Configuration
+
+Data is served from Cloudflare R2. To configure uploads:
+
+```bash
+# Copy the example env file
+cp .env.example .env
+
+# Edit with your R2 credentials (from Cloudflare dashboard)
+# R2_ACCOUNT_ID=your_account_id
+# R2_ACCESS_KEY_ID=your_access_key
+# R2_SECRET_ACCESS_KEY=your_secret_key
+
+# One-time CORS setup
+make r2-cors
+
+# Upload all data
+make upload
+```
+
 ## Test Cities
 
 Development uses 6 test cities covering diverse urban forms:
@@ -107,6 +130,7 @@ Optimized for Apple Silicon (M1/M2/M3) with thread-based parallelization.
 pipeline/
 ├── pyproject.toml          # Dependencies
 ├── Makefile               # Build orchestration
+├── .env.example           # R2 credentials template
 ├── src/
 │   ├── s01_download_ghsl.py
 │   ├── s02_extract_urban_centers.py
@@ -115,8 +139,12 @@ pipeline/
 │   ├── s05_extract_city_boundaries.py
 │   ├── s06_compute_radial_profiles.py
 │   ├── s07_export_web_formats.py
+│   ├── s10_download_basemap.py
+│   ├── s20_upload_to_r2.py
+│   ├── s21_configure_r2_cors.py
 │   └── utils/
 │       ├── config.py       # Configuration
+│       ├── r2_config.py    # R2/S3 settings
 │       ├── h3_utils.py     # H3 operations
 │       ├── raster_utils.py # Raster processing
 │       └── progress.py     # Checkpointing
@@ -124,11 +152,15 @@ pipeline/
     ├── raw/                # Downloaded GHSL files
     ├── interim/            # Intermediate outputs
     └── processed/          # Final web-ready files
+        ├── basemap/        # Protomaps PMTiles (~70GB)
+        ├── h3_tiles/       # H3 population grids
+        └── cities/         # City JSON files
 ```
 
 ## Make Targets
 
 ```bash
+# Pipeline
 make setup        # Create Python environment
 make download     # Download GHSL data
 make extract      # Extract urban centers
@@ -137,6 +169,20 @@ make boundaries   # Extract city boundaries
 make radial       # Compute radial profiles
 make export       # Export web formats
 make test-cities  # Run for test cities only
+make all          # Run full pipeline
+
+# Basemap
+make basemap      # Download Protomaps planet PMTiles (~70GB)
+make basemap-force # Force re-download
+make basemap-info # Show basemap metadata
+
+# R2 Upload
+make upload       # Upload all processed data to R2
+make upload-dry   # Preview what would be uploaded
+make upload-force # Force full re-upload
+make r2-cors      # One-time CORS setup for R2 bucket
+
+# Utilities
 make status       # Show pipeline progress
 make clean        # Remove generated data
 make help         # Show all targets

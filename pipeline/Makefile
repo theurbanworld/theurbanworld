@@ -13,10 +13,10 @@
 #   - test-only flag enables fast iteration during development
 # Date: 2024-12-08
 
-.PHONY: all clean download extract convert-100m convert-1km boundaries radial export test-cities status lint test help basemap basemap-force basemap-info upload upload-dry upload-force upload-basemap upload-data r2-cors
+.PHONY: all clean download extract convert-100m convert-1km boundaries radial export context test-cities status lint test help basemap basemap-force basemap-info upload upload-dry upload-force upload-basemap upload-data r2-cors
 
 # Default target
-all: export basemap
+all: context basemap
 
 # Python environment
 PYTHON := uv run python
@@ -121,6 +121,18 @@ export: $(PROCESSED_DIR)/city_index.json
 	@echo "Web export complete. Data ready in $(PROCESSED_DIR)/"
 
 # ============================================================================
+# CONTEXT METRICS PHASE
+# ============================================================================
+
+# Compute global/continental/national rankings, growth metrics, density peers
+$(PROCESSED_DIR)/cities/.context_complete: $(PROCESSED_DIR)/city_index.json .venv
+	$(PYTHON) -m src.s08_compute_context_metrics
+	touch $@
+
+context: $(PROCESSED_DIR)/cities/.context_complete
+	@echo "Context metrics computed."
+
+# ============================================================================
 # BASEMAP PHASE
 # ============================================================================
 
@@ -180,6 +192,7 @@ test-cities: .venv
 	$(PYTHON) -m src.s05_extract_city_boundaries --test-only
 	$(PYTHON) -m src.s06_compute_radial_profiles --test-only
 	$(PYTHON) -m src.s07_export_web_formats --test-only
+	$(PYTHON) -m src.s08_compute_context_metrics --test-only
 	@echo "Test cities pipeline complete."
 
 # ============================================================================
@@ -196,6 +209,7 @@ status:
 	@echo "Boundaries: $$(test -f $(INTERIM_DIR)/city_boundaries/.complete && echo 'COMPLETE' || echo 'PENDING')"
 	@echo "Radial:     $$(test -f $(INTERIM_DIR)/radial_profiles/.complete && echo 'COMPLETE' || echo 'PENDING')"
 	@echo "Export:     $$(test -f $(PROCESSED_DIR)/city_index.json && echo 'COMPLETE' || echo 'PENDING')"
+	@echo "Context:    $$(test -f $(PROCESSED_DIR)/cities/.context_complete && echo 'COMPLETE' || echo 'PENDING')"
 	@echo "Basemap:    $$(test -f $(BASEMAP_FILE) && echo 'COMPLETE' || echo 'PENDING')"
 
 # Run tests
@@ -250,6 +264,7 @@ help:
 	@echo "    boundaries   - Extract city boundary H3 cells"
 	@echo "    radial       - Compute radial density profiles"
 	@echo "    export       - Export web-ready JSON/GeoParquet"
+	@echo "    context      - Compute context metrics (rankings, growth, peers)"
 	@echo ""
 	@echo "  Basemap:"
 	@echo "    basemap       - Download Protomaps planet PMTiles (~70GB)"
