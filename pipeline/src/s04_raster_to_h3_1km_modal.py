@@ -7,7 +7,7 @@ Usage:
   modal run src/s04_raster_to_h3_1km_modal.py --local  # Test locally
 
 Cost estimate: ~$0.50-1.00 for all 10 epochs (parallel processing)
-Time estimate: ~5-10 minutes wall-clock
+Time estimate: ~10-20 minutes wall-clock
 
 Decision log:
   - Process epochs in parallel (10 containers)
@@ -54,8 +54,9 @@ H3_RESOLUTION = 8  # Res 8 (~0.7 km²) matches 1km input data better than res 9 
 @app.function(
     image=image,
     memory=32768,  # 32GB - enough to process without tiling
-    timeout=1800,  # 30 minutes max per epoch
-    retries=1,
+    cpu=2.0,       # Request 2 CPUs for faster H3 conversion
+    timeout=3600,  # 60 minutes max per epoch
+    retries=2,
 )
 def process_epoch(epoch: int) -> bytes:
     """Process a single epoch and return parquet bytes."""
