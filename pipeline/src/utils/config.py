@@ -37,7 +37,8 @@ class PipelineConfig(BaseSettings):
     GHSL_POP_GLOBAL_URL_TEMPLATE: str = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GLOBE_R2023A/GHS_POP_E{epoch}_GLOBE_R2023A_54009_{resolution}/V1-0/GHS_POP_E{epoch}_GLOBE_R2023A_54009_{resolution}_V1_0.zip"
 
     # H3 settings
-    H3_RESOLUTION_MAP: int = 9  # ~0.105 km² per cell - for map tiles
+    H3_RESOLUTION_MAP: int = 9  # ~0.105 km² per cell - for 100m data / map tiles
+    H3_RESOLUTION_1KM: int = 8  # ~0.74 km² per cell - for 1km time series data
     H3_RESOLUTION_RADIAL: int = 10  # ~0.015 km² per cell - for radial profiles
 
     # Radial profile settings (Bertaud methodology)

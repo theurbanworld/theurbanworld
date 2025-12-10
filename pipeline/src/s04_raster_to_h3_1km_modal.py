@@ -48,7 +48,7 @@ volume = modal.Volume.from_name("ghsl-h3-results", create_if_missing=True)
 # Constants
 GHSL_URL_TEMPLATE = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GLOBE_R2023A/GHS_POP_E{epoch}_GLOBE_R2023A_54009_1000/V1-0/GHS_POP_E{epoch}_GLOBE_R2023A_54009_1000_V1_0.zip"
 EPOCHS = [1975, 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020]
-H3_RESOLUTION = 9
+H3_RESOLUTION = 8  # Res 8 (~0.7 km²) matches 1km input data better than res 9 (~0.1 km²)
 
 
 @app.function(

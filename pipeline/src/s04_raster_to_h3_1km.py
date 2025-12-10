@@ -271,7 +271,7 @@ def main(test_only: bool = False):
                 epoch,
                 input_dir,
                 output_dir,
-                h3_resolution=config.H3_RESOLUTION_MAP,
+                h3_resolution=config.H3_RESOLUTION_1KM,
             )
 
             if output_path:
