@@ -4,7 +4,6 @@
 Purpose: Transform 100m population raster (2020) to H3 resolution 9 grid
 Input:
   - data/raw/ghsl_pop_100m/*.tif (100m Mollweide tiles)
-  - data/interim/urban_centers.parquet (for tile filtering)
 Output:
   - data/interim/h3_pop_100m/{tile_id}.parquet (per-tile)
   - data/processed/h3_tiles/h3_pop_2020_res9.parquet (merged)
@@ -19,74 +18,27 @@ Date: 2024-12-08
 """
 
 import gc
+import multiprocessing
+import warnings
 from pathlib import Path
+
+# Fix multiprocessing semaphore leak on macOS
+if multiprocessing.get_start_method(allow_none=True) is None:
+    multiprocessing.set_start_method("spawn")
+warnings.filterwarnings("ignore", message=".*leaked semaphore.*")
 
 import click
 import duckdb
-import numpy as np
 import polars as pl
 from tqdm import tqdm
 
 from .utils.config import config, get_interim_path, get_processed_path, get_raw_path
 from .utils.progress import ProgressTracker
-from .utils.raster_utils import get_raster_info, mask_nodata, open_raster, reproject_to_wgs84
+from .utils.raster_utils import get_raster_info, open_raster, reproject_to_wgs84
 from .utils.tile_utils import find_tiles_in_directory, get_tile_path
 
 
-def raster_to_h3_simple(
-    data_array,
-    resolution: int = 9,
-    nodata: float = -200.0,
-    min_value: float = 0.0,
-) -> pl.DataFrame:
-    """
-    Convert raster to H3 cells using point sampling.
-
-    This is a fallback method when h3ronpy is not available or fails.
-    Less accurate but memory-efficient.
-
-    Args:
-        data_array: xarray DataArray in WGS84
-        resolution: H3 resolution
-        nodata: Nodata value to skip
-        min_value: Minimum value to include
-
-    Returns:
-        Polars DataFrame with h3_index and population columns
-    """
-    import h3
-
-    # Get coordinate arrays
-    y_coords = data_array.coords["y"].values
-    x_coords = data_array.coords["x"].values
-
-    # Get data as numpy array
-    values = data_array.values
-    if hasattr(values, "compute"):
-        values = values.compute()
-
-    # Build H3 index
-    h3_data: dict[str, float] = {}
-
-    # Sample every pixel
-    for i, lat in enumerate(y_coords):
-        for j, lon in enumerate(x_coords):
-            val = values[i, j]
-            if val == nodata or val < min_value or np.isnan(val):
-                continue
-
-            cell = h3.latlng_to_cell(float(lat), float(lon), resolution)
-            h3_data[cell] = h3_data.get(cell, 0.0) + float(val)
-
-    if not h3_data:
-        return pl.DataFrame({"h3_index": [], "population": []})
-
-    return pl.DataFrame(
-        {"h3_index": list(h3_data.keys()), "population": list(h3_data.values())}
-    )
-
-
-def raster_to_h3_h3ronpy(
+def raster_to_h3(
     data_array,
     resolution: int = 9,
     nodata: float = -200.0,
@@ -102,34 +54,26 @@ def raster_to_h3_h3ronpy(
     Returns:
         Polars DataFrame with h3_index and population columns
     """
-    try:
-        from h3ronpy.raster import raster_to_dataframe
+    from h3ronpy.raster import raster_to_dataframe
 
-        # Get values and transform
-        values = data_array.values
-        if hasattr(values, "compute"):
-            values = values.compute()
+    # Get values and transform
+    values = data_array.values
+    if hasattr(values, "compute"):
+        values = values.compute()
 
-        transform = data_array.rio.transform()
+    transform = data_array.rio.transform()
 
-        # Convert using h3ronpy
-        df = raster_to_dataframe(
-            values,
-            transform,
-            resolution,
-            nodata_value=nodata,
-            compact=False,
-        )
+    # Convert using h3ronpy (returns PyArrow Table)
+    table = raster_to_dataframe(
+        values,
+        transform,
+        resolution,
+        nodata_value=nodata,
+        compact=False,
+    )
 
-        # Convert to polars
-        return pl.from_pandas(df).rename({"value": "population"})
-
-    except ImportError:
-        print("  h3ronpy not available, using fallback method...")
-        return raster_to_h3_simple(data_array, resolution, nodata)
-    except Exception as e:
-        print(f"  h3ronpy failed ({e}), using fallback method...")
-        return raster_to_h3_simple(data_array, resolution, nodata)
+    # Convert to polars
+    return pl.from_arrow(table).rename({"cell": "h3_index", "value": "population"})
 
 
 def process_tile(
@@ -169,7 +113,7 @@ def process_tile(
 
     # Convert to H3
     print(f"    Converting to H3 res {h3_resolution}...")
-    df = raster_to_h3_h3ronpy(data_wgs84, h3_resolution, nodata)
+    df = raster_to_h3(data_wgs84, h3_resolution, nodata)
 
     # Filter out zero/negative populations
     df = df.filter(pl.col("population") > 0)

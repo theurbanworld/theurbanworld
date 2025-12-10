@@ -16,7 +16,14 @@ Date: 2024-12-08
 """
 
 import gc
+import multiprocessing
+import warnings
 from pathlib import Path
+
+# Fix multiprocessing semaphore leak on macOS
+if multiprocessing.get_start_method(allow_none=True) is None:
+    multiprocessing.set_start_method("spawn")
+warnings.filterwarnings("ignore", message=".*leaked semaphore.*")
 
 import click
 import duckdb
@@ -28,91 +35,82 @@ from .utils.progress import ProgressTracker
 from .utils.raster_utils import get_raster_info, open_raster, reproject_to_wgs84
 
 
-def raster_to_h3_simple(
+def raster_to_h3(
     data_array,
     resolution: int = 9,
     nodata: float = -200.0,
-    min_value: float = 0.0,
+    max_tile_size: int = 8000,
 ) -> pl.DataFrame:
-    """
-    Convert raster to H3 cells using point sampling.
-
-    Args:
-        data_array: xarray DataArray in WGS84
-        resolution: H3 resolution
-        nodata: Nodata value to skip
-        min_value: Minimum value to include
-
-    Returns:
-        Polars DataFrame with h3_index and population columns
-    """
-    import h3
+    """Convert raster to H3 using h3ronpy, with chunking for large rasters."""
+    from affine import Affine
+    from h3ronpy.raster import raster_to_dataframe
     import numpy as np
 
-    # Get coordinate arrays
-    y_coords = data_array.coords["y"].values
-    x_coords = data_array.coords["x"].values
-
-    # Get data as numpy array
     values = data_array.values
     if hasattr(values, "compute"):
         values = values.compute()
 
-    # Build H3 index
-    h3_data: dict[str, float] = {}
+    height, width = values.shape
+    transform = data_array.rio.transform()
 
-    for i, lat in enumerate(y_coords):
-        if i % 100 == 0:
-            print(f"    Row {i}/{len(y_coords)}", end="\r")
-        for j, lon in enumerate(x_coords):
-            val = values[i, j]
-            if val == nodata or val < min_value or np.isnan(val):
-                continue
-
-            cell = h3.latlng_to_cell(float(lat), float(lon), resolution)
-            h3_data[cell] = h3_data.get(cell, 0.0) + float(val)
-
-    print()  # Clear progress line
-
-    if not h3_data:
-        return pl.DataFrame({"h3_index": [], "population": []})
-
-    return pl.DataFrame(
-        {"h3_index": list(h3_data.keys()), "population": list(h3_data.values())}
-    )
-
-
-def raster_to_h3_h3ronpy(
-    data_array,
-    resolution: int = 9,
-    nodata: float = -200.0,
-) -> pl.DataFrame:
-    """Convert raster to H3 using h3ronpy."""
-    try:
-        from h3ronpy.raster import raster_to_dataframe
-
-        values = data_array.values
-        if hasattr(values, "compute"):
-            values = values.compute()
-
-        transform = data_array.rio.transform()
-
-        df = raster_to_dataframe(
+    # Small rasters: process directly
+    if height <= max_tile_size and width <= max_tile_size:
+        table = raster_to_dataframe(
             values,
             transform,
             resolution,
             nodata_value=nodata,
             compact=False,
         )
+        return pl.from_arrow(table).rename({"cell": "h3_index", "value": "population"})
 
-        return pl.from_pandas(df).rename({"value": "population"})
+    # Large rasters: process in tiles
+    print(f"    Processing in tiles ({height}x{width} > {max_tile_size}x{max_tile_size})...")
+    results = []
+    tile_count = 0
 
-    except ImportError:
-        print("  h3ronpy not available, using fallback...")
-        return raster_to_h3_simple(data_array, resolution, nodata)
-    except Exception as e:
-        print(f"  h3ronpy failed ({e}), using fallback...")
-        return raster_to_h3_simple(data_array, resolution, nodata)
+    for row_start in range(0, height, max_tile_size):
+        for col_start in range(0, width, max_tile_size):
+            row_end = min(row_start + max_tile_size, height)
+            col_end = min(col_start + max_tile_size, width)
+
+            # Extract tile
+            tile = values[row_start:row_end, col_start:col_end]
+
+            # Skip if all nodata/invalid
+            valid = (tile != nodata) & ~np.isnan(tile) & (tile > 0)
+            if not np.any(valid):
+                continue
+
+            # Calculate tile transform (shift origin to tile corner)
+            tile_transform = transform * Affine.translation(col_start, row_start)
+
+            # Convert tile to H3
+            table = raster_to_dataframe(
+                tile,
+                tile_transform,
+                resolution,
+                nodata_value=nodata,
+                compact=False,
+            )
+
+            if len(table) > 0:
+                results.append(pl.from_arrow(table))
+                tile_count += 1
+
+            del tile
+            gc.collect()
+
+    print(f"    Processed {tile_count} tiles with data")
+
+    if not results:
+        return pl.DataFrame({"h3_index": [], "population": []})
+
+    # Combine and aggregate overlapping cells at tile boundaries
+    combined = pl.concat(results)
+    return combined.group_by("cell").agg(
+        pl.col("value").sum()
+    ).rename({"cell": "h3_index", "value": "population"})
 
 
 def process_epoch(
@@ -158,7 +156,7 @@ def process_epoch(
 
     # Convert to H3
     print(f"    Converting to H3 res {h3_resolution}...")
-    df = raster_to_h3_h3ronpy(data_wgs84, h3_resolution, nodata)
+    df = raster_to_h3(data_wgs84, h3_resolution, nodata)
 
     # Filter
     df = df.filter(pl.col("population") > 0)
