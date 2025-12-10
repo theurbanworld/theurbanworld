@@ -3,7 +3,7 @@ name = "urban-pipeline"
 version = "0.1.0"
 description = "GHSL urban data processing pipeline for web visualization"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     # Core geospatial
     "rioxarray>=0.17.0",
@@ -39,6 +39,7 @@ dependencies = [
     "openpyxl>=3.1.5",
     # Data exploration
     "streamlit>=1.40.0",
+    "modal>=1.2.4",
 ]
 
 [project.scripts]
