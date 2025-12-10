@@ -13,7 +13,7 @@
 #   - test-only flag enables fast iteration during development
 # Date: 2024-12-08
 
-.PHONY: all clean download extract convert-100m convert-1km boundaries radial export context test-cities status lint test help basemap basemap-force basemap-info upload upload-dry upload-force upload-basemap upload-data r2-cors
+.PHONY: all clean download extract-ucdb extract convert-100m convert-1km boundaries radial export context test-cities status lint test help basemap basemap-force basemap-info upload upload-dry upload-force upload-basemap upload-data r2-cors explore
 
 # Default target
 all: context basemap
@@ -56,13 +56,21 @@ download: $(RAW_DIR)/.download_complete
 	@echo "Download complete."
 
 # ============================================================================
-# EXTRACTION PHASE
+# UCDB EXTRACTION PHASE
 # ============================================================================
 
-$(INTERIM_DIR)/urban_centers.parquet: $(RAW_DIR)/.download_complete .venv
-	$(PYTHON) -m src.s02_extract_urban_centers
+# Full UCDB extraction (schema + themes + geometries + urban centers)
+$(INTERIM_DIR)/ucdb/.extract_complete: $(RAW_DIR)/.download_complete .venv
+	$(PYTHON) -m src.s02_extract_ucdb all
+	touch $@
 
-extract: $(INTERIM_DIR)/urban_centers.parquet
+# For backwards compatibility
+$(INTERIM_DIR)/urban_centers.parquet: $(INTERIM_DIR)/ucdb/.extract_complete
+
+extract-ucdb: $(INTERIM_DIR)/ucdb/.extract_complete
+	@echo "UCDB extraction complete."
+
+extract: extract-ucdb
 	@echo "Urban centers extracted."
 
 # ============================================================================
@@ -186,7 +194,7 @@ r2-cors: .venv
 test-cities: .venv
 	@echo "Running pipeline for test cities only..."
 	$(PYTHON) -m src.s01_download_ghsl --test-only
-	$(PYTHON) -m src.s02_extract_urban_centers --test-only
+	$(PYTHON) -m src.s02_extract_ucdb all
 	$(PYTHON) -m src.s03_raster_to_h3_100m --test-only
 	$(PYTHON) -m src.s04_raster_to_h3_1km --test-only
 	$(PYTHON) -m src.s05_extract_city_boundaries --test-only
@@ -196,6 +204,14 @@ test-cities: .venv
 	@echo "Test cities pipeline complete."
 
 # ============================================================================
+# DATA EXPLORATION
+# ============================================================================
+
+# Launch UCDB data explorer (Streamlit)
+explore: $(INTERIM_DIR)/ucdb/.extract_complete .venv
+	$(UV) run streamlit run src/s02a_explore_ucdb.py
+
+# ============================================================================
 # UTILITIES
 # ============================================================================
 
@@ -203,7 +219,7 @@ test-cities: .venv
 status:
 	@echo "=== Pipeline Status ==="
 	@echo "Download:   $$(test -f $(RAW_DIR)/.download_complete && echo 'COMPLETE' || echo 'PENDING')"
-	@echo "Extract:    $$(test -f $(INTERIM_DIR)/urban_centers.parquet && echo 'COMPLETE' || echo 'PENDING')"
+	@echo "UCDB:       $$(test -f $(INTERIM_DIR)/ucdb/.extract_complete && echo 'COMPLETE' || echo 'PENDING')"
 	@echo "H3 100m:    $$(test -f $(PROCESSED_DIR)/h3_tiles/h3_pop_2020_res9.parquet && echo 'COMPLETE' || echo 'PENDING')"
 	@echo "H3 1km:     $$(test -f $(INTERIM_DIR)/h3_pop_1km/time_series.parquet && echo 'COMPLETE' || echo 'PENDING')"
 	@echo "Boundaries: $$(test -f $(INTERIM_DIR)/city_boundaries/.complete && echo 'COMPLETE' || echo 'PENDING')"
@@ -258,7 +274,7 @@ help:
 	@echo ""
 	@echo "  Pipeline (run in order):"
 	@echo "    download     - Download GHSL data from JRC"
-	@echo "    extract      - Extract urban centers from UCDB"
+	@echo "    extract-ucdb - Extract UCDB (schema, themes, geometries, urban centers)"
 	@echo "    convert-100m - Convert 100m raster to H3"
 	@echo "    convert-1km  - Convert 1km raster to H3 (time series)"
 	@echo "    boundaries   - Extract city boundary H3 cells"
@@ -283,6 +299,10 @@ help:
 	@echo "    all          - Run full pipeline (default)"
 	@echo "    test-cities  - Run pipeline for 6 test cities only"
 	@echo "    convert      - Run both H3 conversions"
+	@echo "    extract      - Alias for extract-ucdb"
+	@echo ""
+	@echo "  Data Exploration:"
+	@echo "    explore      - Launch UCDB data explorer (Streamlit)"
 	@echo ""
 	@echo "  Utilities:"
 	@echo "    status       - Show pipeline progress"

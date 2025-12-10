@@ -12,41 +12,38 @@ dependencies = [
     "geopandas>=1.0.0",
     "shapely>=2.0.0",
     "pyproj>=3.6.0",
-
     # H3 processing
     "h3>=4.0.0",
     "h3ronpy>=0.21.0",
-
     # Data processing
     "polars>=1.0.0",
     "pandas>=2.2.0",
     "numpy>=1.26.0",
     "pyarrow>=15.0.0",
-
     # Database
     "duckdb>=1.1.0",
-
     # Distributed computing
     "dask[complete]>=2024.1.0",
-
     # Utilities
     "httpx>=0.27.0",
     "tqdm>=4.66.0",
     "click>=8.1.0",
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
-
     # Country/continent mapping
     "pycountry>=24.6.0",
     "pycountry-convert>=0.7.2",
-
     # Cloud storage (R2 upload)
     "boto3>=1.34.0",
     "python-dotenv>=1.0.0",
+    "openpyxl>=3.1.5",
+    # Data exploration
+    "streamlit>=1.40.0",
 ]
 
 [project.scripts]
 download = "src.s01_download_ghsl:main"
+extract-schema = "src.s01b_extract_ucdb_schema:main"
 extract = "src.s02_extract_urban_centers:main"
 convert-100m = "src.s03_raster_to_h3_100m:main"
 convert-1km = "src.s04_raster_to_h3_1km:main"
