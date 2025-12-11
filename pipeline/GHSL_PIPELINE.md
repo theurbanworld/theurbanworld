@@ -30,7 +30,7 @@ This document describes how Global Human Settlement Layer (GHSL) data flows thro
 ┌──────────────────────┐  ┌─────────────────┐  ┌─────────────────┐
 │ data/interim/ucdb/   │  │ data/processed/ │  │ data/interim/   │
 │ data/interim/        │  │ h3_tiles/       │  │ h3_pop_1km/     │
-│ urban_centers*.pq    │  │                 │  │                 │
+│ cities.pq            │  │                 │  │                 │
 └──────────────────────┘  └─────────────────┘  └─────────────────┘
 ```
 
@@ -120,8 +120,7 @@ Parses the UCDB GeoPackage to extract thematic data, geometries, and urban cente
 | `data/interim/ucdb/ucdb_all.parquet` | Merged wide table (all themes joined) |
 | `data/interim/ucdb/geometries.parquet` | Polygon boundaries (GeoParquet, WGS84) |
 | `data/interim/ucdb/centroids.parquet` | Point centroids (GeoParquet, WGS84) |
-| `data/interim/urban_centers.parquet` | Metadata with bbox + required tiles |
-| `data/interim/urban_centers_test.parquet` | Test city subset |
+| `data/interim/cities.parquet` | City metadata with bbox + required tiles |
 
 ### Key Join Column
 All thematic layers share `ID_UC_G0` as the primary key for joining.
@@ -267,8 +266,7 @@ data/
 │   │   ├── ucdb_all.parquet
 │   │   ├── geometries.parquet
 │   │   └── centroids.parquet
-│   ├── urban_centers.parquet
-│   ├── urban_centers_test.parquet
+│   ├── cities.parquet
 │   ├── h3_pop_100m/
 │   │   ├── R{row}_C{col}.parquet
 │   │   └── _progress.json

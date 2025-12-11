@@ -65,7 +65,7 @@ $(INTERIM_DIR)/ucdb/.extract_complete: $(RAW_DIR)/.download_complete .venv
 	touch $@
 
 # For backwards compatibility
-$(INTERIM_DIR)/urban_centers.parquet: $(INTERIM_DIR)/ucdb/.extract_complete
+$(INTERIM_DIR)/cities.parquet: $(INTERIM_DIR)/ucdb/.extract_complete
 
 extract-ucdb: $(INTERIM_DIR)/ucdb/.extract_complete
 	@echo "UCDB extraction complete."
@@ -78,7 +78,7 @@ extract: extract-ucdb
 # ============================================================================
 
 # 100m raster to H3 (2020 only)
-$(PROCESSED_DIR)/h3_tiles/h3_pop_2020_res9.parquet: $(RAW_DIR)/.download_complete $(INTERIM_DIR)/urban_centers.parquet .venv
+$(PROCESSED_DIR)/h3_tiles/h3_pop_2020_res9.parquet: $(RAW_DIR)/.download_complete $(INTERIM_DIR)/cities.parquet .venv
 	$(PYTHON) -m src.s03_raster_to_h3_100m
 
 convert-100m: $(PROCESSED_DIR)/h3_tiles/h3_pop_2020_res9.parquet
@@ -99,7 +99,7 @@ convert: convert-100m convert-1km
 # ============================================================================
 
 # City boundary extraction
-$(INTERIM_DIR)/city_boundaries/.complete: $(INTERIM_DIR)/urban_centers.parquet $(PROCESSED_DIR)/h3_tiles/h3_pop_2020_res9.parquet .venv
+$(INTERIM_DIR)/city_boundaries/.complete: $(INTERIM_DIR)/cities.parquet $(PROCESSED_DIR)/h3_tiles/h3_pop_2020_res9.parquet .venv
 	$(PYTHON) -m src.s05_extract_city_boundaries
 	touch $@
 
@@ -107,7 +107,7 @@ boundaries: $(INTERIM_DIR)/city_boundaries/.complete
 	@echo "City boundaries extracted."
 
 # Radial density profiles
-$(INTERIM_DIR)/radial_profiles/.complete: $(INTERIM_DIR)/urban_centers.parquet $(PROCESSED_DIR)/h3_tiles/h3_pop_2020_res9.parquet .venv
+$(INTERIM_DIR)/radial_profiles/.complete: $(INTERIM_DIR)/cities.parquet $(PROCESSED_DIR)/h3_tiles/h3_pop_2020_res9.parquet .venv
 	$(PYTHON) -m src.s06_compute_radial_profiles
 	touch $@
 
@@ -118,7 +118,7 @@ radial: $(INTERIM_DIR)/radial_profiles/.complete
 # EXPORT PHASE
 # ============================================================================
 
-$(PROCESSED_DIR)/city_index.json: $(INTERIM_DIR)/urban_centers.parquet \
+$(PROCESSED_DIR)/city_index.json: $(INTERIM_DIR)/cities.parquet \
                                    $(INTERIM_DIR)/h3_pop_1km/time_series.parquet \
                                    $(INTERIM_DIR)/city_boundaries/.complete \
                                    $(INTERIM_DIR)/radial_profiles/.complete \

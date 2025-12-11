@@ -1,5 +1,5 @@
 """
-01 - Extract UCDB data from GeoPackage and XLSX.
+02 - Extract UCDB data from GeoPackage and XLSX.
 
 Purpose: Parse GHSL-UCDB to extract all thematic data for querying
 Input:
@@ -11,8 +11,6 @@ Output:
   - data/interim/ucdb/ucdb_all.parquet (merged wide table)
   - data/interim/ucdb/geometries.parquet (polygon boundaries, WGS84)
   - data/interim/ucdb/centroids.parquet (point centroids, WGS84)
-  - data/interim/urban_centers.parquet (metadata for downstream stages)
-  - data/interim/urban_centers_test.parquet (test subset)
 
 Decision log:
   - All thematic layers share ID_UC_G0 as join key
@@ -23,18 +21,15 @@ Date: 2024-12-09
 """
 
 import json
-import re
 from pathlib import Path
 
 import click
 import geopandas as gpd
 import pandas as pd
 import polars as pl
-from tqdm import tqdm
 
 from .utils.config import config, get_interim_path, get_raw_path
 from .utils.geometry_utils import fix_invalid_geometry
-from .utils.tile_utils import estimate_tiles_for_bbox_wgs84
 
 
 # GeoPackage layer names
@@ -88,6 +83,14 @@ COMMON_COLUMNS = {
 def clean_column_name(col: str) -> str:
     """Remove BOM character and normalize column names."""
     return col.lstrip("\ufeff").strip()
+
+
+def clean_string_values(df: pl.DataFrame) -> pl.DataFrame:
+    """Remove BOM character from all string column values."""
+    for col in df.columns:
+        if df[col].dtype == pl.Utf8:
+            df = df.with_columns(pl.col(col).str.strip_chars("\ufeff").alias(col))
+    return df
 
 
 # =============================================================================
@@ -244,6 +247,9 @@ def extract_theme_to_parquet(
 
     # Convert to Polars
     pl_df = pl.from_pandas(df)
+
+    # Clean BOM from string values
+    pl_df = clean_string_values(pl_df)
 
     # Write parquet
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -413,203 +419,6 @@ def extract_centroids(gpkg_path: Path, output_path: Path) -> gpd.GeoDataFrame:
 
 
 # =============================================================================
-# URBAN CENTERS METADATA (for downstream stages)
-# =============================================================================
-
-
-def find_column_by_pattern(
-    columns: list[str], pattern: str, fallbacks: list[str] | None = None
-) -> str | None:
-    """
-    Find a column matching a schema pattern (with XXXX as year placeholder).
-    """
-    # Clean columns (remove BOM character)
-    clean_cols = {col.lstrip("\ufeff"): col for col in columns}
-
-    # Try pattern with different years
-    if "XXXX" in pattern:
-        base_pattern = pattern.replace("XXXX", "")
-        for clean_col, orig_col in clean_cols.items():
-            if clean_col.startswith(base_pattern):
-                return orig_col
-
-    # Try exact match (for patterns without XXXX like ID_UC_G0)
-    if pattern in clean_cols:
-        return clean_cols[pattern]
-
-    # Try fallbacks
-    if fallbacks:
-        for fb in fallbacks:
-            if fb in clean_cols:
-                return clean_cols[fb]
-
-    return None
-
-
-def extract_urban_centers(
-    gpkg_path: Path,
-    output_dir: Path,
-    schema: dict | None = None,
-) -> pl.DataFrame:
-    """
-    Extract urban center metadata with bbox and tile info for downstream stages.
-
-    Args:
-        gpkg_path: Path to GeoPackage
-        output_dir: Output directory for parquet files
-        schema: Optional schema dict with aliases
-
-    Returns:
-        Polars DataFrame with urban center metadata
-    """
-    print("Extracting urban center metadata...")
-
-    layer_name = GPKG_LAYER_NAMES["GENERAL_CHARACTERISTICS"]
-    gdf = gpd.read_file(gpkg_path, layer=layer_name)
-    print(f"  Loaded {len(gdf)} urban centers")
-
-    # Fix invalid geometries
-    invalid_count = (~gdf.geometry.is_valid).sum()
-    if invalid_count > 0:
-        print(f"  Fixing {invalid_count} invalid geometries...")
-        gdf["geometry"] = gdf.geometry.apply(fix_invalid_geometry)
-
-    columns = gdf.columns.tolist()
-    col_mapping = {}
-
-    # Get aliases from schema if available
-    aliases = schema.get("aliases", {}) if schema else {}
-
-    # Find columns using schema patterns or fallbacks
-    name_patterns = aliases.get("name", ["GC_UCN_MAI_XXXX"])
-    for pattern in name_patterns:
-        col = find_column_by_pattern(columns, pattern, ["UC_NM_MN", "NAME"])
-        if col:
-            col_mapping["name"] = col
-            break
-
-    country_patterns = aliases.get("country_code", ["GC_CNT_GAD_XXXX"])
-    for pattern in country_patterns:
-        col = find_column_by_pattern(columns, pattern, ["CTR_MN_ISO", "CNTR_CODE"])
-        if col:
-            col_mapping["country_code"] = col
-            break
-
-    pop_patterns = aliases.get("population", ["GC_POP_TOT_XXXX"])
-    for pattern in pop_patterns:
-        col = find_column_by_pattern(columns, pattern, ["P15", "P20"])
-        if col:
-            col_mapping["population"] = col
-            break
-
-    area_patterns = aliases.get("area_km2", ["GC_UCA_KM2_XXXX"])
-    for pattern in area_patterns:
-        col = find_column_by_pattern(columns, pattern, ["AREA"])
-        if col:
-            col_mapping["area"] = col
-            break
-
-    id_patterns = aliases.get("city_id", ["ID_UC_G0"])
-    for pattern in id_patterns:
-        col = find_column_by_pattern(columns, pattern, ["ID_HDC_G0", "UC_ID"])
-        if col:
-            col_mapping["city_id"] = col
-            break
-
-    print(f"  Using columns: {col_mapping}")
-
-    # Reproject to WGS84
-    print("  Reprojecting to WGS84...")
-    gdf_wgs84 = gdf.to_crs("EPSG:4326")
-
-    # Extract data
-    records = []
-    for idx, row in tqdm(gdf_wgs84.iterrows(), total=len(gdf_wgs84), desc="  Extracting"):
-        geom = row.geometry
-        centroid = geom.centroid
-        lat, lon = centroid.y, centroid.x
-        minx, miny, maxx, maxy = geom.bounds
-
-        # Estimate required tiles
-        tiles = estimate_tiles_for_bbox_wgs84(minx, miny, maxx, maxy)
-        tile_ids = [f"R{r}_C{c}" for r, c in tiles]
-
-        # Get area
-        try:
-            area_km2 = row.get(col_mapping.get("area"), 0)
-            if area_km2 == 0 or area_km2 is None:
-                area_km2 = geom.area * 111 * 111  # Rough estimate
-        except Exception:
-            area_km2 = 0
-
-        record = {
-            "city_id": str(row.get(col_mapping.get("city_id", ""), idx)),
-            "name": str(row.get(col_mapping.get("name", ""), f"City_{idx}")),
-            "country_code": str(row.get(col_mapping.get("country_code", ""), "UNK")),
-            "latitude": lat,
-            "longitude": lon,
-            "population_2020": int(row.get(col_mapping.get("population", ""), 0) or 0),
-            "area_km2": float(area_km2 or 0),
-            "bbox_minx": minx,
-            "bbox_miny": miny,
-            "bbox_maxx": maxx,
-            "bbox_maxy": maxy,
-            "required_tiles": tile_ids,
-        }
-        records.append(record)
-
-    df = pl.DataFrame(records)
-
-    # Save full dataset
-    output_path = output_dir / "urban_centers.parquet"
-    df.write_parquet(output_path)
-    print(f"  -> {len(df)} cities saved to {output_path}")
-
-    return df
-
-
-def filter_test_cities(df: pl.DataFrame, test_cities: list[str]) -> pl.DataFrame:
-    """Filter to test cities using exact matching on normalized names."""
-    def normalize(name: str) -> str:
-        # Remove BOM and normalize to lowercase ASCII
-        name = name.lstrip("\ufeff").strip()
-        return re.sub(r"[^a-z0-9\s]", "", name.lower())
-
-    test_normalized = {normalize(c): c for c in test_cities}
-
-    matches = []
-    for row in df.iter_rows(named=True):
-        city_name = row["name"].lstrip("\ufeff").strip()
-        city_norm = normalize(city_name)
-
-        # Try exact match first
-        if city_norm in test_normalized:
-            matches.append(row["city_id"])
-            print(f"  Matched: {city_name} ({row['country_code']}) -> {test_normalized[city_norm]}")
-            continue
-
-        # Try partial match only if the test city name is a significant part of the city name
-        for test_norm, test_name in test_normalized.items():
-            # Only match if the test name is the start of the city name
-            # e.g., "new york" matches "new york city" but not "york"
-            if city_norm.startswith(test_norm) or test_norm.startswith(city_norm):
-                # Additional check: names should be similar length
-                if len(city_norm) <= len(test_norm) * 1.5 and len(test_norm) <= len(city_norm) * 1.5:
-                    matches.append(row["city_id"])
-                    print(f"  Matched: {city_name} ({row['country_code']}) -> {test_name}")
-                    break
-
-    if not matches:
-        print("  WARNING: No matches found. Using population-based selection...")
-        top_6 = df.sort("population_2020", descending=True).head(6)
-        matches = top_6["city_id"].to_list()
-        for row in top_6.iter_rows(named=True):
-            print(f"  Selected by population: {row['name']} ({row['population_2020']:,})")
-
-    return df.filter(pl.col("city_id").is_in(matches))
-
-
-# =============================================================================
 # CLI
 # =============================================================================
 
@@ -673,7 +482,7 @@ def schema():
 @cli.command()
 @click.option("--themes", default=None, help="Comma-separated themes to extract (default: all)")
 def extract(themes: str | None):
-    """Extract all thematic data + geometries + urban centers."""
+    """Extract all thematic data + geometries."""
     print("=" * 60)
     print("UCDB Data Extraction")
     print("=" * 60)
@@ -707,24 +516,6 @@ def extract(themes: str | None):
     extract_geometries(gpkg_path, output_dir / "geometries.parquet")
     extract_centroids(gpkg_path, output_dir / "centroids.parquet")
 
-    # Extract urban centers metadata
-    print("\n--- Extracting Urban Centers Metadata ---")
-    schema_path = ucdb_dir / "ucdb_schema.json"
-    schema = None
-    if schema_path.exists():
-        with open(schema_path) as f:
-            schema = json.load(f)
-
-    interim_dir = get_interim_path()
-    df = extract_urban_centers(gpkg_path, interim_dir, schema)
-
-    # Save test cities
-    print("\nFiltering test cities...")
-    test_df = filter_test_cities(df, config.TEST_CITIES)
-    test_output = interim_dir / "urban_centers_test.parquet"
-    test_df.write_parquet(test_output)
-    print(f"  -> {len(test_df)} test cities saved")
-
     # Create sentinel file
     sentinel = output_dir / ".extract_complete"
     sentinel.touch()
@@ -735,8 +526,7 @@ def extract(themes: str | None):
     print("=" * 60)
     print(f"Output directory: {output_dir}")
     print(f"Themes extracted: {len(list((output_dir / 'themes').glob('*.parquet')))}")
-    print(f"Total cities: {len(df)}")
-    print(f"Test cities: {len(test_df)}")
+    print("Note: Run s02b_extract_cities for city metadata")
 
 
 @cli.command(name="all")

@@ -3,8 +3,8 @@
 
 Purpose: Define each city's spatial extent as a set of H3 cells
 Input:
-  - data/interim/urban_centers.parquet
-  - data/interim/city_geometries.gpkg
+  - data/interim/cities.parquet
+  - data/interim/ucdb/geometries.parquet
   - data/processed/h3_tiles/h3_pop_2020_res9.parquet
 Output:
   - data/interim/city_boundaries/{city_id}.parquet
@@ -261,17 +261,12 @@ def process_city_batch(
 
         progress.mark_in_progress(city_id)
 
-        # Get geometry
-        geom_row = geometries[geometries["UC_NM_MN"] == city.get("name")]
+        # Get geometry by ID_UC_G0
+        geom_row = geometries[geometries["ID_UC_G0"] == int(city_id)]
         if len(geom_row) == 0:
-            # Try by index
-            try:
-                geom = geometries.iloc[int(city_id)].geometry
-            except Exception:
-                progress.mark_failed(city_id, "Geometry not found")
-                continue
-        else:
-            geom = geom_row.iloc[0].geometry
+            progress.mark_failed(city_id, "Geometry not found")
+            continue
+        geom = geom_row.iloc[0].geometry
 
         # Extract boundary
         result = extract_city_boundary(
@@ -311,26 +306,28 @@ def main(test_only: bool = False, workers: int = 8):
     print("=" * 60)
 
     # Load data
-    if test_only:
-        cities_path = get_interim_path() / "urban_centers_test.parquet"
-    else:
-        cities_path = get_interim_path() / "urban_centers.parquet"
+    cities_path = get_interim_path() / "cities.parquet"
 
     if not cities_path.exists():
         print(f"ERROR: Cities file not found: {cities_path}")
         return
 
     cities_df = pl.read_parquet(cities_path)
+
+    if test_only:
+        cities_df = cities_df.filter(pl.col("city_id").is_in([str(id) for id in config.TEST_CITY_IDS]))
+        print(f"Filtering to {len(cities_df)} test cities")
+
     print(f"Loaded {len(cities_df)} cities")
 
     # Load geometries
-    geom_path = get_interim_path() / "city_geometries.gpkg"
+    geom_path = get_interim_path("ucdb") / "geometries.parquet"
     if not geom_path.exists():
         print(f"ERROR: Geometries not found: {geom_path}")
         return
 
     print("Loading geometries...")
-    geometries = gpd.read_file(geom_path)
+    geometries = gpd.read_parquet(geom_path)
 
     # Load population grid
     pop_path = get_processed_path("h3_tiles") / "h3_pop_2020_res9.parquet"

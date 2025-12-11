@@ -3,7 +3,7 @@
 
 Purpose: Calculate population density at 1km intervals from city center
 Input:
-  - data/interim/urban_centers.parquet
+  - data/interim/cities.parquet
   - data/processed/h3_tiles/h3_pop_2020_res9.parquet
   - data/interim/city_boundaries/{city_id}.parquet
 Output:
@@ -269,16 +269,19 @@ def main(test_only: bool = False):
     print("=" * 60)
 
     # Load cities
-    if test_only:
-        cities_path = get_interim_path() / "urban_centers_test.parquet"
-    else:
-        cities_path = get_interim_path() / "urban_centers.parquet"
+    cities_path = get_interim_path() / "cities.parquet"
 
     if not cities_path.exists():
         print(f"ERROR: Cities file not found: {cities_path}")
         return
 
     cities_df = pl.read_parquet(cities_path)
+
+    if test_only:
+        from .utils.config import config
+        cities_df = cities_df.filter(pl.col("city_id").is_in([str(id) for id in config.TEST_CITY_IDS]))
+        print(f"Filtering to {len(cities_df)} test cities")
+
     print(f"Loaded {len(cities_df)} cities")
 
     # Load population grid

@@ -3,7 +3,7 @@
 
 Purpose: Interactive web interface to explore UCDB data
 Input:
-  - data/interim/urban_centers.parquet (city list)
+  - data/interim/cities.parquet (city list)
   - data/interim/ucdb/ucdb_all.parquet (full attributes)
   - data/raw/ucdb/ucdb_schema.json (column definitions)
 Output: Web interface (no files created)
@@ -34,9 +34,9 @@ INTERIM_DIR = DATA_DIR / "interim"
 
 
 @st.cache_data
-def load_urban_centers() -> pd.DataFrame:
-    """Load urban centers metadata."""
-    path = INTERIM_DIR / "urban_centers.parquet"
+def load_cities() -> pd.DataFrame:
+    """Load cities metadata."""
+    path = INTERIM_DIR / "cities.parquet"
     if not path.exists():
         st.error(f"File not found: {path}\n\nRun `make extract-ucdb` first.")
         st.stop()
@@ -73,7 +73,7 @@ def render_city_browser():
     """Render searchable city table."""
     st.header("City Browser")
 
-    df = load_urban_centers()
+    df = load_cities()
 
     # Search box
     search = st.text_input("Search cities", placeholder="e.g., New York, Paris, Tokyo...")
@@ -84,7 +84,7 @@ def render_city_browser():
         df = df[mask]
 
     # Display stats
-    st.caption(f"Showing {len(df):,} of {len(load_urban_centers()):,} cities")
+    st.caption(f"Showing {len(df):,} of {len(load_cities()):,} cities")
 
     # Population filter
     col1, col2 = st.columns(2)
@@ -129,12 +129,12 @@ def render_city_browser():
 
 def render_city_detail(city_name: str):
     """Render detailed view for a single city."""
-    urban_centers = load_urban_centers()
+    cities = load_cities()
     ucdb_all = load_ucdb_all()
     schema = load_schema()
 
     # Find city
-    city_row = urban_centers[urban_centers["name"] == city_name].iloc[0]
+    city_row = cities[cities["name"] == city_name].iloc[0]
     city_id = city_row["city_id"]
 
     # Get full attributes
@@ -266,7 +266,7 @@ def render_map():
     """Render city map."""
     st.header("City Map")
 
-    df = load_urban_centers()
+    df = load_cities()
 
     # Population filter
     min_pop = st.slider(
