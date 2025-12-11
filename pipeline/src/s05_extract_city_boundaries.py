@@ -5,7 +5,7 @@ Purpose: Define each city's spatial extent as a set of H3 cells
 Input:
   - data/interim/cities.parquet
   - data/interim/ucdb/geometries.parquet
-  - data/processed/h3_tiles/h3_pop_2020_res9.parquet
+  - data/processed/h3_tiles/h3_pop_2025_res9.parquet
 Output:
   - data/interim/city_boundaries/{city_id}.parquet
 
@@ -330,7 +330,7 @@ def main(test_only: bool = False, workers: int = 8):
     geometries = gpd.read_parquet(geom_path)
 
     # Load population grid
-    pop_path = get_processed_path("h3_tiles") / "h3_pop_2020_res9.parquet"
+    pop_path = get_processed_path("h3_tiles") / "h3_pop_2025_res9.parquet"
     if not pop_path.exists():
         print(f"ERROR: Population grid not found: {pop_path}")
         return

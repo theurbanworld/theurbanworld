@@ -14,8 +14,8 @@ This document describes how Global Human Settlement Layer (GHSL) data flows thro
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  STAGE 01: Download (s01_download_ghsl.py)                              │
 │  ├── UCDB GeoPackage (urban centers database)                           │
-│  ├── GHSL-POP 100m tiles (2020 only, Mollweide projection)              │
-│  └── GHSL-POP 1km global files (1975-2020, all epochs)                  │
+│  ├── GHSL-POP 100m tiles (2025 only, Mollweide projection)              │
+│  └── GHSL-POP 1km global files (1975-2030, all epochs)                  │
 └─────────────────────────────────────────────────────────────────────────┘
                                     │
                     ┌───────────────┼───────────────┐
@@ -47,11 +47,11 @@ Downloads raw GHSL data from the European Commission JRC servers with retry logi
 | Dataset | Resolution | Epochs | Projection | Format |
 |---------|------------|--------|------------|--------|
 | GHSL-UCDB | N/A | 2024 release | Mollweide (ESRI:54009) | GeoPackage + XLSX |
-| GHSL-POP | 100m | 2020 only | Mollweide (ESRI:54009) | GeoTIFF (tiled) |
-| GHSL-POP | 1km | 1975-2020 (10 epochs) | Mollweide (ESRI:54009) | GeoTIFF (global) |
+| GHSL-POP | 100m | 2025 only | Mollweide (ESRI:54009) | GeoTIFF (tiled) |
+| GHSL-POP | 1km | 1975-2030 (12 epochs) | Mollweide (ESRI:54009) | GeoTIFF (global) |
 
 ### Epochs (1km data)
-`1975, 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020`
+`1975, 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020, 2025, 2030`
 
 ### Test City Tiles
 
@@ -165,7 +165,7 @@ Converts 100m GHSL-POP raster tiles to H3 hexagons at resolution 9.
 |-------------|-------------|
 | `data/interim/h3_pop_100m/{tile_id}.parquet` | Per-tile H3 cells |
 | `data/interim/h3_pop_100m/_progress.json` | Processing progress |
-| `data/processed/h3_tiles/h3_pop_2020_res9.parquet` | Merged, deduplicated H3 cells |
+| `data/processed/h3_tiles/h3_pop_2025_res9.parquet` | Merged, deduplicated H3 cells |
 
 ### Tile Boundary Handling
 H3 cells at tile boundaries may appear in multiple tiles. DuckDB merge sums population for duplicate `h3_index` values.
@@ -209,10 +209,10 @@ Processes all 10 epochs in parallel on Modal cloud infrastructure for faster exe
 | H3 Resolution | 8 | ~0.7 km² per cell (matches 1km input) |
 | Memory per Container | 32 GB | Processes full raster without tiling |
 | Timeout | 30 min | Per epoch processing |
-| Parallelism | 10 | One container per epoch |
+| Parallelism | 12 | One container per epoch |
 
 ### Cost Estimate
-- **Cloud cost:** ~$0.50-1.00 for all 10 epochs
+- **Cloud cost:** ~$0.60-1.20 for all 12 epochs
 - **Wall-clock time:** ~5-10 minutes
 
 ### Run Modes
@@ -220,7 +220,7 @@ Processes all 10 epochs in parallel on Modal cloud infrastructure for faster exe
 | Command | Description |
 |---------|-------------|
 | `modal run src/s04_raster_to_h3_1km_modal.py` | Full cloud run (all epochs) |
-| `modal run src/s04_raster_to_h3_1km_modal.py --test` | Cloud test (2020 only) |
+| `modal run src/s04_raster_to_h3_1km_modal.py --test` | Cloud test (2030 only) |
 | `modal run src/s04_raster_to_h3_1km_modal.py --local` | Local test (no cloud) |
 
 ### Outputs
@@ -239,6 +239,8 @@ Processes all 10 epochs in parallel on Modal cloud infrastructure for faster exe
 | `pop_1980` | Float64 | Population in 1980 |
 | ... | ... | ... |
 | `pop_2020` | Float64 | Population in 2020 |
+| `pop_2025` | Float64 | Population in 2025 |
+| `pop_2030` | Float64 | Population in 2030 |
 
 ---
 
@@ -252,7 +254,7 @@ data/
 │   │   ├── GHS_UCDB_GLOBE_R2024A.xlsx
 │   │   └── ucdb_schema.json
 │   ├── ghsl_pop_100m/
-│   │   └── GHS_POP_E2020_*_R{row}_C{col}_*.tif
+│   │   └── GHS_POP_E2025_*_R{row}_C{col}_*.tif
 │   ├── ghsl_pop_1km/
 │   │   └── GHS_POP_E{epoch}_*_1000_*.tif
 │   └── download_progress.json
@@ -278,7 +280,7 @@ data/
 │
 └── processed/                        # Final outputs
     └── h3_tiles/
-        └── h3_pop_2020_res9.parquet
+        └── h3_pop_2025_res9.parquet
 ```
 
 ---

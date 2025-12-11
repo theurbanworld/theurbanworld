@@ -7,11 +7,11 @@ Input:
   - data/interim/h3_pop_1km/time_series.parquet
   - data/interim/city_boundaries/{city_id}.parquet
   - data/interim/radial_profiles/{city_id}.json
-  - data/processed/h3_tiles/h3_pop_2020_res9.parquet
+  - data/processed/h3_tiles/h3_pop_2025_res9.parquet
 Output:
   - data/processed/cities/{city_id}.json (per-city files)
   - data/processed/city_index.json (search index)
-  - data/processed/h3_tiles/h3_pop_2020_res9.geoparquet (with geometry)
+  - data/processed/h3_tiles/h3_pop_2025_res9.geoparquet (with geometry)
 
 Decision log:
   - City JSONs contain all data for single-city views
@@ -138,7 +138,7 @@ def build_city_json(
             "lat": city["latitude"],
             "lon": city["longitude"],
         },
-        "population_2020": city["population_2020"],
+        "population_2025": city["population_2025"],
         "area_km2": round(city["area_km2"], 2),
         "boundary_h3": {
             "resolution": config.H3_RESOLUTION_MAP,
@@ -149,7 +149,7 @@ def build_city_json(
         "radial_profile": profile_export,
         "statistics": {
             "density_avg": round(
-                city["population_2020"] / city["area_km2"], 1
+                city["population_2025"] / city["area_km2"], 1
             ) if city["area_km2"] > 0 else 0,
         },
         "metadata": {
@@ -171,12 +171,12 @@ def build_city_index(cities_df: pl.DataFrame) -> dict:
         City index dict
     """
     cities = []
-    for row in cities_df.sort("population_2020", descending=True).iter_rows(named=True):
+    for row in cities_df.sort("population_2025", descending=True).iter_rows(named=True):
         cities.append({
             "id": row["city_id"],
             "name": row["name"],
             "country": row["country_code"],
-            "population": row["population_2020"],
+            "population": row["population_2025"],
             "lat": round(row["latitude"], 4),
             "lon": round(row["longitude"], 4),
         })

@@ -9,6 +9,23 @@ Input:
 Output:
   - data/interim/cities.parquet (GeoParquet with polygons)
 
+Output Schema (cities.parquet as GeoParquet):
+  | Column                   | Type      | Source             | Notes                     |
+  |--------------------------|-----------|--------------------|---------------------------|
+  | city_id                  | str       | ID_UC_G0           | Primary key               |
+  | name                     | str       | GC_UCN_MAI_2025    | City name                 |
+  | country_name             | str       | GC_CNT_GAD_2025    | Renamed from country_code |
+  | country_code             | str       | pycountry lookup   | New ISO 3166-1 alpha-3    |
+  | region                   | str       | GC_DEV_USR_2025    | New continent/region      |
+  | latitude                 | float     | centroid.y         | From centroids.parquet    |
+  | longitude                | float     | centroid.x         | From centroids.parquet    |
+  | population_2025          | int       | GC_POP_TOT_2025    |                           |
+  | area_km2                 | float     | GC_UCA_KM2_2025    |                           |
+  | bbox_minx/miny/maxx/maxy | float     | geometry.bounds    | From geometries.parquet   |
+  | required_tiles           | list[str] | tile_utils         | Keep existing logic       |
+  | geometry                 | Polygon   | geometries.parquet | New - full polygon        |
+  | centroid                 | Point     | centroids.parquet  | New - centroid point      |
+
 Decision log:
   - Separated from s02 to allow independent re-runs
   - Uses interim files instead of raw GeoPackage for faster processing
@@ -34,7 +51,7 @@ UCDB_COLUMNS = {
     "GC_UCN_MAI_2025": "name",
     "GC_CNT_GAD_2025": "country_name",
     "GC_DEV_USR_2025": "region",
-    "GC_POP_TOT_2025": "population_2020",
+    "GC_POP_TOT_2025": "population_2025",
     "GC_UCA_KM2_2025": "area_km2",
 }
 
@@ -122,7 +139,7 @@ def extract_cities(force: bool = False) -> gpd.GeoDataFrame:
 
     # Convert population to integer (handling potential floats)
     cities_pl = cities_pl.with_columns(
-        pl.col("population_2020").cast(pl.Int64)
+        pl.col("population_2025").cast(pl.Int64)
     )
 
     # Convert area to float
@@ -222,7 +239,7 @@ def extract_cities(force: bool = False) -> gpd.GeoDataFrame:
         "region",
         "latitude",
         "longitude",
-        "population_2020",
+        "population_2025",
         "area_km2",
         "bbox_minx",
         "bbox_miny",
@@ -273,7 +290,7 @@ def main(force: bool = False):
 
     # Show sample
     print("\nSample data:")
-    sample_cols = ["city_id", "name", "country_name", "country_code", "region", "population_2020"]
+    sample_cols = ["city_id", "name", "country_name", "country_code", "region", "population_2025"]
     print(cities_gdf[sample_cols].head(5).to_string(index=False))
 
 

@@ -8,7 +8,7 @@ This pipeline processes ~13,000 cities globally from the European Commission's G
 - **H3 hexagonal grids** for map visualization
 - **City boundary polygons** as H3 cell sets
 - **Radial density profiles** (Bertaud-style analysis)
-- **Population time series** (1975-2020)
+- **Population time series** (1975-2030)
 - **Web-ready JSON/GeoParquet** for frontend consumption
 
 ## Quick Start
@@ -57,7 +57,7 @@ make status
   "name": "New York",
   "country": "United States",
   "location": {"lat": 40.7128, "lon": -74.006},
-  "population_2020": 18823000,
+  "population_2025": 18823000,
   "boundary_h3": {
     "resolution": 9,
     "cells": ["891e204d21fffff", ...],
@@ -71,7 +71,7 @@ make status
 ### City Index (`data/processed/city_index.json`)
 Lightweight index for search/autocomplete with basic city metadata.
 
-### H3 Population Grid (`data/processed/h3_tiles/h3_pop_2020_res9.parquet`)
+### H3 Population Grid (`data/processed/h3_tiles/h3_pop_2025_res9.parquet`)
 GeoParquet with H3 cell IDs and population values.
 
 ## Configuration

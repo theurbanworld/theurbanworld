@@ -93,15 +93,15 @@ def render_city_browser():
     with col2:
         max_pop = st.number_input("Max population", value=50_000_000, step=100000)
 
-    df = df[(df["population_2020"] >= min_pop) & (df["population_2020"] <= max_pop)]
+    df = df[(df["population_2025"] >= min_pop) & (df["population_2025"] <= max_pop)]
 
     # Select columns to display
-    display_cols = ["name", "country_code", "population_2020", "area_km2", "latitude", "longitude"]
+    display_cols = ["name", "country_code", "population_2025", "area_km2", "latitude", "longitude"]
     display_df = df[display_cols].copy()
-    display_df.columns = ["Name", "Country", "Population (2020)", "Area (km²)", "Latitude", "Longitude"]
+    display_df.columns = ["Name", "Country", "Population (2025)", "Area (km²)", "Latitude", "Longitude"]
 
     # Sort by population by default
-    display_df = display_df.sort_values("Population (2020)", ascending=False)
+    display_df = display_df.sort_values("Population (2025)", ascending=False)
 
     # Show table
     st.dataframe(
@@ -109,7 +109,7 @@ def render_city_browser():
         use_container_width=True,
         hide_index=True,
         column_config={
-            "Population (2020)": st.column_config.NumberColumn(format="%d"),
+            "Population (2025)": st.column_config.NumberColumn(format="%d"),
             "Area (km²)": st.column_config.NumberColumn(format="%.1f"),
             "Latitude": st.column_config.NumberColumn(format="%.4f"),
             "Longitude": st.column_config.NumberColumn(format="%.4f"),
@@ -148,7 +148,7 @@ def render_city_detail(city_name: str):
     # Basic info
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("Population (2020)", f"{city_row['population_2020']:,.0f}")
+        st.metric("Population (2025)", f"{city_row['population_2025']:,.0f}")
     with col2:
         st.metric("Area", f"{city_row['area_km2']:.1f} km²")
     with col3:
@@ -277,14 +277,14 @@ def render_map():
         step=100_000,
     )
 
-    filtered_df = df[df["population_2020"] >= min_pop]
+    filtered_df = df[df["population_2025"] >= min_pop]
     st.caption(f"Showing {len(filtered_df):,} cities with population >= {min_pop:,}")
 
     # Prepare map data
-    map_df = filtered_df[["latitude", "longitude", "name", "population_2020"]].copy()
+    map_df = filtered_df[["latitude", "longitude", "name", "population_2025"]].copy()
     map_df = map_df.rename(columns={"latitude": "lat", "longitude": "lon"})
 
-    st.map(map_df, size="population_2020", color="#0068c9")
+    st.map(map_df, size="population_2025", color="#0068c9")
 
 
 # =============================================================================

@@ -1,12 +1,12 @@
 """
 03 - Convert 100m GHSL-POP raster to H3 hexagons.
 
-Purpose: Transform 100m population raster (2020) to H3 resolution 9 grid
+Purpose: Transform 100m population raster (2025) to H3 resolution 9 grid
 Input:
   - data/raw/ghsl_pop_100m/*.tif (100m Mollweide tiles)
 Output:
   - data/interim/h3_pop_100m/{tile_id}.parquet (per-tile)
-  - data/processed/h3_tiles/h3_pop_2020_res9.parquet (merged)
+  - data/processed/h3_tiles/h3_pop_2025_res9.parquet (merged)
 
 Decision log:
   - Reproject to WGS84 before H3 conversion (h3ronpy requirement)
@@ -255,7 +255,7 @@ def main(test_only: bool = False):
             print(f"\n  ERROR on {tile_id}: {e}")
 
     # Merge all tiles
-    final_output = get_processed_path("h3_tiles") / "h3_pop_2020_res9.parquet"
+    final_output = get_processed_path("h3_tiles") / "h3_pop_2025_res9.parquet"
     merge_tiles_duckdb(output_dir, final_output)
 
     # Summary

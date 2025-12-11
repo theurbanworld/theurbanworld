@@ -4,8 +4,8 @@
 Purpose: Download GHSL-POP raster tiles and UCDB urban centers database
 Input: Configuration with target tiles (derived from test cities)
 Output:
-  - data/raw/ghsl_pop_100m/*.tif (100m 2020 tiles)
-  - data/raw/ghsl_pop_1km/*.tif (1km for 1975-2020)
+  - data/raw/ghsl_pop_100m/*.tif (100m 2025 tiles)
+  - data/raw/ghsl_pop_1km/*.tif (1km for 1975-2030)
   - data/raw/ucdb/*.gpkg (UCDB R2024A)
   - data/raw/download_manifest.json
 
@@ -277,10 +277,10 @@ def main(test_only: bool = False):
     # Collect all items to download
     items = ["ucdb"]  # Always download UCDB
 
-    # 100m tiles (2020 only)
+    # 100m tiles (2025 only)
     tiles = get_required_tiles(test_only)
     for row, col in tiles:
-        items.append(f"E2020_R{row}_C{col}")
+        items.append(f"E2025_R{row}_C{col}")
 
     # 1km global files (all epochs)
     for epoch in config.GHSL_POP_EPOCHS:
@@ -302,7 +302,7 @@ def main(test_only: bool = False):
     print(f"\n[2/3] Downloading 100m population tiles ({len(tiles)} tiles)...")
     pop_100m_dir = get_raw_path("ghsl_pop_100m")
     for row, col in tiles:
-        download_pop_tile(2020, 100, row, col, pop_100m_dir, progress)
+        download_pop_tile(2025, 100, row, col, pop_100m_dir, progress)
 
     # 3. Download 1km global files
     print(f"\n[3/3] Downloading 1km population files ({len(config.GHSL_POP_EPOCHS)} epochs)...")

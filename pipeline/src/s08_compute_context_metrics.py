@@ -13,7 +13,7 @@ Decision log:
   - Use DuckDB for efficient window function rankings
   - Density peers selected by population similarity and density diversity
   - World population baseline from GHSL Table 20 (UN WPP 2022 calibrated)
-  - CAGR calculation uses standard compound growth formula over 45 years (1975-2020)
+  - CAGR calculation uses standard compound growth formula over 50 years (1975-2025)
 Date: 2024-12-09
 """
 
@@ -49,6 +49,7 @@ WORLD_POPULATION = {
     2010: 6_985_603_172,
     2015: 7_426_597_609,
     2020: 7_840_952_947,
+    2025: 8_184_437_460,  # UN World Population Prospects 2024 estimate
 }
 
 # Continent code to name mapping
@@ -150,32 +151,32 @@ def classify_growth_regime(annual_rate: float | None) -> str | None:
 
 
 def get_world_baseline_growth() -> float:
-    """Calculate world population CAGR 1975-2020 from GHSL Table 20."""
-    return calculate_cagr(WORLD_POPULATION[1975], WORLD_POPULATION[2020], 45)
+    """Calculate world population CAGR 1975-2025 from GHSL Table 20."""
+    return calculate_cagr(WORLD_POPULATION[1975], WORLD_POPULATION[2025], 50)
 
 
 def extract_time_series_endpoints(time_series: list[dict]) -> tuple[int | None, int | None]:
     """
-    Extract 1975 and 2020 population from time series.
+    Extract 1975 and 2025 population from time series.
 
     Args:
         time_series: List of {year, population} dicts
 
     Returns:
-        Tuple of (pop_1975, pop_2020) or (None, None) if not found
+        Tuple of (pop_1975, pop_2025) or (None, None) if not found
     """
     pop_1975 = None
-    pop_2020 = None
+    pop_2025 = None
 
     for entry in time_series:
         year = entry.get("year")
         pop = entry.get("population")
         if year == 1975:
             pop_1975 = pop
-        elif year == 2020:
-            pop_2020 = pop
+        elif year == 2025:
+            pop_2025 = pop
 
-    return pop_1975, pop_2020
+    return pop_1975, pop_2025
 
 
 def find_density_peers(
@@ -201,7 +202,7 @@ def find_density_peers(
     Returns:
         List of peer dictionaries with density_ratio
     """
-    target_pop = target_city.get("population_2020", 0)
+    target_pop = target_city.get("population_2025", 0)
     target_density = target_city.get("statistics", {}).get("density_avg", 0)
     target_id = target_city.get("id")
 
@@ -218,7 +219,7 @@ def find_density_peers(
         if city_id == target_id:
             continue
 
-        city_pop = city.get("population_2020", 0)
+        city_pop = city.get("population_2025", 0)
         city_density = city.get("statistics", {}).get("density_avg", 0)
 
         if min_pop <= city_pop <= max_pop and city_density > 0:
@@ -297,7 +298,7 @@ def cities_to_dataframe(cities: list[dict]) -> pl.DataFrame:
     """
     Convert city list to Polars DataFrame for DuckDB processing.
 
-    Extracts: city_id, country, population_2020, density_avg
+    Extracts: city_id, country, population_2025, density_avg
     Adds: continent (derived from country)
     """
     records = []
@@ -311,7 +312,7 @@ def cities_to_dataframe(cities: list[dict]) -> pl.DataFrame:
                 "name": city.get("name", ""),
                 "country": country_code,
                 "continent": continent,
-                "population_2020": city.get("population_2020", 0),
+                "population_2025": city.get("population_2025", 0),
                 "density_avg": city.get("statistics", {}).get("density_avg", 0),
             }
         )
@@ -345,35 +346,35 @@ def compute_rankings(df: pl.DataFrame) -> pl.DataFrame:
         name,
         country,
         continent,
-        population_2020,
+        population_2025,
         density_avg,
 
         -- Global population rankings
-        RANK() OVER (ORDER BY population_2020 DESC) as global_rank,
-        PERCENT_RANK() OVER (ORDER BY population_2020) * 100 as global_percentile,
+        RANK() OVER (ORDER BY population_2025 DESC) as global_rank,
+        PERCENT_RANK() OVER (ORDER BY population_2025) * 100 as global_percentile,
 
         -- Global density rankings
         RANK() OVER (ORDER BY density_avg DESC) as global_density_rank,
         PERCENT_RANK() OVER (ORDER BY density_avg) * 100 as global_density_percentile,
 
         -- National rankings
-        RANK() OVER (PARTITION BY country ORDER BY population_2020 DESC) as national_rank,
-        PERCENT_RANK() OVER (PARTITION BY country ORDER BY population_2020) * 100 as national_percentile,
-        SUM(population_2020) OVER (PARTITION BY country) as country_total,
+        RANK() OVER (PARTITION BY country ORDER BY population_2025 DESC) as national_rank,
+        PERCENT_RANK() OVER (PARTITION BY country ORDER BY population_2025) * 100 as national_percentile,
+        SUM(population_2025) OVER (PARTITION BY country) as country_total,
         COUNT(*) OVER (PARTITION BY country) as country_count,
 
         -- Continental rankings (NULL for cities without continent mapping)
         CASE WHEN continent IS NOT NULL THEN
-            RANK() OVER (PARTITION BY continent ORDER BY population_2020 DESC)
+            RANK() OVER (PARTITION BY continent ORDER BY population_2025 DESC)
         END as continental_rank,
         CASE WHEN continent IS NOT NULL THEN
-            PERCENT_RANK() OVER (PARTITION BY continent ORDER BY population_2020) * 100
+            PERCENT_RANK() OVER (PARTITION BY continent ORDER BY population_2025) * 100
         END as continental_percentile,
-        SUM(population_2020) OVER (PARTITION BY continent) as continent_total,
+        SUM(population_2025) OVER (PARTITION BY continent) as continent_total,
         COUNT(*) OVER (PARTITION BY continent) as continent_count,
 
         -- Global totals
-        SUM(population_2020) OVER () as cities_total,
+        SUM(population_2025) OVER () as cities_total,
         COUNT(*) OVER () as total_cities
 
     FROM cities
@@ -408,15 +409,15 @@ def build_context(
     Returns:
         Context dictionary to add to city JSON
     """
-    population_2020 = city.get("population_2020", 0)
+    population_2025 = city.get("population_2025", 0)
     time_series = city.get("time_series", [])
 
     # Extract time series endpoints for growth calculation
-    pop_1975, pop_2020_ts = extract_time_series_endpoints(time_series)
-    pop_2020 = pop_2020_ts or population_2020
+    pop_1975, pop_2025_ts = extract_time_series_endpoints(time_series)
+    pop_2025 = pop_2025_ts or population_2025
 
     # Growth metrics
-    annual_growth = calculate_cagr(pop_1975, pop_2020, 45)
+    annual_growth = calculate_cagr(pop_1975, pop_2025, 50)
     growth_regime = classify_growth_regime(annual_growth)
 
     relative_acceleration = None
@@ -430,7 +431,7 @@ def build_context(
     global_context = {
         "rank": int(rankings["global_rank"]),
         "percentile": round(100 - rankings["global_percentile"], 1),
-        "share_of_world": round(population_2020 / WORLD_POPULATION[2020], 6),
+        "share_of_world": round(population_2025 / WORLD_POPULATION[2025], 6),
         "total_cities": int(rankings["total_cities"]),
         "density_rank": int(rankings["global_density_rank"]),
         "density_percentile": round(100 - rankings["global_density_percentile"], 1),
@@ -442,7 +443,7 @@ def build_context(
         "country": rankings["country"],
         "rank": int(rankings["national_rank"]),
         "percentile": round(100 - rankings["national_percentile"], 1) if country_count > 1 else 100.0,
-        "share_of_country": round(population_2020 / rankings["country_total"], 4)
+        "share_of_country": round(population_2025 / rankings["country_total"], 4)
         if rankings["country_total"] > 0
         else 1.0,
         "total_cities": country_count,
@@ -458,7 +459,7 @@ def build_context(
             "percentile": round(100 - rankings["continental_percentile"], 1)
             if continent_count > 1
             else 100.0,
-            "share_of_continent": round(population_2020 / rankings["continent_total"], 4)
+            "share_of_continent": round(population_2025 / rankings["continent_total"], 4)
             if rankings["continent_total"] > 0
             else 1.0,
             "total_cities": continent_count,
@@ -531,7 +532,7 @@ def main(test_only: bool = False):
 
     # Calculate world baseline growth
     world_baseline = get_world_baseline_growth()
-    print(f"  World baseline growth (1975-2020): {world_baseline * 100:.2f}%")
+    print(f"  World baseline growth (1975-2025): {world_baseline * 100:.2f}%")
 
     # Initialize progress tracking
     progress_file = cities_dir / "_context_progress.json"
@@ -623,7 +624,7 @@ def main(test_only: bool = False):
     top_pop = ranked_df.sort("global_rank").head(10)
     print("\nTop 10 by population:")
     for row in top_pop.to_dicts():
-        print(f"  {row['global_rank']:3d}. {row['name']} ({row['country']}): {row['population_2020']:,}")
+        print(f"  {row['global_rank']:3d}. {row['name']} ({row['country']}): {row['population_2025']:,}")
 
     # Top 10 by density
     top_density = ranked_df.sort("global_density_rank").head(10)
