@@ -3,17 +3,29 @@
 
 Purpose: Process all epochs in parallel on Modal for faster execution
 Usage:
-  modal run src/s04_raster_to_h3_1km_modal.py  # Run in cloud
-  modal run src/s04_raster_to_h3_1km_modal.py --local  # Test locally
+  modal run src/s04_raster_to_h3_1km_modal.py  # Process and upload to R2
+  modal run src/s04_raster_to_h3_1km_modal.py --skip-existing  # Resume
+  modal run src/s04_raster_to_h3_1km_modal.py --build-only  # Just build time series
+  modal run src/s04_raster_to_h3_1km_modal.py --download-local  # Download to local disk
+
+Setup (one-time):
+  1. Create R2 bucket in Cloudflare dashboard
+  2. Create R2 API token with read/write permissions
+  3. Create Modal secret:
+     modal secret create r2-credentials \\
+       R2_ENDPOINT_URL=https://<account_id>.r2.cloudflarestorage.com \\
+       R2_ACCESS_KEY_ID=<your_access_key> \\
+       R2_SECRET_ACCESS_KEY=<your_secret_key> \\
+       R2_BUCKET_NAME=<your_bucket_name>
 
 Cost estimate: ~$0.50-1.00 for all 10 epochs (parallel processing)
-Time estimate: ~10-20 minutes wall-clock
+Time estimate: ~15-25 minutes wall-clock
 
 Decision log:
   - Process epochs in parallel (10 containers)
   - 32GB memory per container to avoid tiling overhead
   - Download data directly in container (faster than mounting)
-  - Write results to Modal volume, then download locally
+  - Results saved to Modal volume, then uploaded to R2
 Date: 2024-12-10
 """
 
@@ -39,6 +51,7 @@ image = (
         "duckdb>=1.0.0",
         "affine>=2.4.0",
         "numpy>=1.26.0",
+        "boto3>=1.35.0",
     )
 )
 
@@ -57,9 +70,10 @@ H3_RESOLUTION = 8  # Res 8 (~0.7 km²) matches 1km input data better than res 9 
     cpu=2.0,       # Request 2 CPUs for faster H3 conversion
     timeout=3600,  # 60 minutes max per epoch
     retries=2,
+    volumes={"/results": volume},
 )
-def process_epoch(epoch: int) -> bytes:
-    """Process a single epoch and return parquet bytes."""
+def process_epoch(epoch: int) -> str:
+    """Process a single epoch and save to volume."""
     import gc
     import io
     import tempfile
@@ -142,14 +156,17 @@ def process_epoch(epoch: int) -> bytes:
 
         print(f"[{epoch}] Generated {len(df):,} H3 cells")
 
-        # Serialize to parquet bytes
-        buffer = io.BytesIO()
-        df.write_parquet(buffer)
-        parquet_bytes = buffer.getvalue()
+        # Save to volume
+        results_dir = Path("/results")
+        results_dir.mkdir(exist_ok=True)
+        output_path = results_dir / f"{epoch}.parquet"
+        df.write_parquet(output_path)
+        volume.commit()
 
-        print(f"[{epoch}] Complete! Parquet size: {len(parquet_bytes) / 1e6:.1f} MB")
+        file_size = output_path.stat().st_size / 1e6
+        print(f"[{epoch}] Complete! Saved {output_path.name} ({file_size:.1f} MB)")
 
-        return parquet_bytes
+        return f"Saved {len(df):,} cells to {output_path.name}"
 
 
 @app.function(
@@ -157,27 +174,26 @@ def process_epoch(epoch: int) -> bytes:
     volumes={"/results": volume},
     timeout=600,
 )
-def build_time_series(epoch_results: dict[int, bytes]) -> str:
-    """Build wide-format time series from epoch results."""
+def build_time_series() -> str:
+    """Build wide-format time series from volume files."""
     import duckdb
-    import polars as pl
     from pathlib import Path
 
     print("Building time series table...")
 
     results_dir = Path("/results")
-    results_dir.mkdir(exist_ok=True)
 
-    # Save individual epoch files
-    for epoch, parquet_bytes in epoch_results.items():
-        epoch_path = results_dir / f"{epoch}.parquet"
-        epoch_path.write_bytes(parquet_bytes)
-        print(f"  Saved {epoch}.parquet")
+    # Find all epoch parquet files
+    epoch_files = sorted(results_dir.glob("[0-9][0-9][0-9][0-9].parquet"))
+    epochs = [int(f.stem) for f in epoch_files]
+
+    if not epochs:
+        return "No epoch files found in volume"
+
+    print(f"  Found {len(epochs)} epoch files: {epochs}")
 
     # Build time series with DuckDB
     conn = duckdb.connect()
-
-    epochs = sorted(epoch_results.keys())
     union_parts = []
     for epoch in epochs:
         epoch_file = results_dir / f"{epoch}.parquet"
@@ -219,10 +235,26 @@ def build_time_series(epoch_results: dict[int, bytes]) -> str:
 @app.function(
     image=image,
     volumes={"/results": volume},
-    timeout=300,
+    timeout=60,
+)
+def list_existing_epochs() -> list[int]:
+    """List epochs already processed in volume."""
+    from pathlib import Path
+
+    results_dir = Path("/results")
+    existing = []
+    for f in results_dir.glob("[0-9][0-9][0-9][0-9].parquet"):
+        existing.append(int(f.stem))
+    return sorted(existing)
+
+
+@app.function(
+    image=image,
+    volumes={"/results": volume},
+    timeout=600,  # 10 minutes for ~4GB transfer
 )
 def download_results() -> dict[str, bytes]:
-    """Download all results from volume."""
+    """Download all results from volume (for local storage)."""
     from pathlib import Path
 
     results_dir = Path("/results")
@@ -235,13 +267,68 @@ def download_results() -> dict[str, bytes]:
     return files
 
 
+@app.function(
+    image=image,
+    volumes={"/results": volume},
+    secrets=[modal.Secret.from_name("r2-credentials")],
+    timeout=600,  # 10 minutes for upload
+)
+def upload_to_r2(prefix: str = "ghsl-pop-1km") -> list[str]:
+    """Upload all results from volume to R2."""
+    import os
+    from pathlib import Path
+
+    import boto3
+
+    # Get R2 credentials from environment (injected by Modal secret)
+    endpoint_url = os.environ["R2_ENDPOINT_URL"]
+    access_key = os.environ["R2_ACCESS_KEY_ID"]
+    secret_key = os.environ["R2_SECRET_ACCESS_KEY"]
+    bucket_name = os.environ["R2_BUCKET_NAME"]
+
+    print(f"Uploading to R2 bucket: {bucket_name}")
+
+    # Create S3 client for R2
+    s3 = boto3.client(
+        "s3",
+        endpoint_url=endpoint_url,
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key,
+    )
+
+    results_dir = Path("/results")
+    uploaded = []
+
+    for path in sorted(results_dir.glob("*.parquet")):
+        key = f"{prefix}/{path.name}"
+        file_size = path.stat().st_size / 1e6
+
+        print(f"  Uploading {path.name} ({file_size:.1f} MB) -> {key}")
+        s3.upload_file(str(path), bucket_name, key)
+        uploaded.append(key)
+
+    print(f"Uploaded {len(uploaded)} files to s3://{bucket_name}/{prefix}/")
+    return uploaded
+
+
 @app.local_entrypoint()
-def main(local: bool = False, test: bool = False):
+def main(
+    local: bool = False,
+    test: bool = False,
+    skip_existing: bool = False,
+    build_only: bool = False,
+    download_local: bool = False,
+    upload_only: bool = False,
+):
     """Run the H3 conversion pipeline.
 
     Args:
         local: Run locally (no cloud) with single epoch
         test: Run in cloud but only process 2020 epoch (cheaper test)
+        skip_existing: Skip epochs already in volume (for resuming)
+        build_only: Only build time series from existing epoch files
+        download_local: Download results to local disk instead of R2
+        upload_only: Only upload existing results to R2 (skip processing)
     """
     import time
     from pathlib import Path
@@ -252,52 +339,100 @@ def main(local: bool = False, test: bool = False):
 
     start_time = time.time()
 
+    # Upload-only mode: just upload existing files to R2
+    if upload_only:
+        print("\nUpload-only mode: uploading existing files to R2...")
+        uploaded = upload_to_r2.remote()
+        print(f"  Uploaded {len(uploaded)} files")
+        total_time = time.time() - start_time
+        print(f"\nComplete! Total time: {total_time:.1f}s")
+        return
+
+    # Build-only mode: just create time series from existing files
+    if build_only:
+        print("\nBuild-only mode: creating time series from existing epoch files...")
+        summary = build_time_series.remote()
+        print(f"  {summary}")
+
+        if download_local:
+            _download_to_local(Path("data/interim/h3_pop_1km"))
+        else:
+            print("\nUploading to R2...")
+            uploaded = upload_to_r2.remote()
+            print(f"  Uploaded {len(uploaded)} files")
+
+        total_time = time.time() - start_time
+        print(f"\nComplete! Total time: {total_time:.1f}s")
+        return
+
     # Determine which epochs to process
     if local or test:
         epochs_to_process = [2020]  # Single epoch for testing
         print(f"\n{'Local' if local else 'Cloud'} test mode: processing only 2020")
     else:
-        epochs_to_process = EPOCHS
-        print(f"\nProcessing {len(epochs_to_process)} epochs in parallel...")
+        epochs_to_process = list(EPOCHS)
+        print(f"\nProcessing {len(epochs_to_process)} epochs...")
+
+    # Check for existing epochs in volume
+    if skip_existing and not local:
+        existing = list_existing_epochs.remote()
+        if existing:
+            print(f"  Found existing epochs in volume: {existing}")
+            epochs_to_process = [e for e in epochs_to_process if e not in existing]
+            if not epochs_to_process:
+                print("  All epochs already processed! Use --build-only to create time series.")
+                return
+            print(f"  Will process remaining epochs: {epochs_to_process}")
 
     if local:
         # Local test (no cloud)
         result = process_epoch.local(2020)
-        epoch_results = {2020: result}
+        print(f"  {result}")
     else:
         # Cloud processing (parallel)
         futures = []
         for epoch in epochs_to_process:
             futures.append(process_epoch.spawn(epoch))
 
-        # Collect results
-        epoch_results = {}
+        # Wait for results (just status messages, data saved to volume)
         for epoch, future in zip(epochs_to_process, futures):
             print(f"  Waiting for {epoch}...")
-            epoch_results[epoch] = future.get()
+            status = future.get()
+            print(f"    {status}")
 
     print(f"\nAll epochs processed in {time.time() - start_time:.1f}s")
 
     # Build time series
     print("\nBuilding time series...")
-    summary = build_time_series.remote(epoch_results)
+    summary = build_time_series.remote()
     print(f"  {summary}")
 
-    # Download results locally
-    print("\nDownloading results...")
+    # Upload to R2 or download locally
+    if download_local:
+        _download_to_local(Path("data/interim/h3_pop_1km"))
+    else:
+        print("\nUploading to R2...")
+        uploaded = upload_to_r2.remote()
+        print(f"  Uploaded {len(uploaded)} files")
+
+    total_time = time.time() - start_time
+    print(f"\n{'=' * 60}")
+    print(f"Complete! Total time: {total_time:.1f}s ({total_time/60:.1f} min)")
+    print("=" * 60)
+
+
+def _download_to_local(output_dir) -> None:
+    """Helper to download results to local disk."""
+    from pathlib import Path
+
+    output_dir = Path(output_dir)
+    print("\nDownloading results to local disk...")
     files = download_results.remote()
 
-    # Save to local data directory
-    output_dir = Path("data/interim/h3_pop_1km")
     output_dir.mkdir(parents=True, exist_ok=True)
-
     for filename, content in files.items():
         output_path = output_dir / filename
         output_path.write_bytes(content)
         print(f"  Saved {output_path}")
 
-    total_time = time.time() - start_time
-    print(f"\n{'=' * 60}")
-    print(f"Complete! Total time: {total_time:.1f}s ({total_time/60:.1f} min)")
     print(f"Results saved to {output_dir}")
-    print("=" * 60)
