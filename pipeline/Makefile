@@ -84,9 +84,9 @@ $(PROCESSED_DIR)/h3_tiles/h3_pop_2020_res9.parquet: $(RAW_DIR)/.download_complet
 convert-100m: $(PROCESSED_DIR)/h3_tiles/h3_pop_2020_res9.parquet
 	@echo "100m H3 conversion complete."
 
-# 1km raster to H3 (time series)
+# 1km raster to H3 (time series) - uses Modal cloud
 $(INTERIM_DIR)/h3_pop_1km/time_series.parquet: $(RAW_DIR)/.download_complete .venv
-	$(PYTHON) -m src.s04_raster_to_h3_1km
+	uv run modal run src/s04_raster_to_h3_1km_modal.py
 
 convert-1km: $(INTERIM_DIR)/h3_pop_1km/time_series.parquet
 	@echo "1km H3 conversion complete."
@@ -196,7 +196,7 @@ test-cities: .venv
 	$(PYTHON) -m src.s01_download_ghsl --test-only
 	$(PYTHON) -m src.s02_extract_ucdb all
 	$(PYTHON) -m src.s03_raster_to_h3_100m --test-only
-	$(PYTHON) -m src.s04_raster_to_h3_1km --test-only
+	uv run modal run src/s04_raster_to_h3_1km_modal.py --test
 	$(PYTHON) -m src.s05_extract_city_boundaries --test-only
 	$(PYTHON) -m src.s06_compute_radial_profiles --test-only
 	$(PYTHON) -m src.s07_export_web_formats --test-only
