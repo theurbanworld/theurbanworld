@@ -74,6 +74,15 @@ class PipelineConfig(BaseSettings):
         "Geneva",
     ]
 
+    TEST_CITY_IDS: list[int] = [
+        69,   # Geneva
+        178,  # Singapore
+        1289, # Lagos
+        2878, # Paris
+        7799, # Rio de Janeiro
+        8099, # New York
+    ]
+
     class Config:
         env_prefix = "URBAN_"
         case_sensitive = False
