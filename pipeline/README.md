@@ -33,8 +33,8 @@ make status
 |-------|--------|-------------|
 | 1. Download | `s01_download_ghsl.py` | Download GHSL-POP tiles and UCDB |
 | 2. Extract | `s02_extract_urban_centers.py` | Parse urban center metadata |
-| 3. H3 100m | `s03_raster_to_h3_100m_modal.py` | Convert 100m raster to H3 res-9 (Modal cloud) |
-| 4. H3 1km | `s04_raster_to_h3_1km_modal.py` | Convert 1km rasters to H3 (Modal cloud) |
+| 3. H3 100m | `s03_raster_100m_to_h3_r9.py` | Convert 100m raster to H3 res-9 (Modal cloud) |
+| 4. H3 1km | `s04_raster_1km_to_h3_r8.py` | Convert 1km rasters to H3 (Modal cloud) |
 | 5. Boundaries | `s05_extract_city_boundaries.py` | Extract city extents as H3 cells |
 | 6. Profiles | `s06_compute_radial_profiles.py` | Compute Bertaud radial profiles |
 | 7. Export | `s07_export_web_formats.py` | Generate web-ready JSON/Parquet |
@@ -134,8 +134,8 @@ pipeline/
 ├── src/
 │   ├── s01_download_ghsl.py
 │   ├── s02_extract_urban_centers.py
-│   ├── s03_raster_to_h3_100m_modal.py
-│   ├── s04_raster_to_h3_1km_modal.py
+│   ├── s03_raster_100m_to_h3_r9.py
+│   ├── s04_raster_1km_to_h3_r8.py
 │   ├── s05_extract_city_boundaries.py
 │   ├── s06_compute_radial_profiles.py
 │   ├── s07_export_web_formats.py

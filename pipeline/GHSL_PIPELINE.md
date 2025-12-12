@@ -129,7 +129,7 @@ All thematic layers share `ID_UC_G0` as the primary key for joining.
 
 ## Stage 03: 100m Raster to H3 (Modal Cloud)
 
-**Script:** `src/s03_raster_to_h3_100m_modal.py`
+**Script:** `src/s03_raster_100m_to_h3_r9.py`
 
 Processes all 375 GHSL 100m tiles in parallel on Modal cloud infrastructure for faster execution.
 
@@ -171,12 +171,12 @@ Processes all 375 GHSL 100m tiles in parallel on Modal cloud infrastructure for 
 
 | Command | Description |
 |---------|-------------|
-| `modal run src/s03_raster_to_h3_100m_modal.py` | Full cloud run (all 375 tiles) |
-| `modal run src/s03_raster_to_h3_100m_modal.py --cities-only` | Only tiles for cities (203 tiles) |
-| `modal run src/s03_raster_to_h3_100m_modal.py --skip-existing` | Resume interrupted run |
-| `modal run src/s03_raster_to_h3_100m_modal.py --merge-only` | Just merge existing tiles |
-| `modal run src/s03_raster_to_h3_100m_modal.py --download-local` | Download to local disk |
-| `modal run src/s03_raster_to_h3_100m_modal.py --test` | Test with single tile (Paris) |
+| `modal run src/s03_raster_100m_to_h3_r9.py` | Full cloud run (all 375 tiles) |
+| `modal run src/s03_raster_100m_to_h3_r9.py --cities-only` | Only tiles for cities (203 tiles) |
+| `modal run src/s03_raster_100m_to_h3_r9.py --skip-existing` | Resume interrupted run |
+| `modal run src/s03_raster_100m_to_h3_r9.py --merge-only` | Just merge existing tiles |
+| `modal run src/s03_raster_100m_to_h3_r9.py --download-local` | Download to local disk |
+| `modal run src/s03_raster_100m_to_h3_r9.py --test` | Test with single tile (Paris) |
 
 ### Outputs
 
@@ -200,7 +200,7 @@ H3 cells at tile boundaries may appear in multiple tiles. DuckDB merge sums popu
 
 ## Stage 04: 1km Raster to H3 (Modal Cloud)
 
-**Script:** `src/s04_raster_to_h3_1km_modal.py`
+**Script:** `src/s04_raster_1km_to_h3_r8.py`
 
 Processes all 10 epochs in parallel on Modal cloud infrastructure for faster execution.
 
@@ -238,9 +238,9 @@ Processes all 10 epochs in parallel on Modal cloud infrastructure for faster exe
 
 | Command | Description |
 |---------|-------------|
-| `modal run src/s04_raster_to_h3_1km_modal.py` | Full cloud run (all epochs) |
-| `modal run src/s04_raster_to_h3_1km_modal.py --test` | Cloud test (2030 only) |
-| `modal run src/s04_raster_to_h3_1km_modal.py --local` | Local test (no cloud) |
+| `modal run src/s04_raster_1km_to_h3_r8.py` | Full cloud run (all epochs) |
+| `modal run src/s04_raster_1km_to_h3_r8.py --test` | Cloud test (2030 only) |
+| `modal run src/s04_raster_1km_to_h3_r8.py --local` | Local test (no cloud) |
 
 ### Outputs
 

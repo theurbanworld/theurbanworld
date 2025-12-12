@@ -1,12 +1,12 @@
 """
-04 - Convert 1km GHSL-POP rasters to H3 (Modal cloud version).
+04 - Convert 1km GHSL-POP rasters to H3 resolution 8.
 
 Purpose: Process all epochs in parallel on Modal for faster execution
 Usage:
-  modal run src/s04_raster_to_h3_1km_modal.py  # Process and upload to R2
-  modal run src/s04_raster_to_h3_1km_modal.py --skip-existing  # Resume
-  modal run src/s04_raster_to_h3_1km_modal.py --build-only  # Just build time series
-  modal run src/s04_raster_to_h3_1km_modal.py --download-local  # Download to local disk
+  modal run src/s04_raster_1km_to_h3_r8.py  # Process and upload to R2
+  modal run src/s04_raster_1km_to_h3_r8.py --skip-existing  # Resume
+  modal run src/s04_raster_1km_to_h3_r8.py --build-only  # Just build time series
+  modal run src/s04_raster_1km_to_h3_r8.py --download-local  # Download to local disk
 
 Setup (one-time):
   1. Create R2 bucket in Cloudflare dashboard

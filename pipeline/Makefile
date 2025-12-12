@@ -79,14 +79,14 @@ extract: extract-ucdb
 
 # 100m raster to H3 (2025 only) - uses Modal cloud
 $(PROCESSED_DIR)/h3_tiles/h3_pop_2025_res9.parquet: $(RAW_DIR)/.download_complete $(INTERIM_DIR)/cities.parquet .venv
-	uv run modal run src/s03_raster_to_h3_100m_modal.py --download-local
+	uv run modal run src/s03_raster_100m_to_h3_r9.py --download-local
 
 convert-100m: $(PROCESSED_DIR)/h3_tiles/h3_pop_2025_res9.parquet
 	@echo "100m H3 conversion complete."
 
 # 1km raster to H3 (time series) - uses Modal cloud
 $(INTERIM_DIR)/h3_pop_1km/time_series.parquet: $(RAW_DIR)/.download_complete .venv
-	uv run modal run src/s04_raster_to_h3_1km_modal.py
+	uv run modal run src/s04_raster_1km_to_h3_r8.py
 
 convert-1km: $(INTERIM_DIR)/h3_pop_1km/time_series.parquet
 	@echo "1km H3 conversion complete."
@@ -195,8 +195,8 @@ test-cities: .venv
 	@echo "Running pipeline for test cities only..."
 	$(PYTHON) -m src.s01_download_ghsl --test-only
 	$(PYTHON) -m src.s02_extract_ucdb all
-	uv run modal run src/s03_raster_to_h3_100m_modal.py --test --download-local
-	uv run modal run src/s04_raster_to_h3_1km_modal.py --test
+	uv run modal run src/s03_raster_100m_to_h3_r9.py --test --download-local
+	uv run modal run src/s04_raster_1km_to_h3_r8.py --test
 	$(PYTHON) -m src.s05_extract_city_boundaries --test-only
 	$(PYTHON) -m src.s06_compute_radial_profiles --test-only
 	$(PYTHON) -m src.s07_export_web_formats --test-only

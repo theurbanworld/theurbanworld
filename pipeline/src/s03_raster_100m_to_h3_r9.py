@@ -1,13 +1,13 @@
 """
-03 - Convert 100m GHSL-POP rasters to H3 (Modal cloud version).
+03 - Convert 100m GHSL-POP rasters to H3 resolution 9.
 
 Purpose: Process all 100m tiles in parallel on Modal for faster execution
 Usage:
-  modal run src/s03_raster_to_h3_100m_modal.py  # Process all global tiles
-  modal run src/s03_raster_to_h3_100m_modal.py --cities-only  # Only tiles for cities
-  modal run src/s03_raster_to_h3_100m_modal.py --skip-existing  # Resume
-  modal run src/s03_raster_to_h3_100m_modal.py --merge-only  # Just merge existing tiles
-  modal run src/s03_raster_to_h3_100m_modal.py --download-local  # Download to local disk
+  modal run src/s03_raster_100m_to_h3_r9.py  # Process all global tiles
+  modal run src/s03_raster_100m_to_h3_r9.py --cities-only  # Only tiles for cities
+  modal run src/s03_raster_100m_to_h3_r9.py --skip-existing  # Resume
+  modal run src/s03_raster_100m_to_h3_r9.py --merge-only  # Just merge existing tiles
+  modal run src/s03_raster_100m_to_h3_r9.py --download-local  # Download to local disk
 
 Setup (one-time):
   1. Create R2 bucket in Cloudflare dashboard
