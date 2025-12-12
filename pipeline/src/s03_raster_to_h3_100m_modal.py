@@ -40,13 +40,11 @@ app = modal.App("ghsl-h3-100m-conversion")
 # Container image with all dependencies
 image = (
     modal.Image.debian_slim(python_version="3.11")
-    .apt_install("libgdal-dev", "gdal-bin")
+    .apt_install("libgdal-dev", "gdal-bin", "proj-data")
     .pip_install(
         "pyarrow>=15.0.0",
         "h3ronpy>=0.22.0",
         "polars>=1.0.0",
-        "rioxarray>=0.15.0",
-        "xarray>=2024.1.0",
         "rasterio>=1.3.0",
         "pyproj>=3.6.0",
         "httpx>=0.27.0",
@@ -122,6 +120,7 @@ VALID_TILES = [
     timeout=600,  # 10 minutes max per tile
     retries=2,
     volumes={"/results": volume},
+    max_containers=100,  # Max simultaneous containers
 )
 def process_tile(row: int, col: int) -> dict:
     """Process a single tile and save to volume."""
@@ -134,8 +133,8 @@ def process_tile(row: int, col: int) -> dict:
     import httpx
     import numpy as np
     import polars as pl
-    import rioxarray  # noqa: F401 - needed for rio accessor
-    import xarray as xr
+    import rasterio
+    from rasterio.warp import calculate_default_transform, reproject, Resampling
     from h3ronpy.raster import raster_to_dataframe
 
     tile_id = f"R{row}_C{col}"
@@ -167,26 +166,41 @@ def process_tile(row: int, col: int) -> dict:
 
         print(f"[{tile_id}] Extracted {tif_name}")
 
-        # Load raster
-        data = xr.open_dataarray(tif_path, engine="rasterio")
-        nodata = data.rio.nodata or -200.0
+        # Load and reproject raster using rasterio directly (more robust CRS handling)
+        # Use PROJ4 strings to avoid ESRI/EPSG database lookup issues
+        src_crs = "+proj=moll +lon_0=0 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
+        dst_crs = "+proj=longlat +datum=WGS84 +no_defs"
 
-        print(f"[{tile_id}] Loaded raster: shape={data.shape}, crs={data.rio.crs}")
+        with rasterio.open(tif_path) as src:
+            nodata = src.nodata if src.nodata is not None else -200.0
+            print(f"[{tile_id}] Loaded raster: shape={src.shape}, original_crs={src.crs}")
 
-        # Reproject to WGS84
-        print(f"[{tile_id}] Reprojecting to WGS84...")
-        data_wgs84 = data.rio.reproject("EPSG:4326", nodata=nodata)
+            # Calculate output transform and dimensions
+            dst_transform, dst_width, dst_height = calculate_default_transform(
+                src_crs, dst_crs, src.width, src.height, *src.bounds
+            )
 
-        # Get values - squeeze to 2D and ensure contiguous float32
-        values = data_wgs84.values
-        if values.ndim == 3:
-            values = values.squeeze()  # Remove band dimension (1, H, W) -> (H, W)
+            # Reproject to WGS84
+            print(f"[{tile_id}] Reprojecting to WGS84...")
+            values = np.zeros((dst_height, dst_width), dtype=np.float32)
+
+            reproject(
+                source=rasterio.band(src, 1),
+                destination=values,
+                src_transform=src.transform,
+                src_crs=src_crs,
+                dst_transform=dst_transform,
+                dst_crs=dst_crs,
+                resampling=Resampling.bilinear,
+                src_nodata=nodata,
+                dst_nodata=nodata,
+            )
+
+        transform = dst_transform
         values = np.ascontiguousarray(values, dtype=np.float32)
 
-        transform = data_wgs84.rio.transform()
-
         # Free memory
-        del data, zip_bytes, data_wgs84
+        del zip_bytes
         gc.collect()
 
         print(f"[{tile_id}] Converting to H3 res {H3_RESOLUTION}... (shape: {values.shape})")

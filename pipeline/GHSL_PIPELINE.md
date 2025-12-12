@@ -127,28 +127,30 @@ All thematic layers share `ID_UC_G0` as the primary key for joining.
 
 ---
 
-## Stage 03: 100m Raster to H3
+## Stage 03: 100m Raster to H3 (Modal Cloud)
 
-**Script:** `src/s03_raster_to_h3_100m.py`
+**Script:** `src/s03_raster_to_h3_100m_modal.py`
 
-Converts 100m GHSL-POP raster tiles to H3 hexagons at resolution 9.
+Processes all 375 GHSL 100m tiles in parallel on Modal cloud infrastructure for faster execution.
 
 ### Processing Flow
 
 ```
-100m GeoTIFF (Mollweide)
+100m GeoTIFF (Mollweide) × 375 tiles
          │
-         ▼ reproject
-    WGS84 (EPSG:4326)
+         ▼ parallel download in containers
+    Up to 100 Modal containers (8GB each)
+         │
+         ▼ reproject to WGS84
          │
          ▼ h3ronpy.raster_to_dataframe()
-    H3 Resolution 9 cells
+    H3 Resolution 9 cells (per tile)
          │
-         ▼ filter (population > 0)
+         ▼ save to Modal volume
     Per-tile Parquet
          │
          ▼ DuckDB merge (SUM population by h3_index)
-    Merged Parquet
+    Merged Parquet → R2 or local
 ```
 
 ### Configuration
@@ -156,16 +158,33 @@ Converts 100m GHSL-POP raster tiles to H3 hexagons at resolution 9.
 | Parameter | Value | Notes |
 |-----------|-------|-------|
 | H3 Resolution | 9 | ~0.1 km² per cell (matches 100m input) |
-| Chunk Size | 2048 x 2048 | For memory-efficient processing |
-| Nodata Value | -200.0 | Default if not in raster metadata |
+| Memory per Container | 8 GB | Sufficient for 100m tiles |
+| CPUs per Container | 2 | For h3ronpy multi-threading |
+| Timeout | 10 min | Per tile processing |
+| Max Parallelism | 100 | Simultaneous containers |
+
+### Cost Estimate
+- **Cloud cost:** ~$2-4 for global (375 tiles), ~$1-2 for cities-only (203 tiles)
+- **Wall-clock time:** ~5-10 minutes
+
+### Run Modes
+
+| Command | Description |
+|---------|-------------|
+| `modal run src/s03_raster_to_h3_100m_modal.py` | Full cloud run (all 375 tiles) |
+| `modal run src/s03_raster_to_h3_100m_modal.py --cities-only` | Only tiles for cities (203 tiles) |
+| `modal run src/s03_raster_to_h3_100m_modal.py --skip-existing` | Resume interrupted run |
+| `modal run src/s03_raster_to_h3_100m_modal.py --merge-only` | Just merge existing tiles |
+| `modal run src/s03_raster_to_h3_100m_modal.py --download-local` | Download to local disk |
+| `modal run src/s03_raster_to_h3_100m_modal.py --test` | Test with single tile (Paris) |
 
 ### Outputs
 
 | Output Path | Description |
 |-------------|-------------|
-| `data/interim/h3_pop_100m/{tile_id}.parquet` | Per-tile H3 cells |
-| `data/interim/h3_pop_100m/_progress.json` | Processing progress |
-| `data/processed/h3_tiles/h3_pop_2025_res9.parquet` | Merged, deduplicated H3 cells |
+| Modal Volume `/results/tiles/{tile_id}.parquet` | Per-tile H3 cells (cloud) |
+| `data/processed/h3_tiles/h3_pop_2025_res9.parquet` | Merged, deduplicated H3 cells (with --download-local) |
+| R2 `ghsl-pop-100m/h3_pop_2025_res9.parquet` | Merged file in cloud storage (default) |
 
 ### Tile Boundary Handling
 H3 cells at tile boundaries may appear in multiple tiles. DuckDB merge sums population for duplicate `h3_index` values.
@@ -269,9 +288,6 @@ data/
 │   │   ├── geometries.parquet
 │   │   └── centroids.parquet
 │   ├── cities.parquet
-│   ├── h3_pop_100m/
-│   │   ├── R{row}_C{col}.parquet
-│   │   └── _progress.json
 │   └── h3_pop_1km/
 │       ├── 1975.parquet
 │       ├── ...
