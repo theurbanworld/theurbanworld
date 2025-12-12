@@ -39,6 +39,9 @@ from .utils.config import (
 )
 from .utils.progress import ProgressTracker
 
+# GHSL tile grid shapefile URL (contains metadata about all available tiles)
+GHSL_TILE_GRID_URL = "https://ghsl.jrc.ec.europa.eu/download/GHSL_data_54009_shapefile.zip"
+
 
 # Test city approximate bounding boxes (WGS84) -> GHSL tile mapping
 # These map to Mollweide tile grid coordinates
@@ -179,6 +182,64 @@ def download_ucdb(output_dir: Path, progress: ProgressTracker) -> Path | None:
     return gpkg_files[0]
 
 
+def download_tile_grid(output_dir: Path, progress: ProgressTracker) -> Path | None:
+    """Download GHSL tile grid shapefile.
+
+    Note: Uses subprocess curl because the ghsl.jrc.ec.europa.eu domain has SSL
+    certificate issues that Python's ssl module doesn't handle well.
+    """
+    import subprocess
+
+    item_id = "tile_grid"
+    if progress.is_complete(item_id):
+        shp_files = list(output_dir.glob("*.shp"))
+        if shp_files:
+            print(f"Tile grid already downloaded: {shp_files[0].name}")
+            return shp_files[0]
+
+    progress.mark_in_progress(item_id)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    zip_path = output_dir / "tile_grid.zip"
+
+    print(f"Downloading tile grid shapefile from {GHSL_TILE_GRID_URL}")
+
+    # Use curl with -k flag to skip SSL verification (ghsl.jrc.ec.europa.eu has cert issues)
+    try:
+        result = subprocess.run(
+            ["curl", "-L", "-k", "-o", str(zip_path), GHSL_TILE_GRID_URL],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        if result.returncode != 0:
+            progress.mark_failed(item_id, f"curl failed: {result.stderr}")
+            print(f"  FAILED: {result.stderr}")
+            return None
+    except subprocess.TimeoutExpired:
+        progress.mark_failed(item_id, "Download timed out")
+        print("  FAILED: Download timed out")
+        return None
+    except FileNotFoundError:
+        progress.mark_failed(item_id, "curl not found")
+        print("  FAILED: curl not found")
+        return None
+
+    # Extract
+    print("  Extracting...")
+    extracted = extract_zip(zip_path, output_dir)
+    zip_path.unlink()  # Remove zip after extraction
+
+    # Find shp file
+    shp_files = [f for f in extracted if f.suffix == ".shp"]
+    if not shp_files:
+        progress.mark_failed(item_id, "No .shp file found in archive")
+        return None
+
+    progress.mark_complete(item_id, {"file": shp_files[0].name})
+    print(f"  Extracted: {shp_files[0].name}")
+    return shp_files[0]
+
+
 def download_pop_tile(
     epoch: int,
     resolution: int,
@@ -275,7 +336,7 @@ def main(test_only: bool = False):
     progress = ProgressTracker(progress_file)
 
     # Collect all items to download
-    items = ["ucdb"]  # Always download UCDB
+    items = ["tile_grid", "ucdb"]  # Always download tile grid and UCDB
 
     # 100m tiles (2025 only)
     tiles = get_required_tiles(test_only)
@@ -290,8 +351,15 @@ def main(test_only: bool = False):
     progress.print_summary()
     print()
 
+    # 0. Download tile grid shapefile
+    print("\n[0/4] Downloading tile grid shapefile...")
+    tile_grid_dir = get_raw_path("ghsl_tile_grid")
+    tile_grid_path = download_tile_grid(tile_grid_dir, progress)
+    if not tile_grid_path:
+        print("WARNING: Failed to download tile grid. Continuing without it.")
+
     # 1. Download UCDB
-    print("\n[1/3] Downloading UCDB (Urban Centre Database)...")
+    print("\n[1/4] Downloading UCDB (Urban Centre Database)...")
     ucdb_dir = get_raw_path("ucdb")
     ucdb_path = download_ucdb(ucdb_dir, progress)
     if not ucdb_path:
@@ -299,13 +367,13 @@ def main(test_only: bool = False):
         return
 
     # 2. Download 100m tiles
-    print(f"\n[2/3] Downloading 100m population tiles ({len(tiles)} tiles)...")
+    print(f"\n[2/4] Downloading 100m population tiles ({len(tiles)} tiles)...")
     pop_100m_dir = get_raw_path("ghsl_pop_100m")
     for row, col in tiles:
         download_pop_tile(2025, 100, row, col, pop_100m_dir, progress)
 
     # 3. Download 1km global files
-    print(f"\n[3/3] Downloading 1km population files ({len(config.GHSL_POP_EPOCHS)} epochs)...")
+    print(f"\n[3/4] Downloading 1km population files ({len(config.GHSL_POP_EPOCHS)} epochs)...")
     pop_1km_dir = get_raw_path("ghsl_pop_1km")
     for epoch in config.GHSL_POP_EPOCHS:
         download_pop_global(epoch, 1000, pop_1km_dir, progress)
