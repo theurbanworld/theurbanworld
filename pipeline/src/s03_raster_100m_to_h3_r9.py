@@ -287,7 +287,7 @@ def merge_all_tiles() -> str:
     print(f"  Total population: {result['population'].sum():,.0f}")
 
     # Save merged result
-    merged_path = output_dir / "h3_pop_2025_res9.parquet"
+    merged_path = output_dir / "h3_r9_pop_2025.parquet"
     result.write_parquet(merged_path)
 
     # Commit volume
@@ -296,7 +296,7 @@ def merge_all_tiles() -> str:
     conn.close()
 
     file_size = merged_path.stat().st_size / 1e6
-    return f"Saved h3_pop_2025_res9.parquet ({file_size:.1f} MB, {len(result):,} cells)"
+    return f"Saved h3_r9_pop_2025.parquet ({file_size:.1f} MB, {len(result):,} cells)"
 
 
 @app.function(
@@ -331,7 +331,7 @@ def download_results() -> dict[str, bytes]:
     files = {}
 
     # Get merged file
-    merged_path = results_dir / "h3_pop_2025_res9.parquet"
+    merged_path = results_dir / "h3_r9_pop_2025.parquet"
     if merged_path.exists():
         files[merged_path.name] = merged_path.read_bytes()
         print(f"  Read {merged_path.name}: {len(files[merged_path.name]) / 1e6:.1f} MB")
@@ -372,7 +372,7 @@ def upload_to_r2(prefix: str = "ghsl-pop-100m") -> list[str]:
     uploaded = []
 
     # Upload merged file
-    merged_path = results_dir / "h3_pop_2025_res9.parquet"
+    merged_path = results_dir / "h3_r9_pop_2025.parquet"
     if merged_path.exists():
         key = f"{prefix}/{merged_path.name}"
         file_size = merged_path.stat().st_size / 1e6

@@ -4,14 +4,14 @@
 Purpose: Generate final JSON and GeoParquet files for web serving
 Input:
   - data/interim/cities.parquet
-  - data/interim/h3_pop_1km/time_series.parquet
+  - data/interim/h3_pop_1km/h3_r8_pop_timeseries.parquet
   - data/interim/city_boundaries/{city_id}.parquet
   - data/interim/radial_profiles/{city_id}.json
-  - data/processed/h3_tiles/h3_pop_2025_res9.parquet
+  - data/processed/h3_tiles/h3_r9_pop_2025.parquet
 Output:
   - data/processed/cities/{city_id}.json (per-city files)
   - data/processed/city_index.json (search index)
-  - data/processed/h3_tiles/h3_pop_2025_res9.geoparquet (with geometry)
+  - data/processed/h3_tiles/h3_r9_pop_2025.geoparquet (with geometry)
 
 Decision log:
   - City JSONs contain all data for single-city views
@@ -216,7 +216,7 @@ def main(test_only: bool = False):
     print(f"Loaded {len(cities_df)} cities")
 
     # Load time series
-    time_series_path = get_interim_path("h3_pop_1km") / "time_series.parquet"
+    time_series_path = get_interim_path("h3_pop_1km") / "h3_r8_pop_timeseries.parquet"
     time_series_df = None
     if time_series_path.exists():
         print("Loading time series...")

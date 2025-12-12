@@ -78,17 +78,17 @@ extract: extract-ucdb
 # ============================================================================
 
 # 100m raster to H3 (2025 only) - uses Modal cloud
-$(PROCESSED_DIR)/h3_tiles/h3_pop_2025_res9.parquet: $(RAW_DIR)/.download_complete $(INTERIM_DIR)/cities.parquet .venv
+$(PROCESSED_DIR)/h3_tiles/h3_r9_pop_2025.parquet: $(RAW_DIR)/.download_complete $(INTERIM_DIR)/cities.parquet .venv
 	uv run modal run src/s03_raster_100m_to_h3_r9.py --download-local
 
-convert-100m: $(PROCESSED_DIR)/h3_tiles/h3_pop_2025_res9.parquet
+convert-100m: $(PROCESSED_DIR)/h3_tiles/h3_r9_pop_2025.parquet
 	@echo "100m H3 conversion complete."
 
 # 1km raster to H3 (time series) - uses Modal cloud
-$(INTERIM_DIR)/h3_pop_1km/time_series.parquet: $(RAW_DIR)/.download_complete .venv
+$(INTERIM_DIR)/h3_pop_1km/h3_r8_pop_timeseries.parquet: $(RAW_DIR)/.download_complete .venv
 	uv run modal run src/s04_raster_1km_to_h3_r8.py
 
-convert-1km: $(INTERIM_DIR)/h3_pop_1km/time_series.parquet
+convert-1km: $(INTERIM_DIR)/h3_pop_1km/h3_r8_pop_timeseries.parquet
 	@echo "1km H3 conversion complete."
 
 # Both conversions
@@ -99,7 +99,7 @@ convert: convert-100m convert-1km
 # ============================================================================
 
 # City boundary extraction
-$(INTERIM_DIR)/city_boundaries/.complete: $(INTERIM_DIR)/cities.parquet $(PROCESSED_DIR)/h3_tiles/h3_pop_2025_res9.parquet .venv
+$(INTERIM_DIR)/city_boundaries/.complete: $(INTERIM_DIR)/cities.parquet $(PROCESSED_DIR)/h3_tiles/h3_r9_pop_2025.parquet .venv
 	$(PYTHON) -m src.s05_extract_city_boundaries
 	touch $@
 
@@ -107,7 +107,7 @@ boundaries: $(INTERIM_DIR)/city_boundaries/.complete
 	@echo "City boundaries extracted."
 
 # Radial density profiles
-$(INTERIM_DIR)/radial_profiles/.complete: $(INTERIM_DIR)/cities.parquet $(PROCESSED_DIR)/h3_tiles/h3_pop_2025_res9.parquet .venv
+$(INTERIM_DIR)/radial_profiles/.complete: $(INTERIM_DIR)/cities.parquet $(PROCESSED_DIR)/h3_tiles/h3_r9_pop_2025.parquet .venv
 	$(PYTHON) -m src.s06_compute_radial_profiles
 	touch $@
 
@@ -119,7 +119,7 @@ radial: $(INTERIM_DIR)/radial_profiles/.complete
 # ============================================================================
 
 $(PROCESSED_DIR)/city_index.json: $(INTERIM_DIR)/cities.parquet \
-                                   $(INTERIM_DIR)/h3_pop_1km/time_series.parquet \
+                                   $(INTERIM_DIR)/h3_pop_1km/h3_r8_pop_timeseries.parquet \
                                    $(INTERIM_DIR)/city_boundaries/.complete \
                                    $(INTERIM_DIR)/radial_profiles/.complete \
                                    .venv
@@ -220,8 +220,8 @@ status:
 	@echo "=== Pipeline Status ==="
 	@echo "Download:   $$(test -f $(RAW_DIR)/.download_complete && echo 'COMPLETE' || echo 'PENDING')"
 	@echo "UCDB:       $$(test -f $(INTERIM_DIR)/ucdb/.extract_complete && echo 'COMPLETE' || echo 'PENDING')"
-	@echo "H3 100m:    $$(test -f $(PROCESSED_DIR)/h3_tiles/h3_pop_2025_res9.parquet && echo 'COMPLETE' || echo 'PENDING')"
-	@echo "H3 1km:     $$(test -f $(INTERIM_DIR)/h3_pop_1km/time_series.parquet && echo 'COMPLETE' || echo 'PENDING')"
+	@echo "H3 100m:    $$(test -f $(PROCESSED_DIR)/h3_tiles/h3_r9_pop_2025.parquet && echo 'COMPLETE' || echo 'PENDING')"
+	@echo "H3 1km:     $$(test -f $(INTERIM_DIR)/h3_pop_1km/h3_r8_pop_timeseries.parquet && echo 'COMPLETE' || echo 'PENDING')"
 	@echo "Boundaries: $$(test -f $(INTERIM_DIR)/city_boundaries/.complete && echo 'COMPLETE' || echo 'PENDING')"
 	@echo "Radial:     $$(test -f $(INTERIM_DIR)/radial_profiles/.complete && echo 'COMPLETE' || echo 'PENDING')"
 	@echo "Export:     $$(test -f $(PROCESSED_DIR)/city_index.json && echo 'COMPLETE' || echo 'PENDING')"

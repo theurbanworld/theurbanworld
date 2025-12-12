@@ -159,7 +159,7 @@ def process_epoch(epoch: int) -> str:
         # Save to volume
         results_dir = Path("/results")
         results_dir.mkdir(exist_ok=True)
-        output_path = results_dir / f"{epoch}.parquet"
+        output_path = results_dir / f"h3_r8_pop_{epoch}.parquet"
         df.write_parquet(output_path)
         volume.commit()
 
@@ -184,8 +184,8 @@ def build_time_series() -> str:
     results_dir = Path("/results")
 
     # Find all epoch parquet files
-    epoch_files = sorted(results_dir.glob("[0-9][0-9][0-9][0-9].parquet"))
-    epochs = [int(f.stem) for f in epoch_files]
+    epoch_files = sorted(results_dir.glob("h3_r8_pop_[0-9][0-9][0-9][0-9].parquet"))
+    epochs = [int(f.stem.split("_")[-1]) for f in epoch_files]
 
     if not epochs:
         return "No epoch files found in volume"
@@ -196,7 +196,7 @@ def build_time_series() -> str:
     conn = duckdb.connect()
     union_parts = []
     for epoch in epochs:
-        epoch_file = results_dir / f"{epoch}.parquet"
+        epoch_file = results_dir / f"h3_r8_pop_{epoch}.parquet"
         union_parts.append(
             f"SELECT h3_index, population, {epoch} as year FROM read_parquet('{epoch_file}')"
         )
@@ -221,7 +221,7 @@ def build_time_series() -> str:
     print(f"  Created time series for {len(result):,} H3 cells")
 
     # Save
-    time_series_path = results_dir / "time_series.parquet"
+    time_series_path = results_dir / "h3_r8_pop_timeseries.parquet"
     result.write_parquet(time_series_path)
 
     # Commit volume
@@ -229,7 +229,7 @@ def build_time_series() -> str:
 
     conn.close()
 
-    return f"Saved time_series.parquet with {len(result):,} H3 cells"
+    return f"Saved h3_r8_pop_timeseries.parquet with {len(result):,} H3 cells"
 
 
 @app.function(
@@ -243,8 +243,8 @@ def list_existing_epochs() -> list[int]:
 
     results_dir = Path("/results")
     existing = []
-    for f in results_dir.glob("[0-9][0-9][0-9][0-9].parquet"):
-        existing.append(int(f.stem))
+    for f in results_dir.glob("h3_r8_pop_[0-9][0-9][0-9][0-9].parquet"):
+        existing.append(int(f.stem.split("_")[-1]))
     return sorted(existing)
 
 

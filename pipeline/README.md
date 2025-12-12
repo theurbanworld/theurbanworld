@@ -71,7 +71,7 @@ make status
 ### City Index (`data/processed/city_index.json`)
 Lightweight index for search/autocomplete with basic city metadata.
 
-### H3 Population Grid (`data/processed/h3_tiles/h3_pop_2025_res9.parquet`)
+### H3 Population Grid (`data/processed/h3_tiles/h3_r9_pop_2025.parquet`)
 GeoParquet with H3 cell IDs and population values.
 
 ## Configuration

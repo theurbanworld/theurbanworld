@@ -183,8 +183,8 @@ Processes all 375 GHSL 100m tiles in parallel on Modal cloud infrastructure for 
 | Output Path | Description |
 |-------------|-------------|
 | Modal Volume `/results/tiles/{tile_id}.parquet` | Per-tile H3 cells (cloud) |
-| `data/processed/h3_tiles/h3_pop_2025_res9.parquet` | Merged, deduplicated H3 cells (with --download-local) |
-| R2 `ghsl-pop-100m/h3_pop_2025_res9.parquet` | Merged file in cloud storage (default) |
+| `data/processed/h3_tiles/h3_r9_pop_2025.parquet` | Merged, deduplicated H3 cells (with --download-local) |
+| R2 `ghsl-pop-100m/h3_r9_pop_2025.parquet` | Merged file in cloud storage (default) |
 
 ### Tile Boundary Handling
 H3 cells at tile boundaries may appear in multiple tiles. DuckDB merge sums population for duplicate `h3_index` values.
@@ -247,7 +247,7 @@ Processes all 10 epochs in parallel on Modal cloud infrastructure for faster exe
 | Output Path | Description |
 |-------------|-------------|
 | `data/interim/h3_pop_1km/{epoch}.parquet` | Per-epoch H3 cells |
-| `data/interim/h3_pop_1km/time_series.parquet` | Wide-format time series |
+| `data/interim/h3_pop_1km/h3_r8_pop_timeseries.parquet` | Wide-format time series |
 
 ### Time Series Schema
 
@@ -292,11 +292,11 @@ data/
 │       ├── 1975.parquet
 │       ├── ...
 │       ├── 2020.parquet
-│       └── time_series.parquet
+│       └── h3_r8_pop_timeseries.parquet
 │
 └── processed/                        # Final outputs
     └── h3_tiles/
-        └── h3_pop_2025_res9.parquet
+        └── h3_r9_pop_2025.parquet
 ```
 
 ---
