@@ -4,7 +4,7 @@
 Purpose: Define each city's spatial extent as a set of H3 cells
 Input:
   - data/interim/cities.parquet
-  - https://data.theurban.world/ghsl-pop-100m/h3_r9_pop_2025.parquet
+  - data/process
 Output:
   - data/processed/city_areas.parquet
 
