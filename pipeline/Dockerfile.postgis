@@ -1,0 +1,15 @@
+# PostGIS with H3 extension
+# Based on official postgis/postgis with h3 installed via apt
+#
+# Build: docker build -f Dockerfile.postgis -t urbanworld-postgis .
+# Run:   docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres urbanworld-postgis
+
+FROM postgis/postgis:16-3.5
+
+# Install h3 extension from PGDG apt repository
+RUN apt-get update && apt-get install -y \
+    postgresql-16-h3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add initialization script to create extensions
+COPY --chmod=644 init-extensions.sql /docker-entrypoint-initdb.d/
