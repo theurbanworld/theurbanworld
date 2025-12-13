@@ -46,7 +46,6 @@ dependencies = [
 download = "src.s01_download_ghsl:main"
 extract-schema = "src.s01b_extract_ucdb_schema:main"
 extract = "src.s02_extract_urban_centers:main"
-# convert-100m: use `modal run src/s03_raster_100m_to_h3_r9.py`
 boundaries = "src.s05_extract_city_boundaries:main"
 radial = "src.s06_compute_radial_profiles:main"
 export = "src.s07_export_web_formats:main"
