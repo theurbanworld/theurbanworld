@@ -2,7 +2,26 @@
 @import "@nuxt/ui";
 
 @theme static {
+  /* Typography */
   --font-sans: 'Inter', sans-serif;
   --font-serif: 'Crimson Pro', serif;
   --font-mono: 'JetBrains Mono', monospace;
+
+  /* Forest green color scale (primary accent) */
+  --color-forest-50: #F4F7F3;
+  --color-forest-100: #E5EBE3;
+  --color-forest-200: #D4DED0;
+  --color-forest-300: #B5C9AF;
+  --color-forest-400: #8FAD85;
+  --color-forest-500: #6A8F5E;
+  --color-forest-600: #4A6741;
+  --color-forest-700: #3A5233;
+  --color-forest-800: #2F4229;
+  --color-forest-900: #273622;
+  --color-forest-950: #131D10;
+
+  /* Typography colors */
+  --color-espresso: #3D352C;
+  --color-body: #4A4238;
+  --color-data: #5C4A3D;
 }

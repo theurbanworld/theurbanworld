@@ -54,7 +54,7 @@ export default defineNuxtConfig({
     provider: 'bunny',
     families: [
       { name: 'Crimson Pro', weights: [400, 600, 700] },
-      { name: 'Inter', weights: [400, 500, 600, 700] },
+      { name: 'Inter', weights: [300, 400, 500, 600, 700] },
       { name: 'JetBrains Mono', weights: [400, 500, 600, 700] }
     ]
   },

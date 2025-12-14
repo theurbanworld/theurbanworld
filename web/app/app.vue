@@ -1,7 +1,15 @@
 <template>
-  <div>
-    <NuxtLayout>
+  <UApp>
+    <UHeader>
+      <template #title>
+        <AppLogo />
+      </template>
+    </UHeader>
+
+    <UMain>
       <NuxtPage />
-    </NuxtLayout>
-  </div>
+    </UMain>
+
+    <UFooter />
+  </UApp>
 </template>
