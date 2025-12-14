@@ -1,0 +1,39 @@
+{
+  "name": "app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "lint": "eslint .",
+    "typecheck": "nuxt typecheck"
+  },
+  "dependencies": {
+    "@deck.gl/core": "^9.2.5",
+    "@deck.gl/geo-layers": "^9.2.5",
+    "@deck.gl/layers": "^9.2.5",
+    "@deck.gl/mapbox": "^9.2.5",
+    "@iconify-json/lucide": "^1.2.74",
+    "@iconify-json/simple-icons": "^1.2.59",
+    "@loaders.gl/core": "^4.3.4",
+    "@loaders.gl/parquet": "^4.3.4",
+    "@nuxt/ui": "^4.2.1",
+    "chart.js": "^4.5.1",
+    "deck.gl": "^9.2.5",
+    "fuse.js": "^7.1.0",
+    "maplibre-gl": "^5.14.0",
+    "nuxt": "^4.2.2",
+    "pmtiles": "^4.3.0",
+    "protomaps-themes-base": "^4.5.0",
+    "vue-chartjs": "^5.3.3"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "^1.10.0",
+    "eslint": "^9.39.1",
+    "typescript": "^5.9.3",
+    "vue-tsc": "^3.1.5"
+  },
+  "packageManager": "pnpm@10.25.0+sha512.5e82639027af37cf832061bcc6d639c219634488e0f2baebe785028a793de7b525ffcd3f7ff574f5e9860654e098fe852ba8ac5dd5cefe1767d23a020a92f501"
+}
