@@ -10,7 +10,8 @@
 export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
-    '@nuxt/ui'
+    '@nuxt/ui',
+    '@nuxt/fonts'
   ],
 
   devtools: {
@@ -47,5 +48,14 @@ export default defineNuxtConfig({
         braceStyle: '1tbs'
       }
     }
+  },
+
+  fonts: {
+    provider: 'bunny',
+    families: [
+      { name: 'Crimson Pro', weights: [400, 600, 700] },
+      { name: 'Inter', weights: [400, 500, 600, 700] },
+      { name: 'JetBrains Mono', weights: [400, 500, 600, 700] }
+    ]
   },
 })
