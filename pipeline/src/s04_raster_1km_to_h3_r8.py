@@ -6,7 +6,8 @@ Purpose: Process all epochs in parallel on Modal using exactextract for
          that overlap with city geometries from cities.parquet.
 
 Usage:
-  modal run src/s04_raster_1km_to_h3_r8.py              # Full pipeline
+  modal run src/s04_raster_1km_to_h3_r8.py              # Full pipeline (legacy mode)
+  modal run src/s04_raster_1km_to_h3_r8.py --use-epoch-geometries  # Per-epoch zones (recommended)
   modal run src/s04_raster_1km_to_h3_r8.py --test       # Single epoch (2020)
   modal run src/s04_raster_1km_to_h3_r8.py --zones-only # Generate H3 zones only
   modal run src/s04_raster_1km_to_h3_r8.py --skip-zones # Use existing zones
@@ -30,11 +31,14 @@ Time estimate: ~30-45 minutes wall-clock
 Decision log:
   - Uses WGS84 GHSL data (4326_30ss) - no reprojection needed
   - Uses exactextract for proper area-weighted population sums
-  - Only processes H3 cells overlapping city geometries (from cities.parquet)
-  - H3 zones generated once and cached in Modal volume
+  - Only processes H3 cells overlapping city geometries
+  - Supports two modes:
+    - Legacy: single zones file from cities.parquet (2025 boundaries)
+    - Epoch-specific: per-epoch zones from city_geometries_by_epoch.parquet (MTUC)
+  - H3 zones cached in Modal volume
   - Process epochs in parallel (12 containers)
   - 32GB memory per container for raster + exactextract
-Date: 2024-12-13
+Date: 2024-12-13 (updated 2024-12-26 for MTUC support)
 """
 
 import modal
@@ -72,7 +76,8 @@ GHSL_URL_TEMPLATE = (
 )
 EPOCHS = [1975, 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020, 2025, 2030]
 H3_RESOLUTION = 8
-CITIES_PARQUET = "data/interim/cities.parquet"
+CITIES_PARQUET = "data/interim/cities.parquet"  # Fallback for legacy mode
+EPOCH_GEOMETRIES_PARQUET = "data/interim/city_geometries_by_epoch.parquet"
 
 
 @app.function(
@@ -81,12 +86,13 @@ CITIES_PARQUET = "data/interim/cities.parquet"
     timeout=1800,  # 30 minutes
     volumes={"/results": volume},
 )
-def generate_h3_zones(cities_bytes: bytes) -> str:
+def generate_h3_zones_for_epoch(epoch_geom_bytes: bytes, epoch: int) -> str:
     """
-    Generate H3 res 8 polygon zones for all city geometries.
+    Generate H3 res 8 polygon zones for a specific epoch's city geometries.
 
     Args:
-        cities_bytes: Serialized cities.parquet content
+        epoch_geom_bytes: Serialized city_geometries_by_epoch.parquet content
+        epoch: Year to filter geometries (1975, 1980, ..., 2030)
 
     Returns:
         Status message with cell count
@@ -98,18 +104,90 @@ def generate_h3_zones(cities_bytes: bytes) -> str:
     import h3
     from shapely import Polygon
 
+    print(f"[{epoch}] Loading epoch geometries from parquet...")
+    all_geom_gdf = gpd.read_parquet(io.BytesIO(epoch_geom_bytes))
+
+    # Filter to this epoch
+    epoch_gdf = all_geom_gdf[all_geom_gdf["epoch"] == epoch].copy()
+    print(f"[{epoch}] Filtered to {len(epoch_gdf):,} cities for epoch {epoch}")
+
+    if len(epoch_gdf) == 0:
+        print(f"[{epoch}] No geometries found for epoch {epoch}")
+        return f"No geometries for epoch {epoch}"
+
+    # Generate H3 cells for each city geometry
+    print(f"[{epoch}] Generating H3 res {H3_RESOLUTION} cells...")
+    all_cells = set()
+    for idx, geometry in enumerate(epoch_gdf.geometry):
+        if geometry is None or geometry.is_empty:
+            continue
+        try:
+            cells = h3.geo_to_cells(geometry, res=H3_RESOLUTION)
+            all_cells.update(cells)
+        except Exception as e:
+            print(f"[{epoch}] Warning: Failed to process geometry {idx}: {e}")
+            continue
+
+        if (idx + 1) % 1000 == 0:
+            print(f"[{epoch}] Processed {idx + 1:,} cities, {len(all_cells):,} unique cells")
+
+    print(f"[{epoch}] Total unique H3 cells: {len(all_cells):,}")
+
+    # Convert cells to polygons for exactextract
+    print(f"[{epoch}] Converting H3 cells to polygons...")
+    h3_polygons = []
+    for i, cell in enumerate(all_cells):
+        boundary = h3.cell_to_boundary(cell)
+        coords = [(lng, lat) for lat, lng in boundary]
+        coords.append(coords[0])
+        h3_polygons.append({
+            "h3_index": cell,
+            "geometry": Polygon(coords),
+        })
+
+        if (i + 1) % 100000 == 0:
+            print(f"[{epoch}] Converted {i + 1:,} polygons")
+
+    # Create GeoDataFrame
+    zones_gdf = gpd.GeoDataFrame(h3_polygons, crs="EPSG:4326")
+
+    # Save to volume with epoch-specific filename
+    output_path = Path(f"/results/h3_zones_{epoch}.parquet")
+    zones_gdf.to_parquet(output_path)
+    volume.commit()
+
+    file_size = output_path.stat().st_size / 1e6
+    print(f"[{epoch}] Saved {output_path.name} ({file_size:.1f} MB)")
+
+    return f"Generated {len(zones_gdf):,} H3 zones for {epoch}"
+
+
+# Keep legacy function for backward compatibility
+@app.function(
+    image=image,
+    memory=16384,
+    timeout=1800,
+    volumes={"/results": volume},
+)
+def generate_h3_zones(cities_bytes: bytes) -> str:
+    """Legacy: Generate H3 zones from cities.parquet (single set for all epochs)."""
+    import io
+    from pathlib import Path
+
+    import geopandas as gpd
+    import h3
+    from shapely import Polygon
+
     print("Loading cities from parquet...")
     cities_gdf = gpd.read_parquet(io.BytesIO(cities_bytes))
     print(f"  Loaded {len(cities_gdf):,} cities")
 
-    # Generate H3 cells for each city geometry
     print(f"Generating H3 res {H3_RESOLUTION} cells for city geometries...")
     all_cells = set()
     for idx, geometry in enumerate(cities_gdf.geometry):
         if geometry is None or geometry.is_empty:
             continue
         try:
-            # h3.geo_to_cells expects a GeoJSON-like __geo_interface__
             cells = h3.geo_to_cells(geometry, res=H3_RESOLUTION)
             all_cells.update(cells)
         except Exception as e:
@@ -121,28 +199,22 @@ def generate_h3_zones(cities_bytes: bytes) -> str:
 
     print(f"  Total unique H3 cells: {len(all_cells):,}")
 
-    # Convert cells to polygons for exactextract
-    # Store h3_index as string to avoid exactextract C++ type casting issues
     print("Converting H3 cells to polygons...")
     h3_polygons = []
     for i, cell in enumerate(all_cells):
         boundary = h3.cell_to_boundary(cell)
-        # boundary is [(lat, lng), ...], convert to [(lng, lat), ...] for shapely
         coords = [(lng, lat) for lat, lng in boundary]
-        coords.append(coords[0])  # Close polygon
+        coords.append(coords[0])
         h3_polygons.append({
-            "h3_index": cell,  # Keep as string for exactextract compatibility
+            "h3_index": cell,
             "geometry": Polygon(coords),
         })
 
         if (i + 1) % 100000 == 0:
             print(f"  Converted {i + 1:,} polygons")
 
-    # Create GeoDataFrame
-    print("Creating GeoDataFrame...")
     zones_gdf = gpd.GeoDataFrame(h3_polygons, crs="EPSG:4326")
 
-    # Save to volume
     output_path = Path("/results/h3_zones.parquet")
     zones_gdf.to_parquet(output_path)
     volume.commit()
@@ -175,12 +247,16 @@ def process_epoch(epoch: int) -> str:
 
     print(f"[{epoch}] Starting processing...")
 
-    # Load H3 zones from volume
-    zones_path = Path("/results/h3_zones.parquet")
+    # Load H3 zones from volume (prefer epoch-specific, fallback to legacy)
+    zones_path = Path(f"/results/h3_zones_{epoch}.parquet")
     if not zones_path.exists():
-        raise RuntimeError("H3 zones not found - run generate_h3_zones first")
+        # Try legacy single zones file
+        zones_path = Path("/results/h3_zones.parquet")
+        if not zones_path.exists():
+            raise RuntimeError(f"H3 zones not found for epoch {epoch} - run zone generation first")
+        print(f"[{epoch}] Using legacy h3_zones.parquet (no epoch-specific zones)")
 
-    print(f"[{epoch}] Loading H3 zones...")
+    print(f"[{epoch}] Loading H3 zones from {zones_path.name}...")
     zones_gdf = gpd.read_parquet(zones_path)
     print(f"[{epoch}] Loaded {len(zones_gdf):,} H3 zones")
 
@@ -332,11 +408,27 @@ def list_existing_epochs() -> list[int]:
     timeout=60,
 )
 def check_zones_exist() -> bool:
-    """Check if H3 zones file exists in volume."""
+    """Check if legacy H3 zones file exists in volume."""
     from pathlib import Path
 
     zones_path = Path("/results/h3_zones.parquet")
     return zones_path.exists()
+
+
+@app.function(
+    image=image,
+    volumes={"/results": volume},
+    timeout=60,
+)
+def list_existing_zones() -> list[int]:
+    """List epochs with H3 zones already generated."""
+    from pathlib import Path
+
+    results_dir = Path("/results")
+    existing = []
+    for f in results_dir.glob("h3_zones_[0-9][0-9][0-9][0-9].parquet"):
+        existing.append(int(f.stem.split("_")[-1]))
+    return sorted(existing)
 
 
 @app.function(
@@ -413,6 +505,7 @@ def main(
     zones_only: bool = False,
     skip_zones: bool = False,
     regenerate_zones: bool = False,
+    use_epoch_geometries: bool = False,
 ):
     """Run the H3 conversion pipeline with exactextract.
 
@@ -426,6 +519,7 @@ def main(
         zones_only: Only generate H3 zones from cities (skip epoch processing)
         skip_zones: Skip zone generation (use existing zones in volume)
         regenerate_zones: Force regenerate zones even if they exist
+        use_epoch_geometries: Use per-epoch city boundaries from MTUC (recommended)
     """
     import time
     from pathlib import Path
@@ -462,36 +556,6 @@ def main(
         print(f"\nComplete! Total time: {total_time:.1f}s")
         return
 
-    # Load cities.parquet for zone generation
-    cities_path = Path(CITIES_PARQUET)
-    if not cities_path.exists():
-        raise FileNotFoundError(f"Cities file not found: {cities_path}")
-
-    cities_bytes = cities_path.read_bytes()
-    print(f"\nLoaded {cities_path} ({len(cities_bytes) / 1e6:.1f} MB)")
-
-    # Generate H3 zones (or skip if requested)
-    if not skip_zones:
-        if regenerate_zones:
-            print("\nRegenerating H3 zones (--regenerate-zones)...")
-            zones_status = generate_h3_zones.remote(cities_bytes)
-            print(f"  {zones_status}")
-        else:
-            # Check if zones exist
-            existing_zones = check_zones_exist.remote()
-            if existing_zones:
-                print("\nH3 zones already exist in volume (use --regenerate-zones to recreate)")
-            else:
-                print("\nGenerating H3 zones from city geometries...")
-                zones_status = generate_h3_zones.remote(cities_bytes)
-                print(f"  {zones_status}")
-
-    # Zones-only mode: stop after zone generation
-    if zones_only:
-        total_time = time.time() - start_time
-        print(f"\nZones-only mode complete! Total time: {total_time:.1f}s")
-        return
-
     # Determine which epochs to process
     if local or test:
         epochs_to_process = [2020]  # Single epoch for testing
@@ -499,6 +563,66 @@ def main(
     else:
         epochs_to_process = list(EPOCHS)
         print(f"\nProcessing {len(epochs_to_process)} epochs...")
+
+    # Load geometry data for zone generation
+    if use_epoch_geometries:
+        # Use per-epoch geometries from MTUC
+        geom_path = Path(EPOCH_GEOMETRIES_PARQUET)
+        if not geom_path.exists():
+            raise FileNotFoundError(
+                f"Epoch geometries not found: {geom_path}\n"
+                "Run 'python -m src.s02c_extract_epoch_geometries' first."
+            )
+        geom_bytes = geom_path.read_bytes()
+        print(f"\nUsing per-epoch geometries from {geom_path} ({len(geom_bytes) / 1e6:.1f} MB)")
+
+        # Generate H3 zones for each epoch
+        if not skip_zones:
+            existing_zones = list_existing_zones.remote() if not regenerate_zones else []
+            zones_to_generate = [e for e in epochs_to_process if e not in existing_zones]
+
+            if zones_to_generate:
+                print(f"\nGenerating H3 zones for {len(zones_to_generate)} epochs...")
+                # Generate zones in parallel
+                zone_futures = []
+                for epoch in zones_to_generate:
+                    zone_futures.append(generate_h3_zones_for_epoch.spawn(geom_bytes, epoch))
+
+                for epoch, future in zip(zones_to_generate, zone_futures):
+                    print(f"  Waiting for zones {epoch}...")
+                    status = future.get()
+                    print(f"    {status}")
+            else:
+                print(f"\nAll epoch zones already exist in volume")
+    else:
+        # Legacy mode: single zones file from cities.parquet
+        cities_path = Path(CITIES_PARQUET)
+        if not cities_path.exists():
+            raise FileNotFoundError(f"Cities file not found: {cities_path}")
+
+        cities_bytes = cities_path.read_bytes()
+        print(f"\nUsing legacy mode with {cities_path} ({len(cities_bytes) / 1e6:.1f} MB)")
+
+        # Generate H3 zones (or skip if requested)
+        if not skip_zones:
+            if regenerate_zones:
+                print("\nRegenerating H3 zones (--regenerate-zones)...")
+                zones_status = generate_h3_zones.remote(cities_bytes)
+                print(f"  {zones_status}")
+            else:
+                existing_zones = check_zones_exist.remote()
+                if existing_zones:
+                    print("\nH3 zones already exist in volume (use --regenerate-zones to recreate)")
+                else:
+                    print("\nGenerating H3 zones from city geometries...")
+                    zones_status = generate_h3_zones.remote(cities_bytes)
+                    print(f"  {zones_status}")
+
+    # Zones-only mode: stop after zone generation
+    if zones_only:
+        total_time = time.time() - start_time
+        print(f"\nZones-only mode complete! Total time: {total_time:.1f}s")
+        return
 
     # Check for existing epochs in volume
     if skip_existing and not local:

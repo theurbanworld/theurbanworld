@@ -1,5 +1,5 @@
 """
-07 - Export web-ready formats for frontend.
+Export web-ready formats for frontend.
 
 Purpose: Generate final JSON and GeoParquet files for web serving
 Input:

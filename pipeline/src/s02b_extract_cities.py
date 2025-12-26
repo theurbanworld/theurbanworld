@@ -17,6 +17,7 @@ Output Schema (cities.parquet as GeoParquet):
   | country_name             | str       | GC_CNT_GAD_2025    | Renamed from country_code |
   | country_code             | str       | pycountry lookup   | New ISO 3166-1 alpha-3    |
   | region                   | str       | GC_DEV_USR_2025    | New continent/region      |
+  | year_of_birth            | int       | MTUC GC_UCB_YOB    | First epoch city existed  |
   | latitude                 | float     | centroid.y         | From centroids.parquet    |
   | longitude                | float     | centroid.x         | From centroids.parquet    |
   | population_2025          | int       | GC_POP_TOT_2025    |                           |
@@ -41,7 +42,7 @@ import polars as pl
 import pycountry
 from tqdm import tqdm
 
-from .utils.config import get_interim_path
+from .utils.config import get_interim_path, get_raw_path
 from .utils.tile_utils import estimate_tiles_for_bbox_wgs84
 
 
@@ -170,6 +171,28 @@ def extract_cities(force: bool = False) -> gpd.GeoDataFrame:
         if len(failed_countries) > 10:
             print(f"    ... and {len(failed_countries) - 10} more")
 
+    # Add year_of_birth from MTUC (if available)
+    print("Adding year_of_birth from MTUC...")
+    mtuc_dir = get_raw_path("mtuc")
+    mtuc_files = list(mtuc_dir.glob("*.gpkg"))
+    if mtuc_files:
+        mtuc_gdf = gpd.read_file(mtuc_files[0])
+        # Column name has trailing space in MTUC: "GC_UCB_YOB _2025"
+        yob_col = [c for c in mtuc_gdf.columns if "YOB" in c]
+        if yob_col:
+            mtuc_yob = mtuc_gdf[["ID_MTUC_G0", yob_col[0]]].copy()
+            mtuc_yob.columns = ["city_id", "year_of_birth"]
+            mtuc_yob["city_id"] = mtuc_yob["city_id"].astype(str)
+            mtuc_yob["year_of_birth"] = mtuc_yob["year_of_birth"].astype("Int64")
+            cities_df = cities_df.merge(mtuc_yob, on="city_id", how="left")
+            print(f"  Added year_of_birth for {cities_df['year_of_birth'].notna().sum()} cities")
+        else:
+            print("  Warning: year_of_birth column not found in MTUC")
+            cities_df["year_of_birth"] = None
+    else:
+        print("  Warning: MTUC not found, skipping year_of_birth")
+        cities_df["year_of_birth"] = None
+
     # Prepare geometries with ID as string for joining
     geometries = geometries.copy()
     geometries["city_id"] = geometries["ID_UC_G0"].astype(str)
@@ -237,6 +260,7 @@ def extract_cities(force: bool = False) -> gpd.GeoDataFrame:
         "country_name",
         "country_code",
         "region",
+        "year_of_birth",
         "latitude",
         "longitude",
         "population_2025",

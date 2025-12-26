@@ -31,6 +31,7 @@ class PipelineConfig(BaseSettings):
 
     # Download URLs (centralized for easy updates when JRC changes structure)
     GHSL_UCDB_URL: str = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_UCDB_GLOBE_R2024A/GHS_UCDB_GLOBE_R2024A/V1-1/GHS_UCDB_GLOBE_R2024A_V1_1.zip"
+    GHSL_MTUC_URL: str = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_UCDB_GLOBE_R2024A/GHS_UCDB_MTUC_GLOBE_R2024A/V1-1/GHS_UCDB_MTUC_GLOBE_R2024A_V1_1.zip"
 
     # URL templates (use {epoch}, {resolution}, {row}, {col} placeholders)
     GHSL_POP_TILE_URL_TEMPLATE: str = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GLOBE_R2023A/GHS_POP_E{epoch}_GLOBE_R2023A_54009_{resolution}/V1-0/tiles/GHS_POP_E{epoch}_GLOBE_R2023A_54009_{resolution}_V1_0_R{row}_C{col}.zip"
@@ -132,3 +133,8 @@ def get_ghsl_pop_global_url(epoch: int, resolution: int) -> str:
 def get_ghsl_ucdb_url() -> str:
     """Return UCDB download URL."""
     return config.GHSL_UCDB_URL
+
+
+def get_ghsl_mtuc_url() -> str:
+    """Return MTUC (Multi-Temporal Urban Centers) download URL."""
+    return config.GHSL_MTUC_URL

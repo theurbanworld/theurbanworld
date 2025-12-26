@@ -32,6 +32,7 @@ from tqdm import tqdm
 
 from .utils.config import (
     config,
+    get_ghsl_mtuc_url,
     get_ghsl_pop_global_url,
     get_ghsl_pop_tile_url,
     get_ghsl_ucdb_url,
@@ -159,6 +160,43 @@ def download_ucdb(output_dir: Path, progress: ProgressTracker) -> Path | None:
     zip_path = output_dir / "ucdb.zip"
 
     print(f"Downloading UCDB from {url}")
+    success, error = download_file(url, zip_path)
+
+    if not success:
+        progress.mark_failed(item_id, error)
+        print(f"  FAILED: {error}")
+        return None
+
+    # Extract
+    print("  Extracting...")
+    extracted = extract_zip(zip_path, output_dir)
+    zip_path.unlink()  # Remove zip after extraction
+
+    # Find gpkg file
+    gpkg_files = [f for f in extracted if f.suffix == ".gpkg"]
+    if not gpkg_files:
+        progress.mark_failed(item_id, "No .gpkg file found in archive")
+        return None
+
+    progress.mark_complete(item_id, {"file": gpkg_files[0].name})
+    print(f"  Extracted: {gpkg_files[0].name}")
+    return gpkg_files[0]
+
+
+def download_mtuc(output_dir: Path, progress: ProgressTracker) -> Path | None:
+    """Download MTUC (Multi-Temporal Urban Centers) GeoPackage."""
+    item_id = "mtuc"
+    if progress.is_complete(item_id):
+        gpkg_files = list(output_dir.glob("*.gpkg"))
+        if gpkg_files:
+            print(f"MTUC already downloaded: {gpkg_files[0].name}")
+            return gpkg_files[0]
+
+    progress.mark_in_progress(item_id)
+    url = get_ghsl_mtuc_url()
+    zip_path = output_dir / "mtuc.zip"
+
+    print(f"Downloading MTUC from {url}")
     success, error = download_file(url, zip_path)
 
     if not success:
@@ -336,7 +374,7 @@ def main(test_only: bool = False):
     progress = ProgressTracker(progress_file)
 
     # Collect all items to download
-    items = ["tile_grid", "ucdb"]  # Always download tile grid and UCDB
+    items = ["tile_grid", "ucdb", "mtuc"]  # Always download tile grid, UCDB, and MTUC
 
     # 100m tiles (2025 only)
     tiles = get_required_tiles(test_only)
@@ -352,28 +390,35 @@ def main(test_only: bool = False):
     print()
 
     # 0. Download tile grid shapefile
-    print("\n[0/4] Downloading tile grid shapefile...")
+    print("\n[0/5] Downloading tile grid shapefile...")
     tile_grid_dir = get_raw_path("ghsl_tile_grid")
     tile_grid_path = download_tile_grid(tile_grid_dir, progress)
     if not tile_grid_path:
         print("WARNING: Failed to download tile grid. Continuing without it.")
 
     # 1. Download UCDB
-    print("\n[1/4] Downloading UCDB (Urban Centre Database)...")
+    print("\n[1/5] Downloading UCDB (Urban Centre Database)...")
     ucdb_dir = get_raw_path("ucdb")
     ucdb_path = download_ucdb(ucdb_dir, progress)
     if not ucdb_path:
         print("ERROR: Failed to download UCDB. Cannot continue.")
         return
 
-    # 2. Download 100m tiles
-    print(f"\n[2/4] Downloading 100m population tiles ({len(tiles)} tiles)...")
+    # 2. Download MTUC (Multi-Temporal Urban Centers)
+    print("\n[2/5] Downloading MTUC (Multi-Temporal Urban Centers)...")
+    mtuc_dir = get_raw_path("mtuc")
+    mtuc_path = download_mtuc(mtuc_dir, progress)
+    if not mtuc_path:
+        print("WARNING: Failed to download MTUC. Continuing without it.")
+
+    # 3. Download 100m tiles
+    print(f"\n[3/5] Downloading 100m population tiles ({len(tiles)} tiles)...")
     pop_100m_dir = get_raw_path("ghsl_pop_100m")
     for row, col in tiles:
         download_pop_tile(2025, 100, row, col, pop_100m_dir, progress)
 
-    # 3. Download 1km global files
-    print(f"\n[3/4] Downloading 1km population files ({len(config.GHSL_POP_EPOCHS)} epochs)...")
+    # 4. Download 1km global files
+    print(f"\n[4/5] Downloading 1km population files ({len(config.GHSL_POP_EPOCHS)} epochs)...")
     pop_1km_dir = get_raw_path("ghsl_pop_1km")
     for epoch in config.GHSL_POP_EPOCHS:
         download_pop_global(epoch, 1000, pop_1km_dir, progress)
