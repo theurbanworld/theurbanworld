@@ -1,17 +1,16 @@
 """
-04 - Convert 1km GHSL-POP rasters to H3 resolution 8.
+03 - Convert 1km GHSL-POP rasters to H3 resolution 8.
 
 Purpose: Process all epochs in parallel on Modal using exactextract for
          accurate area-weighted zonal statistics. Only processes H3 cells
-         that overlap with city geometries from city_geometries_by_epoch.parquet.
+         that overlap with city geometries from geometries_by_epoch.parquet.
+         Each H3 cell is associated with its primary city (largest overlap).
 
 Usage:
-  modal run src/s04_raster_1km_to_h3_r8.py              # Full pipeline
-  modal run src/s04_raster_1km_to_h3_r8.py --zones-only # Generate H3 zones only
-  modal run src/s04_raster_1km_to_h3_r8.py --skip-zones # Use existing zones
-  modal run src/s04_raster_1km_to_h3_r8.py --skip-existing  # Resume processing
-  modal run src/s04_raster_1km_to_h3_r8.py --build-only     # Build time series
-  modal run src/s04_raster_1km_to_h3_r8.py --download-local # Download locally
+  modal run src/s03_raster_1km_to_h3_r8.py              # Full pipeline
+  modal run src/s03_raster_1km_to_h3_r8.py --skip-existing  # Resume processing
+  modal run src/s03_raster_1km_to_h3_r8.py --build-only     # Build pop time series
+  modal run src/s03_raster_1km_to_h3_r8.py --download-local # Download locally
 
 Setup (one-time):
   1. Create R2 bucket in Cloudflare dashboard
@@ -24,16 +23,16 @@ Setup (one-time):
        R2_BUCKET_NAME=<your_bucket_name>
 
 Cost estimate: ~$1-2 for all 12 epochs (parallel processing)
-Time estimate: ~30-45 minutes wall-clock
+Time estimate: ~15-25 minutes wall-clock
 
 Decision log:
   - Uses WGS84 GHSL data (4326_30ss) - no reprojection needed
   - Uses exactextract for proper area-weighted population sums
   - Only processes H3 cells overlapping city geometries
-  - Uses per-epoch city boundaries from city_geometries_by_epoch.parquet (MTUC)
-  - H3 zones cached in Modal volume
-  - Process epochs in parallel (12 containers)
-  - 32GB memory per container for raster + exactextract
+  - Uses per-epoch city boundaries from geometries_by_epoch.parquet (MTUC)
+  - Each H3 cell assigned to primary city (largest intersection area)
+  - Cell generation and processing combined in single function (no intermediate files)
+  - All 12 epochs processed in parallel (12 containers @ 32GB each)
 
 Date: 2024-12-13 (updated 2024-12-26)
 """
@@ -73,33 +72,52 @@ GHSL_URL_TEMPLATE = (
 )
 EPOCHS = [1975, 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020, 2025, 2030]
 H3_RESOLUTION = 8
-EPOCH_GEOMETRIES_PARQUET = "data/interim/city_geometries_by_epoch.parquet"
+EPOCH_GEOMETRIES_PARQUET = "data/interim/mtuc/geometries_by_epoch.parquet"
 
 
 @app.function(
     image=image,
-    memory=16384,  # 16GB for H3 cell generation
-    timeout=1800,  # 30 minutes
+    memory=32768,  # 32GB for raster + exactextract + H3 cells
+    cpu=2.0,
+    timeout=3600,  # 60 minutes max per epoch
+    retries=2,
     volumes={"/results": volume},
 )
-def generate_h3_zones_for_epoch(epoch_geom_bytes: bytes, epoch: int) -> str:
+def process_epoch_full(epoch_geom_bytes: bytes, epoch: int) -> str:
     """
-    Generate H3 res 8 polygon zones for a specific epoch's city geometries.
+    Generate H3 cells and process population for a single epoch.
+
+    Combines cell generation and raster processing in a single function
+    to enable full parallelism across all epochs (no sequential phases).
+
+    Each H3 cell is associated with its primary city (the one with the
+    largest intersection area when a cell overlaps multiple cities).
 
     Args:
-        epoch_geom_bytes: Serialized city_geometries_by_epoch.parquet content
+        epoch_geom_bytes: Serialized geometries_by_epoch.parquet content
         epoch: Year to filter geometries (1975, 1980, ..., 2030)
 
     Returns:
         Status message with cell count
     """
     import io
+    import tempfile
+    import zipfile
+    from collections import defaultdict
     from pathlib import Path
 
     import geopandas as gpd
     import h3
+    import httpx
+    import polars as pl
+    from exactextract import exact_extract
     from shapely import Polygon
 
+    print(f"[{epoch}] Starting full processing...")
+
+    # =========================================================================
+    # Step 1: Generate H3 cells from city geometries (in-memory)
+    # =========================================================================
     print(f"[{epoch}] Loading epoch geometries from parquet...")
     all_geom_gdf = gpd.read_parquet(io.BytesIO(epoch_geom_bytes))
 
@@ -111,87 +129,66 @@ def generate_h3_zones_for_epoch(epoch_geom_bytes: bytes, epoch: int) -> str:
         print(f"[{epoch}] No geometries found for epoch {epoch}")
         return f"No geometries for epoch {epoch}"
 
-    # Generate H3 cells for each city geometry
-    print(f"[{epoch}] Generating H3 res {H3_RESOLUTION} cells...")
-    all_cells = set()
-    for idx, geometry in enumerate(epoch_gdf.geometry):
+    # Generate H3 cells for each city geometry, tracking overlap areas
+    # Map: h3_index -> [(city_id, overlap_area), ...]
+    print(f"[{epoch}] Generating H3 res {H3_RESOLUTION} cells with city associations...")
+    cell_city_overlaps: dict[str, list[tuple[str, float]]] = defaultdict(list)
+
+    for idx, row in enumerate(epoch_gdf.itertuples()):
+        geometry = row.geometry
+        city_id = str(row.city_id)
+
         if geometry is None or geometry.is_empty:
             continue
         try:
             cells = h3.geo_to_cells(geometry, res=H3_RESOLUTION)
-            all_cells.update(cells)
+            for cell in cells:
+                # Compute intersection area between H3 cell and city geometry
+                boundary = h3.cell_to_boundary(cell)
+                coords = [(lng, lat) for lat, lng in boundary]
+                coords.append(coords[0])
+                cell_polygon = Polygon(coords)
+
+                intersection = cell_polygon.intersection(geometry)
+                overlap_area = intersection.area if not intersection.is_empty else 0.0
+                cell_city_overlaps[cell].append((city_id, overlap_area))
         except Exception as e:
-            print(f"[{epoch}] Warning: Failed to process geometry {idx}: {e}")
+            print(f"[{epoch}] Warning: Failed to process city {city_id}: {e}")
             continue
 
         if (idx + 1) % 1000 == 0:
-            print(f"[{epoch}] Processed {idx + 1:,} cities, {len(all_cells):,} unique cells")
+            print(f"[{epoch}] Processed {idx + 1:,} cities, {len(cell_city_overlaps):,} unique cells")
 
-    print(f"[{epoch}] Total unique H3 cells: {len(all_cells):,}")
+    print(f"[{epoch}] Total unique H3 cells: {len(cell_city_overlaps):,}")
 
-    # Convert cells to polygons for exactextract
-    print(f"[{epoch}] Converting H3 cells to polygons...")
-    h3_polygons = []
-    for i, cell in enumerate(all_cells):
+    # Assign each cell to the city with the largest overlap
+    print(f"[{epoch}] Assigning cells to primary cities...")
+    h3_cells = []
+    for i, (cell, city_overlaps) in enumerate(cell_city_overlaps.items()):
+        # Select city with maximum overlap area
+        primary_city_id = max(city_overlaps, key=lambda x: x[1])[0]
+
         boundary = h3.cell_to_boundary(cell)
         coords = [(lng, lat) for lat, lng in boundary]
         coords.append(coords[0])
-        h3_polygons.append({
+        h3_cells.append({
             "h3_index": cell,
+            "city_id": primary_city_id,
             "geometry": Polygon(coords),
         })
 
         if (i + 1) % 100000 == 0:
-            print(f"[{epoch}] Converted {i + 1:,} polygons")
+            print(f"[{epoch}] Assigned {i + 1:,} cells")
 
-    # Create GeoDataFrame
-    zones_gdf = gpd.GeoDataFrame(h3_polygons, crs="EPSG:4326")
+    # Create GeoDataFrame (in-memory, not saved)
+    h3_cells_gdf = gpd.GeoDataFrame(h3_cells, crs="EPSG:4326")
+    print(f"[{epoch}] Created {len(h3_cells_gdf):,} H3 cell polygons in memory")
 
-    # Save to volume with epoch-specific filename
-    output_path = Path(f"/results/h3_zones_{epoch}.parquet")
-    zones_gdf.to_parquet(output_path)
-    volume.commit()
-
-    file_size = output_path.stat().st_size / 1e6
-    print(f"[{epoch}] Saved {output_path.name} ({file_size:.1f} MB)")
-
-    return f"Generated {len(zones_gdf):,} H3 zones for {epoch}"
-
-
-@app.function(
-    image=image,
-    memory=32768,  # 32GB for raster + exactextract
-    cpu=2.0,
-    timeout=3600,  # 60 minutes max per epoch
-    retries=2,
-    volumes={"/results": volume},
-)
-def process_epoch(epoch: int) -> str:
-    """Process a single epoch using exactextract for area-weighted zonal statistics."""
-    import io
-    import tempfile
-    import zipfile
-    from pathlib import Path
-
-    import geopandas as gpd
-    import httpx
-    import polars as pl
-    from exactextract import exact_extract
-
-    print(f"[{epoch}] Starting processing...")
-
-    # Load epoch-specific H3 zones from volume
-    zones_path = Path(f"/results/h3_zones_{epoch}.parquet")
-    if not zones_path.exists():
-        raise RuntimeError(f"H3 zones not found for epoch {epoch} - run zone generation first")
-
-    print(f"[{epoch}] Loading H3 zones from {zones_path.name}...")
-    zones_gdf = gpd.read_parquet(zones_path)
-    print(f"[{epoch}] Loaded {len(zones_gdf):,} H3 zones")
-
-    # Download the WGS84 raster (no reprojection needed)
+    # =========================================================================
+    # Step 2: Download and process raster
+    # =========================================================================
     url = GHSL_URL_TEMPLATE.format(epoch=epoch)
-    print(f"[{epoch}] Downloading from {url}")
+    print(f"[{epoch}] Downloading raster from {url}")
 
     with httpx.Client(timeout=600) as client:
         response = client.get(url, follow_redirects=True)
@@ -219,9 +216,9 @@ def process_epoch(epoch: int) -> str:
         print(f"[{epoch}] Running exactextract (sum aggregation)...")
         results_df = exact_extract(
             str(tif_path),
-            zones_gdf,
+            h3_cells_gdf,
             ops=["sum"],
-            include_cols=["h3_index"],
+            include_cols=["h3_index", "city_id"],
             output="pandas",
         )
 
@@ -229,7 +226,6 @@ def process_epoch(epoch: int) -> str:
         df = pl.from_pandas(results_df).rename({"sum": "population"})
 
         # Convert h3_index from string back to int64
-        import h3
         df = df.with_columns(
             pl.col("h3_index").map_elements(h3.str_to_int, return_dtype=pl.Int64)
         )
@@ -249,7 +245,7 @@ def process_epoch(epoch: int) -> str:
         file_size = output_path.stat().st_size / 1e6
         print(f"[{epoch}] Complete! Saved {output_path.name} ({file_size:.1f} MB)")
 
-        return f"Saved {len(df):,} cells to {output_path.name}"
+        return f"Epoch {epoch}: {len(df):,} H3 cells saved"
 
 
 @app.function(
@@ -257,12 +253,12 @@ def process_epoch(epoch: int) -> str:
     volumes={"/results": volume},
     timeout=600,
 )
-def build_time_series() -> str:
-    """Build wide-format time series from volume files."""
+def build_pop_timeseries() -> str:
+    """Build wide-format population time series from volume files."""
     import duckdb
     from pathlib import Path
 
-    print("Building time series table...")
+    print("Building population time series table...")
 
     results_dir = Path("/results")
 
@@ -327,22 +323,6 @@ def list_existing_epochs() -> list[int]:
     results_dir = Path("/results")
     existing = []
     for f in results_dir.glob("h3_r8_pop_[0-9][0-9][0-9][0-9].parquet"):
-        existing.append(int(f.stem.split("_")[-1]))
-    return sorted(existing)
-
-
-@app.function(
-    image=image,
-    volumes={"/results": volume},
-    timeout=60,
-)
-def list_existing_zones() -> list[int]:
-    """List epochs with H3 zones already generated."""
-    from pathlib import Path
-
-    results_dir = Path("/results")
-    existing = []
-    for f in results_dir.glob("h3_zones_[0-9][0-9][0-9][0-9].parquet"):
         existing.append(int(f.stem.split("_")[-1]))
     return sorted(existing)
 
@@ -416,20 +396,17 @@ def main(
     build_only: bool = False,
     download_local: bool = False,
     upload_only: bool = False,
-    zones_only: bool = False,
-    skip_zones: bool = False,
-    regenerate_zones: bool = False,
 ):
     """Run the H3 conversion pipeline with exactextract.
 
+    All 12 epochs are processed in parallel - each container generates H3 cells
+    and processes the raster in a single step for maximum concurrency.
+
     Args:
         skip_existing: Skip epochs already in volume (for resuming)
-        build_only: Only build time series from existing epoch files
+        build_only: Only build pop time series from existing epoch files
         download_local: Download results to local disk instead of R2
         upload_only: Only upload existing results to R2 (skip processing)
-        zones_only: Only generate H3 zones from cities (skip epoch processing)
-        skip_zones: Skip zone generation (use existing zones in volume)
-        regenerate_zones: Force regenerate zones even if they exist
     """
     import time
     from pathlib import Path
@@ -451,8 +428,8 @@ def main(
 
     # Build-only mode: just create time series from existing files
     if build_only:
-        print("\nBuild-only mode: creating time series from existing epoch files...")
-        summary = build_time_series.remote()
+        print("\nBuild-only mode: creating pop time series from existing epoch files...")
+        summary = build_pop_timeseries.remote()
         print(f"  {summary}")
 
         if download_local:
@@ -468,42 +445,6 @@ def main(
 
     # Determine which epochs to process
     epochs_to_process = list(EPOCHS)
-    print(f"\nProcessing {len(epochs_to_process)} epochs...")
-
-    # Load geometry data for zone generation
-    geom_path = Path(EPOCH_GEOMETRIES_PARQUET)
-    if not geom_path.exists():
-        raise FileNotFoundError(
-            f"Epoch geometries not found: {geom_path}\n"
-            "Run 'uv run python -m src.s02c_extract_epoch_geometries' first."
-        )
-    geom_bytes = geom_path.read_bytes()
-    print(f"\nUsing per-epoch geometries from {geom_path} ({len(geom_bytes) / 1e6:.1f} MB)")
-
-    # Generate H3 zones for each epoch
-    if not skip_zones:
-        existing_zones = list_existing_zones.remote() if not regenerate_zones else []
-        zones_to_generate = [e for e in epochs_to_process if e not in existing_zones]
-
-        if zones_to_generate:
-            print(f"\nGenerating H3 zones for {len(zones_to_generate)} epochs...")
-            # Generate zones in parallel
-            zone_futures = []
-            for epoch in zones_to_generate:
-                zone_futures.append(generate_h3_zones_for_epoch.spawn(geom_bytes, epoch))
-
-            for epoch, future in zip(zones_to_generate, zone_futures):
-                print(f"  Waiting for zones {epoch}...")
-                status = future.get()
-                print(f"    {status}")
-        else:
-            print("\nAll epoch zones already exist in volume")
-
-    # Zones-only mode: stop after zone generation
-    if zones_only:
-        total_time = time.time() - start_time
-        print(f"\nZones-only mode complete! Total time: {total_time:.1f}s")
-        return
 
     # Check for existing epochs in volume
     if skip_existing:
@@ -514,14 +455,26 @@ def main(
             if not epochs_to_process:
                 print("  All epochs already processed! Use --build-only to create time series.")
                 return
-            print(f"  Will process remaining epochs: {epochs_to_process}")
 
-    # Cloud processing (parallel)
+    print(f"\nProcessing {len(epochs_to_process)} epochs in parallel...")
+
+    # Load geometry data
+    geom_path = Path(EPOCH_GEOMETRIES_PARQUET)
+    if not geom_path.exists():
+        raise FileNotFoundError(
+            f"Epoch geometries not found: {geom_path}\n"
+            "Run 'uv run python -m src.s02b_extract_city_geometries' first."
+        )
+    geom_bytes = geom_path.read_bytes()
+    print(f"Using per-epoch geometries from {geom_path} ({len(geom_bytes) / 1e6:.1f} MB)")
+
+    # Process all epochs in parallel (single phase - cells + raster in each container)
+    print(f"\nSpawning {len(epochs_to_process)} containers...")
     futures = []
     for epoch in epochs_to_process:
-        futures.append(process_epoch.spawn(epoch))
+        futures.append(process_epoch_full.spawn(geom_bytes, epoch))
 
-    # Wait for results (just status messages, data saved to volume)
+    # Wait for results
     for epoch, future in zip(epochs_to_process, futures):
         print(f"  Waiting for {epoch}...")
         status = future.get()
@@ -529,9 +482,9 @@ def main(
 
     print(f"\nAll epochs processed in {time.time() - start_time:.1f}s")
 
-    # Build time series
-    print("\nBuilding time series...")
-    summary = build_time_series.remote()
+    # Build pop time series
+    print("\nBuilding pop time series...")
+    summary = build_pop_timeseries.remote()
     print(f"  {summary}")
 
     # Upload to R2 or download locally

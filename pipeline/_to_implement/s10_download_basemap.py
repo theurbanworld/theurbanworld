@@ -1,5 +1,5 @@
 """
-10 - Download Basemap
+Download Basemap
 
 Purpose: Download the latest monthly Protomaps PMTiles build for self-hosting
 Input: https://build.protomaps.com/ (monthly builds)

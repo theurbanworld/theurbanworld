@@ -1,5 +1,5 @@
 """
-02b - Generate city metadata from UCDB interim files.
+Generate city metadata from UCDB interim files.
 
 Purpose: Extract urban center metadata with bbox, geometry, and tile coverage
 Input:
