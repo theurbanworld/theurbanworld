@@ -4,34 +4,32 @@
 Purpose: Extract urban center metadata with bbox, geometry, and tile coverage
 Input:
   - data/interim/ucdb/ucdb_all.parquet (merged thematic data)
-  - data/interim/ucdb/geometries.parquet (polygon boundaries)
-  - data/interim/ucdb/centroids.parquet (centroid points)
+  - data/interim/mtuc/centroids_2025.parquet (centroid points)
+  - data/interim/mtuc/geometries_by_epoch.parquet (city geometries)
 Output:
-  - data/interim/cities.parquet (GeoParquet with polygons)
+  - data/processed/cities/cities.parquet (GeoParquet with polygons)
 
 Output Schema (cities.parquet as GeoParquet):
-  | Column                   | Type      | Source             | Notes                     |
-  |--------------------------|-----------|--------------------|---------------------------|
-  | city_id                  | str       | ID_UC_G0           | Primary key               |
-  | name                     | str       | GC_UCN_MAI_2025    | City name                 |
-  | country_name             | str       | GC_CNT_GAD_2025    | Renamed from country_code |
-  | country_code             | str       | pycountry lookup   | New ISO 3166-1 alpha-3    |
-  | region                   | str       | GC_DEV_USR_2025    | New continent/region      |
-  | year_of_birth            | int       | MTUC GC_UCB_YOB    | First epoch city existed  |
-  | latitude                 | float     | centroid.y         | From centroids.parquet    |
-  | longitude                | float     | centroid.x         | From centroids.parquet    |
-  | population_2025          | int       | GC_POP_TOT_2025    |                           |
-  | area_km2                 | float     | GC_UCA_KM2_2025    |                           |
-  | bbox_minx/miny/maxx/maxy | float     | geometry.bounds    | From geometries.parquet   |
-  | required_tiles           | list[str] | tile_utils         | Keep existing logic       |
-  | geometry                 | Polygon   | geometries.parquet | New - full polygon        |
-  | centroid                 | Point     | centroids.parquet  | New - centroid point      |
+  | Column                   | Type      | Source                             | Notes                     |
+  |--------------------------|-----------|------------------------------------|---------------------------|
+  | city_id                  | str       | ID_UC_G0                           | Primary key               |
+  | name                     | str       | GC_UCN_MAI_2025                    | City name                 |
+  | country_name             | str       | GC_CNT_GAD_2025                    | Renamed from country_code |
+  | country_code             | str       | pycountry lookup                   | ISO 3166-1 alpha-3        |
+  | region                   | str       | GC_DEV_USR_2025                    | Continent/region          |
+  | ucdb_year_of_birth       | int       | MTUC GC_UCB_YOB                    | First epoch city existed  |
+  | geometry_2025            | Polygon   | geometries_by_epoch.parquet        | City boundary polygon     |
+  | centroid_2025            | Point     | centroids_2025.parquet             | Centroid point            |
+  | ucdb_population_2025     | int       | GC_POP_TOT_2025                    |                           |
+  | ucdb_area_km2_2025       | float     | GC_UCA_KM2_2025                    |                           |
+  | bbox_minx/miny/maxx/maxy | float     | geometries_by_epoch.parquet.bounds | From geometries.parquet   |
+  | required_tiles           | list[str] | tile_utils                         | Keep existing logic       |
 
 Decision log:
   - Separated from s02 to allow independent re-runs
   - Uses interim files instead of raw GeoPackage for faster processing
   - Converts country names to ISO 3166-1 alpha-3 codes using pycountry
-  - Includes both polygon geometry and centroid point
+  - Includes centroid point
   - Computes tile coverage for downstream GHSL processing
 Date: 2024-12-11
 """
@@ -52,8 +50,8 @@ UCDB_COLUMNS = {
     "GC_UCN_MAI_2025": "name",
     "GC_CNT_GAD_2025": "country_name",
     "GC_DEV_USR_2025": "region",
-    "GC_POP_TOT_2025": "population_2025",
-    "GC_UCA_KM2_2025": "area_km2",
+    "GC_POP_TOT_2025": "ucdb_population_2025",
+    "GC_UCA_KM2_2025": "ucdb_area_km2_2025",
 }
 
 # Manual country name to ISO mappings for names that pycountry doesn't recognize
@@ -112,8 +110,8 @@ def extract_cities(force: bool = False) -> gpd.GeoDataFrame:
 
     # Load source data
     ucdb_path = get_interim_path("ucdb") / "ucdb_all.parquet"
-    geom_path = get_interim_path("ucdb") / "geometries.parquet"
-    centroid_path = get_interim_path("ucdb") / "centroids.parquet"
+    geom_path = get_interim_path("mtuc") / "geometries_by_epoch.parquet"
+    centroid_path = get_interim_path("mtuc") / "centroids_2025.parquet"
 
     for path in [ucdb_path, geom_path, centroid_path]:
         if not path.exists():
@@ -140,12 +138,12 @@ def extract_cities(force: bool = False) -> gpd.GeoDataFrame:
 
     # Convert population to integer (handling potential floats)
     cities_pl = cities_pl.with_columns(
-        pl.col("population_2025").cast(pl.Int64)
+        pl.col("ucdb_population_2025").cast(pl.Int64)
     )
 
     # Convert area to float
     cities_pl = cities_pl.with_columns(
-        pl.col("area_km2").cast(pl.Float64)
+        pl.col("ucdb_area_km2_2025").cast(pl.Float64)
     )
 
     # Convert to pandas for merging with geodata
@@ -171,8 +169,8 @@ def extract_cities(force: bool = False) -> gpd.GeoDataFrame:
         if len(failed_countries) > 10:
             print(f"    ... and {len(failed_countries) - 10} more")
 
-    # Add year_of_birth from MTUC (if available)
-    print("Adding year_of_birth from MTUC...")
+    # Add ucdb_year_of_birth from MTUC (if available)
+    print("Adding ucdb_year_of_birth from MTUC...")
     mtuc_dir = get_raw_path("mtuc")
     mtuc_files = list(mtuc_dir.glob("*.gpkg"))
     if mtuc_files:
@@ -181,27 +179,25 @@ def extract_cities(force: bool = False) -> gpd.GeoDataFrame:
         yob_col = [c for c in mtuc_gdf.columns if "YOB" in c]
         if yob_col:
             mtuc_yob = mtuc_gdf[["ID_MTUC_G0", yob_col[0]]].copy()
-            mtuc_yob.columns = ["city_id", "year_of_birth"]
+            mtuc_yob.columns = ["city_id", "ucdb_year_of_birth"]
             mtuc_yob["city_id"] = mtuc_yob["city_id"].astype(str)
-            mtuc_yob["year_of_birth"] = mtuc_yob["year_of_birth"].astype("Int64")
+            mtuc_yob["ucdb_year_of_birth"] = mtuc_yob["ucdb_year_of_birth"].astype("Int64")
             cities_df = cities_df.merge(mtuc_yob, on="city_id", how="left")
-            print(f"  Added year_of_birth for {cities_df['year_of_birth'].notna().sum()} cities")
+            print(f"  Added ucdb_year_of_birth for {cities_df['ucdb_year_of_birth'].notna().sum()} cities")
         else:
-            print("  Warning: year_of_birth column not found in MTUC")
-            cities_df["year_of_birth"] = None
+            print("  Warning: ucdb_year_of_birth column not found in MTUC")
+            cities_df["ucdb_year_of_birth"] = None
     else:
-        print("  Warning: MTUC not found, skipping year_of_birth")
-        cities_df["year_of_birth"] = None
+        print("  Warning: MTUC not found, skipping ucdb_year_of_birth")
+        cities_df["ucdb_year_of_birth"] = None
 
     # Prepare geometries with ID as string for joining
     geometries = geometries.copy()
-    geometries["city_id"] = geometries["ID_UC_G0"].astype(str)
-    geometries = geometries.drop(columns=["ID_UC_G0"])
+    geometries["city_id"] = geometries["city_id"].astype(str)
 
     centroids = centroids.copy()
-    centroids["city_id"] = centroids["ID_UC_G0"].astype(str)
-    centroids = centroids.rename(columns={"geometry": "centroid"})
-    centroids = centroids.drop(columns=["ID_UC_G0"])
+    centroids["city_id"] = centroids["city_id"].astype(str)
+    centroids = centroids.rename(columns={"geometry": "centroid_2025"})
 
     # Merge geometry
     print("Merging with geometries...")
@@ -213,19 +209,11 @@ def extract_cities(force: bool = False) -> gpd.GeoDataFrame:
 
     # Merge centroids
     cities_gdf = cities_gdf.merge(
-        centroids[["city_id", "centroid"]], on="city_id", how="left"
-    )
-
-    # Extract lat/lon from centroids
-    print("Extracting coordinates and bounding boxes...")
-    cities_gdf["latitude"] = cities_gdf["centroid"].apply(
-        lambda p: p.y if p else None
-    )
-    cities_gdf["longitude"] = cities_gdf["centroid"].apply(
-        lambda p: p.x if p else None
+        centroids[["city_id", "centroid_2025"]], on="city_id", how="left"
     )
 
     # Extract bounding box from geometry
+    print("Extracting bounding boxes...")
     cities_gdf["bbox_minx"] = cities_gdf.geometry.apply(
         lambda g: g.bounds[0] if g else None
     )
@@ -253,6 +241,10 @@ def extract_cities(force: bool = False) -> gpd.GeoDataFrame:
 
     cities_gdf["required_tiles"] = required_tiles
 
+    # Rename geometry column to geometry_2025
+    cities_gdf = cities_gdf.rename(columns={"geometry": "geometry_2025"})
+    cities_gdf = cities_gdf.set_geometry("geometry_2025")
+
     # Reorder columns
     column_order = [
         "city_id",
@@ -260,18 +252,16 @@ def extract_cities(force: bool = False) -> gpd.GeoDataFrame:
         "country_name",
         "country_code",
         "region",
-        "year_of_birth",
-        "latitude",
-        "longitude",
-        "population_2025",
-        "area_km2",
+        "ucdb_year_of_birth",
+        "geometry_2025",
+        "centroid_2025",
+        "ucdb_population_2025",
+        "ucdb_area_km2_2025",
         "bbox_minx",
         "bbox_miny",
         "bbox_maxx",
         "bbox_maxy",
         "required_tiles",
-        "geometry",
-        "centroid",
     ]
     cities_gdf = cities_gdf[column_order]
 
@@ -314,7 +304,7 @@ def main(force: bool = False):
 
     # Show sample
     print("\nSample data:")
-    sample_cols = ["city_id", "name", "country_name", "country_code", "region", "population_2025"]
+    sample_cols = ["city_id", "name", "country_name", "country_code", "region", "ucdb_population_2025"]
     print(cities_gdf[sample_cols].head(5).to_string(index=False))
 
 
