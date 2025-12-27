@@ -41,6 +41,9 @@ dependencies = [
     "streamlit>=1.40.0",
     "modal>=1.2.4",
     "psycopg2-binary>=2.9.11",
+    # Data validation
+    "pandera[io]>=0.21.0",
+    "ibis-framework[duckdb]>=9.0.0",
 ]
 
 [project.scripts]
