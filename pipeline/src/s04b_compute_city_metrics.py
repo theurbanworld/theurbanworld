@@ -14,7 +14,7 @@ Decision log:
   - Density peers selected by population similarity and density diversity
   - World population baseline from GHSL Table 20 (UN WPP 2022 calibrated)
   - CAGR calculation uses standard compound growth formula over 50 years (1975-2025)
-Date: 2024-12-09
+Date: 2025-12-09
 """
 
 import json

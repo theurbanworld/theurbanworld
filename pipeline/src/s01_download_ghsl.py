@@ -14,7 +14,7 @@ Decision log:
   - Checksum validation after download
   - Resume partial downloads via progress tracking
 
-Date: 2024-12-08 (updated 2024-12-26)
+Date: 2025-12-08 (updated 2025-12-26)
 """
 
 import hashlib

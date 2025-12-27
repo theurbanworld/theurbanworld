@@ -6,7 +6,7 @@ Decision log:
   - GHSL uses a Mollweide-based tile grid
   - Each tile is ~10000x10000 pixels at 100m resolution
   - Tile IDs are R{row}_C{col} format
-Date: 2024-12-08
+Date: 2025-12-08
 """
 
 from pathlib import Path

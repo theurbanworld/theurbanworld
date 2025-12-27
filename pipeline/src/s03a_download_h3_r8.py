@@ -1,10 +1,10 @@
 """
-04a - Download 1km H3 population data from R2.
+Download 1km H3 population data from R2.
 
 Purpose: Download the processed H3 resolution 8 population data from R2
 Usage:
-  uv run python src/s04a_download_h3_r8.py
-  uv run python src/s04a_download_h3_r8.py --timeseries-only  # Just the combined file
+  uv run python -m src.s03a_download_h3_r8
+  uv run python -m src.s03a_download_h3_r8 --timeseries-only  # Just the combined file
 
 Prerequisites:
   - R2 credentials in .env file:
@@ -14,7 +14,7 @@ Prerequisites:
     R2_BUCKET_NAME=<your_bucket_name>
 
 Output: data/processed/ghsl_pop_1k/*.parquet
-Date: 2024-12-13
+Date: 2025-12-13
 """
 
 import argparse

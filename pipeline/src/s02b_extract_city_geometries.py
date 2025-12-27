@@ -32,7 +32,7 @@ Decision log:
   - Cities that didn't exist in an epoch are simply absent (no NULL rows)
   - Area computed in equal-area projection for accuracy
   - Geometry stored in WGS84 for compatibility with web mapping
-Date: 2024-12-26
+Date: 2025-12-26
 """
 
 import click

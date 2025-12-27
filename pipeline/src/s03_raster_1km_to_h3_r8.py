@@ -1,5 +1,5 @@
 """
-03 - Convert 1km GHSL-POP rasters to H3 resolution 8.
+Convert 1km GHSL-POP rasters to H3 resolution 8.
 
 Purpose: Process all epochs in parallel on Modal using exactextract for
          accurate area-weighted zonal statistics. Only processes H3 cells
@@ -34,7 +34,7 @@ Decision log:
   - Cell generation and processing combined in single function (no intermediate files)
   - All 12 epochs processed in parallel (12 containers @ 32GB each)
 
-Date: 2024-12-13 (updated 2024-12-26)
+Date: 2025-12-13 (updated 2025-12-26)
 """
 
 import modal

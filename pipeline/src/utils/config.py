@@ -7,7 +7,7 @@ Decision log:
   - Paths are relative to project root for portability
   - H3 res 9 for maps (~0.1 km²), res 10 for radial profiles (~0.015 km²)
   - Population threshold of 100 per cell captures urban fringe
-Date: 2024-12-08
+Date: 2025-12-08
 """
 
 from pathlib import Path

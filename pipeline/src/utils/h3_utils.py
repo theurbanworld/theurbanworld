@@ -6,7 +6,7 @@ Decision log:
   - Use h3 library (v4+) for core operations
   - h3ronpy for efficient raster-to-H3 conversion
   - Resolution 9 for maps (~0.1 km²), resolution 10 for profiles (~0.015 km²)
-Date: 2024-12-08 (updated 2024-12-26)
+Date: 2025-12-08 (updated 2025-12-26)
 """
 
 import math

@@ -2,6 +2,7 @@
 Extract UCDB data from GeoPackage and XLSX.
 
 Purpose: Parse GHSL-UCDB to extract all thematic data for querying
+
 Input:
   - data/raw/ucdb/GHS_UCDB_GLOBE_R2024A.gpkg (16 layers)
   - data/raw/ucdb/GHS_UCDB_GLOBE_R2024A.xlsx (Index sheet for schema)
@@ -15,7 +16,7 @@ Decision log:
   - Extract schema from XLSX Index for human-readable column names
   - Store geometry separately to keep thematic tables lightweight
   - Column names have BOM prefix in GPKG that needs cleaning
-Date: 2024-12-09
+Date: 2025-12-09
 """
 
 import json

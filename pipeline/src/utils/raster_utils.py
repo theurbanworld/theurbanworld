@@ -7,7 +7,7 @@ Decision log:
   - Chunk size of 2048x2048 balances memory vs overhead
   - Reproject to WGS84 before H3 conversion (h3ronpy requirement)
   - Nodata handling critical for population rasters
-Date: 2024-12-08
+Date: 2025-12-08
 """
 
 from pathlib import Path

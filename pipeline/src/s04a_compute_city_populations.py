@@ -22,7 +22,7 @@ Decision log:
   - Uses exact H3 cell areas via h3.cell_area() - cells vary 0.55-0.74 km² by latitude
   - Long format output for flexibility in downstream analysis
   - Aggregates from individual epoch files (contain city_id)
-Date: 2024-12-26
+Date: 2025-12-26
 """
 
 import click

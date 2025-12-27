@@ -31,7 +31,7 @@ Decision log:
   - Converts country names to ISO 3166-1 alpha-3 codes using pycountry
   - Includes centroid point
   - Computes tile coverage for downstream GHSL processing
-Date: 2024-12-11
+Date: 2025-12-11
 """
 
 import click
@@ -40,7 +40,7 @@ import polars as pl
 import pycountry
 from tqdm import tqdm
 
-from .utils.config import get_interim_path, get_raw_path
+from .utils.config import get_interim_path, get_processed_path, get_raw_path
 from .utils.tile_utils import estimate_tiles_for_bbox_wgs84
 
 
@@ -199,10 +199,11 @@ def extract_cities(force: bool = False) -> gpd.GeoDataFrame:
     centroids["city_id"] = centroids["city_id"].astype(str)
     centroids = centroids.rename(columns={"geometry": "centroid_2025"})
 
-    # Merge geometry
+    # Merge geometry (filter to epoch 2025 to avoid duplicates from geometries_by_epoch)
     print("Merging with geometries...")
+    geometries_2025 = geometries[geometries["epoch"] == 2025]
     cities_gdf = gpd.GeoDataFrame(
-        cities_df.merge(geometries[["city_id", "geometry"]], on="city_id", how="left"),
+        cities_df.merge(geometries_2025[["city_id", "geometry"]], on="city_id", how="left"),
         geometry="geometry",
         crs="EPSG:4326",
     )
@@ -277,7 +278,7 @@ def main(force: bool = False):
     print("=" * 60)
 
     # Output path
-    output_path = get_interim_path() / "cities.parquet"
+    output_path = get_processed_path("cities") / "cities.parquet"
 
     # Check if output exists
     if output_path.exists() and not force:

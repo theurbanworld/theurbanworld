@@ -16,7 +16,7 @@ Decision log:
   - Using pydantic-settings for consistency with config.py
   - Credentials validated lazily (at use time, not import time)
   - Multipart settings tuned for 70GB basemap file
-Date: 2024-12-09
+Date: 2025-12-09
 """
 
 import os

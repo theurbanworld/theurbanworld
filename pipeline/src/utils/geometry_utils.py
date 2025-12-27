@@ -6,7 +6,7 @@ Decision log:
   - GHSL data is in Mollweide (EPSG:54009), need to convert to WGS84 for H3
   - Use pyproj for accurate coordinate transformations
   - Shapely for geometry operations
-Date: 2024-12-08
+Date: 2025-12-08
 """
 
 import math
