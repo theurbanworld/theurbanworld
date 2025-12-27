@@ -6,8 +6,7 @@ Decision log:
   - Use h3 library (v4+) for core operations
   - h3ronpy for efficient raster-to-H3 conversion
   - Resolution 9 for maps (~0.1 km²), resolution 10 for profiles (~0.015 km²)
-  - Haversine distance for accurate km calculations
-Date: 2024-12-08
+Date: 2024-12-08 (updated 2024-12-26)
 """
 
 import math
@@ -15,6 +14,8 @@ from typing import Iterable
 
 import h3
 import numpy as np
+
+from .geometry_utils import haversine_distance_km
 
 
 def h3_to_parent(h3_index: int | str, parent_res: int) -> str:
@@ -50,30 +51,11 @@ def latlng_to_h3(lat: float, lng: float, resolution: int) -> str:
     return h3.latlng_to_cell(lat, lng, resolution)
 
 
-def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """
-    Calculate great-circle distance between two points in kilometers.
-
-    Uses the haversine formula.
-    """
-    R = 6371.0  # Earth radius in km
-
-    lat1_rad = math.radians(lat1)
-    lat2_rad = math.radians(lat2)
-    dlat = math.radians(lat2 - lat1)
-    dlon = math.radians(lon2 - lon1)
-
-    a = math.sin(dlat / 2) ** 2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2) ** 2
-    c = 2 * math.asin(math.sqrt(a))
-
-    return R * c
-
-
 def h3_distance_km(h3_index1: int | str, h3_index2: int | str) -> float:
     """Calculate distance between H3 cell centroids in km."""
     lat1, lon1 = h3_cell_to_latlng(h3_index1)
     lat2, lon2 = h3_cell_to_latlng(h3_index2)
-    return haversine_km(lat1, lon1, lat2, lon2)
+    return haversine_distance_km(lat1, lon1, lat2, lon2)
 
 
 def cells_within_radius(
@@ -100,7 +82,7 @@ def cells_within_radius(
     result = set()
     for cell in candidates:
         cell_lat, cell_lng = h3.cell_to_latlng(cell)
-        if haversine_km(lat, lng, cell_lat, cell_lng) <= radius_km:
+        if haversine_distance_km(lat, lng, cell_lat, cell_lng) <= radius_km:
             result.add(cell)
 
     return result
@@ -279,7 +261,7 @@ def assign_cells_to_rings(
 
     for cell in cells:
         cell_lat, cell_lng = h3_cell_to_latlng(cell)
-        distance_km = haversine_km(center_lat, center_lng, cell_lat, cell_lng)
+        distance_km = haversine_distance_km(center_lat, center_lng, cell_lat, cell_lng)
 
         ring_idx = int(distance_km / ring_width_km)
         if 0 <= ring_idx < num_rings:

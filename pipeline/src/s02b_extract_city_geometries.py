@@ -1,5 +1,5 @@
 """
-02c - Extract epoch-specific city geometries from MTUC.
+Extract epoch-specific city geometries from MTUC.
 
 Purpose: Extract urban center boundaries for each epoch (1975-2030) from the
          Multi-Temporal Urban Centers dataset, enabling accurate time-series
@@ -9,7 +9,7 @@ Input:
   - data/raw/mtuc/GHS_UCDB_MTUC_GLOBE_R2024A.gpkg (12 epoch layers)
 
 Output:
-  - data/interim/city_geometries_by_epoch.parquet (GeoParquet)
+  - data/interim/mtuc/geometries_by_epoch.parquet (GeoParquet)
 
 Output Schema:
   | Column   | Type    | Description                          |
@@ -17,7 +17,15 @@ Output Schema:
   | city_id  | str     | Urban center ID (links to cities)    |
   | epoch    | int     | Year (1975, 1980, ..., 2030)         |
   | geometry | Polygon | City boundary for that epoch         |
-  | area_km2 | float   | Computed from geometry               |
+
+
+  - data/interim/mtuc/centroids_2025.parquet (GeoParquet)
+
+Output Schema:
+  | Column   | Type    | Description                           |
+  |----------|---------|-------------------------------------- |
+  | city_id  | str     | Urban center ID (links to cities)     |
+  | geometry | Point   | Weighted population centroid for 2025 |
 
 Decision log:
   - Long format (one row per city-epoch) for storage efficiency and flexibility
@@ -37,6 +45,9 @@ from .utils.geometry_utils import fix_invalid_geometry
 
 # MTUC epoch layer template
 MTUC_LAYER_TEMPLATE = "GHSL_UCDB_MTUC_{epoch}_GLOBE_R2024"
+
+# MTUC centroid layer (weighted population centroids)
+MTUC_CENTROID_LAYER = "GHSL_UCDB_MTUC_GLOBE_R2024"
 
 # All available epochs in MTUC
 EPOCHS = [1975, 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020, 2025, 2030]
@@ -122,6 +133,46 @@ def extract_epoch_geometries(
     return result
 
 
+def extract_centroids(mtuc_path: str | None = None) -> gpd.GeoDataFrame:
+    """
+    Extract weighted population centroids from MTUC GeoPackage.
+
+    Args:
+        mtuc_path: Path to MTUC GeoPackage (default: auto-detect in raw/mtuc)
+
+    Returns:
+        GeoDataFrame with city_id, geometry (Point)
+    """
+    # Find MTUC GeoPackage
+    if mtuc_path is None:
+        mtuc_dir = get_raw_path("mtuc")
+        gpkg_files = list(mtuc_dir.glob("*.gpkg"))
+        if not gpkg_files:
+            raise FileNotFoundError(
+                f"No GeoPackage found in {mtuc_dir}. Run s01_download_ghsl first."
+            )
+        mtuc_path = gpkg_files[0]
+
+    print(f"Reading centroids from: {mtuc_path}")
+
+    # Read centroid layer
+    gdf = gpd.read_file(mtuc_path, layer=MTUC_CENTROID_LAYER)
+
+    # Rename ID column (MTUC uses ID_MTUC_G0, not ID_UC_G0)
+    gdf = gdf.rename(columns={"ID_MTUC_G0": "city_id"})
+    gdf["city_id"] = gdf["city_id"].astype(str)
+
+    # Reproject to WGS84
+    gdf = gdf.to_crs("EPSG:4326")
+
+    # Keep only needed columns
+    gdf = gdf[["city_id", "geometry"]]
+
+    print(f"  Extracted {len(gdf):,} centroids")
+
+    return gdf
+
+
 @click.command()
 @click.option("--force", is_flag=True, help="Overwrite existing output")
 @click.option(
@@ -130,17 +181,21 @@ def extract_epoch_geometries(
     help="Comma-separated epochs to extract (default: all)",
 )
 def main(force: bool = False, epochs: str | None = None):
-    """Extract epoch-specific city geometries from MTUC."""
+    """Extract epoch-specific city geometries and centroids from MTUC."""
     print("=" * 60)
-    print("MTUC Epoch Geometry Extraction")
+    print("MTUC Geometry Extraction")
     print("=" * 60)
 
-    # Output path
-    output_path = get_interim_path() / "city_geometries_by_epoch.parquet"
+    # Output paths
+    output_dir = get_interim_path("mtuc")
+    geom_path = output_dir / "geometries_by_epoch.parquet"
+    centroid_path = output_dir / "centroids_2025.parquet"
 
-    # Check if output exists
-    if output_path.exists() and not force:
-        print(f"Output already exists: {output_path}")
+    # Check if outputs exist
+    if geom_path.exists() and centroid_path.exists() and not force:
+        print(f"Outputs already exist:")
+        print(f"  {geom_path}")
+        print(f"  {centroid_path}")
         print("Use --force to overwrite")
         return
 
@@ -150,24 +205,35 @@ def main(force: bool = False, epochs: str | None = None):
         epochs_list = [int(e.strip()) for e in epochs.split(",")]
         print(f"Extracting epochs: {epochs_list}")
 
-    # Extract geometries
-    result = extract_epoch_geometries(epochs=epochs_list)
+    # Extract epoch geometries
+    print("\n--- Extracting Epoch Geometries ---")
+    geom_result = extract_epoch_geometries(epochs=epochs_list)
 
-    # Save as GeoParquet
-    print(f"\nSaving to {output_path}...")
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    result.to_parquet(output_path)
+    # Save epoch geometries
+    print(f"\nSaving to {geom_path}...")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    geom_result.to_parquet(geom_path)
+
+    # Extract centroids
+    print("\n--- Extracting Centroids ---")
+    centroid_result = extract_centroids()
+
+    # Save centroids
+    print(f"Saving to {centroid_path}...")
+    centroid_result.to_parquet(centroid_path)
 
     # Summary
     print("\n" + "=" * 60)
     print("Extraction Complete")
     print("=" * 60)
-    print(f"Output: {output_path}")
-    print(f"File size: {output_path.stat().st_size / 1e6:.1f} MB")
+    print(f"Geometries: {geom_path}")
+    print(f"  File size: {geom_path.stat().st_size / 1e6:.1f} MB")
+    print(f"Centroids: {centroid_path}")
+    print(f"  File size: {centroid_path.stat().st_size / 1e6:.1f} MB")
 
     # Show sample
-    print("\nSample data (2025 epoch):")
-    sample = result[result["epoch"] == 2025].head(5)
+    print("\nSample geometries (2025 epoch):")
+    sample = geom_result[geom_result["epoch"] == 2025].head(5)
     print(sample[["city_id", "epoch", "area_km2"]].to_string(index=False))
 
 

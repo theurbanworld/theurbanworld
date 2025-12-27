@@ -14,7 +14,6 @@ This document describes how Global Human Settlement Layer (GHSL) data flows thro
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  STAGE 01: Download (s01_download_ghsl.py)                              │
 │  ├── UCDB GeoPackage (urban centers database)                           │
-│  ├── GHSL-POP 100m tiles (2025 only, Mollweide projection)              │
 │  └── GHSL-POP 1km global files (1975-2030, all epochs)                  │
 └─────────────────────────────────────────────────────────────────────────┘
                                     │

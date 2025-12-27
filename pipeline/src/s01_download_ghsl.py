@@ -1,22 +1,20 @@
 """
-01 - Download GHSL data from European Commission servers.
+Download GHSL data from European Commission servers.
 
-Purpose: Download GHSL-POP raster tiles and UCDB urban centers database
-Input: Configuration with target tiles (derived from test cities)
+Purpose: Download GHSL-POP rasters and UCDB urban centers database
 Output:
-  - data/raw/ghsl_pop_100m/*.tif (100m 2025 tiles)
   - data/raw/ghsl_pop_1km/*.tif (1km for 1975-2030)
   - data/raw/ucdb/*.gpkg (UCDB R2024A)
-  - data/raw/download_manifest.json
+  - data/raw/mtuc/*.gpkg (MTUC R2024A)
+  - data/raw/ghsl_tile_grid/*.shp (Tile grid shapefile)
 
 Decision log:
-  - Download UCDB first to identify which tiles are needed for test cities
-  - Use httpx for async downloads with retry logic
+  - Use httpx for downloads with retry logic
   - Exponential backoff on failures (3 retries, 2^n seconds)
   - Checksum validation after download
-  - Resume partial downloads via manifest tracking
+  - Resume partial downloads via progress tracking
 
-Date: 2024-12-08
+Date: 2024-12-08 (updated 2024-12-26)
 """
 
 import hashlib
@@ -34,7 +32,6 @@ from .utils.config import (
     config,
     get_ghsl_mtuc_url,
     get_ghsl_pop_global_url,
-    get_ghsl_pop_tile_url,
     get_ghsl_ucdb_url,
     get_raw_path,
 )
@@ -44,30 +41,6 @@ from .utils.progress import ProgressTracker
 GHSL_TILE_GRID_URL = "https://ghsl.jrc.ec.europa.eu/download/GHSL_data_54009_shapefile.zip"
 
 
-# Test city approximate bounding boxes (WGS84) -> GHSL tile mapping
-# These map to Mollweide tile grid coordinates
-TEST_CITY_TILES = {
-    "New York": [(5, 11), (5, 12)],  # R5_C11, R5_C12
-    "Paris": [(5, 18)],  # R5_C18
-    "Singapore": [(8, 27)],  # R8_C27
-    "Lagos": [(7, 18)],  # R7_C18
-    "Rio de Janeiro": [(8, 13)],  # R8_C13
-    "Geneva": [(5, 18)],  # R5_C18 (same tile as Paris)
-}
-
-
-def get_required_tiles(test_only: bool = False) -> list[tuple[int, int]]:
-    """Get list of tiles to download."""
-    if test_only:
-        # Deduplicate tiles from test cities
-        tiles = set()
-        for city_tiles in TEST_CITY_TILES.values():
-            tiles.update(city_tiles)
-        return sorted(tiles)
-    else:
-        # For full dataset, we need to scan UCDB to find all required tiles
-        # For now, return test tiles - full tile list computed in extract step
-        return get_required_tiles(test_only=True)
 
 
 def download_file(
@@ -278,49 +251,6 @@ def download_tile_grid(output_dir: Path, progress: ProgressTracker) -> Path | No
     return shp_files[0]
 
 
-def download_pop_tile(
-    epoch: int,
-    resolution: int,
-    row: int,
-    col: int,
-    output_dir: Path,
-    progress: ProgressTracker,
-) -> Path | None:
-    """Download a single GHSL-POP tile."""
-    tile_id = f"E{epoch}_R{row}_C{col}"
-    if progress.is_complete(tile_id):
-        # Find existing file
-        pattern = f"*E{epoch}*R{row}_C{col}*.tif"
-        existing = list(output_dir.glob(pattern))
-        if existing:
-            return existing[0]
-
-    progress.mark_in_progress(tile_id)
-    url = get_ghsl_pop_tile_url(epoch, resolution, row, col)
-    zip_path = output_dir / f"tile_{tile_id}.zip"
-
-    print(f"  Downloading tile R{row}_C{col} (E{epoch})...")
-    success, error = download_file(url, zip_path)
-
-    if not success:
-        progress.mark_failed(tile_id, error)
-        print(f"    FAILED: {error}")
-        return None
-
-    # Extract
-    extracted = extract_zip(zip_path, output_dir)
-    zip_path.unlink()
-
-    # Find tif file
-    tif_files = [f for f in extracted if f.suffix == ".tif"]
-    if not tif_files:
-        progress.mark_failed(tile_id, "No .tif file found in archive")
-        return None
-
-    progress.mark_complete(tile_id, {"file": tif_files[0].name})
-    return tif_files[0]
-
-
 def download_pop_global(
     epoch: int,
     resolution: int,
@@ -362,8 +292,7 @@ def download_pop_global(
 
 
 @click.command()
-@click.option("--test-only", is_flag=True, help="Download only test city tiles")
-def main(test_only: bool = False):
+def main():
     """Download GHSL data for the urban data pipeline."""
     print("=" * 60)
     print("GHSL Data Download")
@@ -376,11 +305,6 @@ def main(test_only: bool = False):
     # Collect all items to download
     items = ["tile_grid", "ucdb", "mtuc"]  # Always download tile grid, UCDB, and MTUC
 
-    # 100m tiles (2025 only)
-    tiles = get_required_tiles(test_only)
-    for row, col in tiles:
-        items.append(f"E2025_R{row}_C{col}")
-
     # 1km global files (all epochs)
     for epoch in config.GHSL_POP_EPOCHS:
         items.append(f"global_E{epoch}_1000m")
@@ -389,36 +313,30 @@ def main(test_only: bool = False):
     progress.print_summary()
     print()
 
-    # 0. Download tile grid shapefile
-    print("\n[0/5] Downloading tile grid shapefile...")
+    # 1. Download tile grid shapefile
+    print("\n[1/4] Downloading tile grid shapefile...")
     tile_grid_dir = get_raw_path("ghsl_tile_grid")
     tile_grid_path = download_tile_grid(tile_grid_dir, progress)
     if not tile_grid_path:
         print("WARNING: Failed to download tile grid. Continuing without it.")
 
-    # 1. Download UCDB
-    print("\n[1/5] Downloading UCDB (Urban Centre Database)...")
+    # 2. Download UCDB
+    print("\n[2/4] Downloading UCDB (Urban Centre Database)...")
     ucdb_dir = get_raw_path("ucdb")
     ucdb_path = download_ucdb(ucdb_dir, progress)
     if not ucdb_path:
         print("ERROR: Failed to download UCDB. Cannot continue.")
         return
 
-    # 2. Download MTUC (Multi-Temporal Urban Centers)
-    print("\n[2/5] Downloading MTUC (Multi-Temporal Urban Centers)...")
+    # 3. Download MTUC (Multi-Temporal Urban Centers)
+    print("\n[3/4] Downloading MTUC (Multi-Temporal Urban Centers)...")
     mtuc_dir = get_raw_path("mtuc")
     mtuc_path = download_mtuc(mtuc_dir, progress)
     if not mtuc_path:
         print("WARNING: Failed to download MTUC. Continuing without it.")
 
-    # 3. Download 100m tiles
-    print(f"\n[3/5] Downloading 100m population tiles ({len(tiles)} tiles)...")
-    pop_100m_dir = get_raw_path("ghsl_pop_100m")
-    for row, col in tiles:
-        download_pop_tile(2025, 100, row, col, pop_100m_dir, progress)
-
     # 4. Download 1km global files
-    print(f"\n[4/5] Downloading 1km population files ({len(config.GHSL_POP_EPOCHS)} epochs)...")
+    print(f"\n[4/4] Downloading 1km population files ({len(config.GHSL_POP_EPOCHS)} epochs)...")
     pop_1km_dir = get_raw_path("ghsl_pop_1km")
     for epoch in config.GHSL_POP_EPOCHS:
         download_pop_global(epoch, 1000, pop_1km_dir, progress)

@@ -65,25 +65,6 @@ class PipelineConfig(BaseSettings):
     DASK_MEMORY_LIMIT: str = "12GB"
     DASK_THREADS_PER_WORKER: int = 8
 
-    # Test cities for development
-    TEST_CITIES: list[str] = [
-        "New York",
-        "Paris",
-        "Singapore",
-        "Lagos",
-        "Rio de Janeiro",
-        "Geneva",
-    ]
-
-    TEST_CITY_IDS: list[int] = [
-        69,   # Geneva
-        178,  # Singapore
-        1289, # Lagos
-        2878, # Paris
-        7799, # Rio de Janeiro
-        8099, # New York
-    ]
-
     class Config:
         env_prefix = "URBAN_"
         case_sensitive = False

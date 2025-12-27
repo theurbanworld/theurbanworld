@@ -1,5 +1,5 @@
 """
-02 - Extract UCDB data from GeoPackage and XLSX.
+Extract UCDB data from GeoPackage and XLSX.
 
 Purpose: Parse GHSL-UCDB to extract all thematic data for querying
 Input:
@@ -9,8 +9,6 @@ Output:
   - data/raw/ucdb/ucdb_schema.json (human-readable column definitions)
   - data/interim/ucdb/themes/*.parquet (15 thematic tables)
   - data/interim/ucdb/ucdb_all.parquet (merged wide table)
-  - data/interim/ucdb/geometries.parquet (polygon boundaries, WGS84)
-  - data/interim/ucdb/centroids.parquet (point centroids, WGS84)
 
 Decision log:
   - All thematic layers share ID_UC_G0 as join key
@@ -29,7 +27,6 @@ import pandas as pd
 import polars as pl
 
 from .utils.config import config, get_interim_path, get_raw_path
-from .utils.geometry_utils import fix_invalid_geometry
 
 
 # GeoPackage layer names
@@ -341,84 +338,6 @@ def merge_all_themes(themes_dir: Path, output_path: Path) -> pl.DataFrame:
 
 
 # =============================================================================
-# GEOMETRY EXTRACTION
-# =============================================================================
-
-
-def extract_geometries(gpkg_path: Path, output_path: Path) -> gpd.GeoDataFrame:
-    """
-    Extract polygon geometries to GeoParquet file.
-
-    Args:
-        gpkg_path: Path to GeoPackage
-        output_path: Output path for GeoParquet
-
-    Returns:
-        GeoDataFrame with geometries
-    """
-    print("Extracting polygon geometries...")
-
-    layer_name = GPKG_LAYER_NAMES["GENERAL_CHARACTERISTICS"]
-    gdf = gpd.read_file(gpkg_path, layer=layer_name)
-
-    # Clean column names
-    gdf.columns = [clean_column_name(c) for c in gdf.columns]
-
-    # Keep only ID and geometry
-    gdf = gdf[["ID_UC_G0", "geometry"]].copy()
-
-    # Fix invalid geometries
-    invalid_count = (~gdf.geometry.is_valid).sum()
-    if invalid_count > 0:
-        print(f"  Fixing {invalid_count} invalid geometries...")
-        gdf["geometry"] = gdf.geometry.apply(fix_invalid_geometry)
-
-    # Reproject to WGS84
-    print("  Reprojecting to WGS84...")
-    gdf = gdf.to_crs("EPSG:4326")
-
-    # Save as GeoParquet
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    gdf.to_parquet(output_path)
-    print(f"  -> {len(gdf)} geometries saved")
-
-    return gdf
-
-
-def extract_centroids(gpkg_path: Path, output_path: Path) -> gpd.GeoDataFrame:
-    """
-    Extract point geometries from UC_centroids layer to GeoParquet file.
-
-    Args:
-        gpkg_path: Path to GeoPackage
-        output_path: Output path for GeoParquet
-
-    Returns:
-        GeoDataFrame with centroid points
-    """
-    print("Extracting centroid points...")
-
-    gdf = gpd.read_file(gpkg_path, layer="UC_centroids")
-
-    # Clean column names
-    gdf.columns = [clean_column_name(c) for c in gdf.columns]
-
-    # Keep only ID and geometry
-    gdf = gdf[["ID_UC_G0", "geometry"]].copy()
-
-    # Reproject to WGS84
-    print("  Reprojecting to WGS84...")
-    gdf = gdf.to_crs("EPSG:4326")
-
-    # Save as GeoParquet
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    gdf.to_parquet(output_path)
-    print(f"  -> {len(gdf)} centroids saved")
-
-    return gdf
-
-
-# =============================================================================
 # CLI
 # =============================================================================
 
@@ -482,7 +401,7 @@ def schema():
 @cli.command()
 @click.option("--themes", default=None, help="Comma-separated themes to extract (default: all)")
 def extract(themes: str | None):
-    """Extract all thematic data + geometries."""
+    """Extract all thematic data."""
     print("=" * 60)
     print("UCDB Data Extraction")
     print("=" * 60)
@@ -510,11 +429,6 @@ def extract(themes: str | None):
     # Merge into single wide table
     print("\n--- Merging Themes ---")
     merge_all_themes(output_dir / "themes", output_dir / "ucdb_all.parquet")
-
-    # Extract geometries
-    print("\n--- Extracting Geometries ---")
-    extract_geometries(gpkg_path, output_dir / "geometries.parquet")
-    extract_centroids(gpkg_path, output_dir / "centroids.parquet")
 
     # Create sentinel file
     sentinel = output_dir / ".extract_complete"
