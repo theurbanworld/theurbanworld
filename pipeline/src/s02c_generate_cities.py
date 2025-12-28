@@ -246,6 +246,35 @@ def extract_cities(force: bool = False) -> gpd.GeoDataFrame:
     cities_gdf = cities_gdf.rename(columns={"geometry": "geometry_2025"})
     cities_gdf = cities_gdf.set_geometry("geometry_2025")
 
+    # Deduplicate border cities (same city_id in multiple countries)
+    print("Deduplicating border cities...")
+    dup_mask = cities_gdf.duplicated(subset=["city_id"], keep=False)
+    dup_cities = cities_gdf[dup_mask]
+
+    if len(dup_cities) > 0:
+        # Log duplicates before removing
+        dup_ids = dup_cities["city_id"].unique()
+        print(f"  Found {len(dup_ids)} city_ids with duplicates ({len(dup_cities)} total rows):")
+        for cid in sorted(dup_ids):
+            rows = dup_cities[dup_cities["city_id"] == cid]
+            entries = ", ".join(
+                f"{r['name']} ({r['country_code']}, pop={r['ucdb_population_2025']:,})"
+                for _, r in rows.iterrows()
+            )
+            print(f"    {cid}: {entries}")
+
+        # Sort by population (desc) then country_code (asc) and keep first
+        cities_gdf = cities_gdf.sort_values(
+            by=["ucdb_population_2025", "country_code"],
+            ascending=[False, True]
+        )
+        before_count = len(cities_gdf)
+        cities_gdf = cities_gdf.drop_duplicates(subset=["city_id"], keep="first")
+        after_count = len(cities_gdf)
+        print(f"  Removed {before_count - after_count} duplicate rows")
+    else:
+        print("  No duplicates found")
+
     # Reorder columns
     column_order = [
         "city_id",

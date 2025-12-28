@@ -33,13 +33,16 @@ from pathlib import Path
 from .utils.config import config, get_processed_path
 
 
-def compute_city_population_for_epoch(epoch: int, input_dir: Path) -> pl.DataFrame:
+def compute_city_population_for_epoch(
+    epoch: int, input_dir: Path, canonical_city_ids: set[str] | None = None
+) -> pl.DataFrame:
     """
     Compute city population for a single epoch.
 
     Args:
         epoch: Year to process (1975, 1980, ..., 2030)
         input_dir: Directory containing h3_r8_pop_{epoch}.parquet files
+        canonical_city_ids: If provided, filter to only these city_ids (from UCDB)
 
     Returns:
         DataFrame with city_id, epoch, population, area_km2, density_per_km2, cell_count
@@ -51,6 +54,10 @@ def compute_city_population_for_epoch(epoch: int, input_dir: Path) -> pl.DataFra
 
     # Load H3 population data
     h3_pop = pl.read_parquet(file_path)
+
+    # Filter to canonical city_ids if provided
+    if canonical_city_ids is not None:
+        h3_pop = h3_pop.filter(pl.col("city_id").is_in(canonical_city_ids))
 
     # Compute exact area for each H3 cell using h3.cell_area()
     # h3_index is stored as Int64, need to convert to string hex first
@@ -95,10 +102,17 @@ def compute_all_city_populations(epochs: list[int] | None = None) -> pl.DataFram
     input_dir = get_processed_path("ghsl_pop_1km")
     epochs = epochs or config.GHSL_POP_EPOCHS
 
+    # Load canonical city_ids from UCDB-based cities.parquet
+    cities_path = get_processed_path("cities") / "cities.parquet"
+    canonical_city_ids = set(
+        pl.read_parquet(cities_path).select("city_id").to_series().to_list()
+    )
+    print(f"  Filtering to {len(canonical_city_ids):,} canonical UCDB city_ids")
+
     all_pops = []
     for epoch in epochs:
         print(f"  Processing epoch {epoch}...")
-        pop_data = compute_city_population_for_epoch(epoch, input_dir)
+        pop_data = compute_city_population_for_epoch(epoch, input_dir, canonical_city_ids)
         total_pop = pop_data["population"].sum()
         print(f"    {len(pop_data):,} cities, total pop: {total_pop:,.0f}")
         all_pops.append(pop_data)

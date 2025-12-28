@@ -178,8 +178,8 @@ def load_data() -> pl.DataFrame:
         .alias("continent")
     )
 
-    # Join populations with city info
-    merged = populations.join(cities, on="city_id", how="left")
+    # Join populations with city info (inner join to filter to canonical cities only)
+    merged = populations.join(cities, on="city_id", how="inner")
 
     return merged
 
