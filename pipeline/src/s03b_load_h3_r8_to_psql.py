@@ -31,9 +31,8 @@ import duckdb
 import psycopg2
 from dotenv import load_dotenv
 
-# Load environment variables from project root
-PROJECT_ROOT = Path(__file__).parent.parent.parent
-load_dotenv(PROJECT_ROOT / ".env")
+# Load environment variables
+load_dotenv(".env")
 
 # Data paths
 INPUT_DIR = Path("data/processed/ghsl_pop_1km")

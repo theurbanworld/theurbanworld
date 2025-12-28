@@ -29,9 +29,8 @@ from dotenv import load_dotenv
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
-# Load .env file from project root
-_PROJECT_ROOT = Path(__file__).parent.parent.parent
-load_dotenv(_PROJECT_ROOT / ".env")
+# Load .env file
+load_dotenv(".env")
 
 
 class R2Config(BaseSettings):

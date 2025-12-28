@@ -24,9 +24,8 @@ from pathlib import Path
 import boto3
 from dotenv import load_dotenv
 
-# Load environment variables from project root
-PROJECT_ROOT = Path(__file__).parent.parent.parent
-load_dotenv(PROJECT_ROOT / ".env")
+# Load environment variables
+load_dotenv(".env")
 
 # R2 settings
 R2_PREFIX = "ghsl-pop-1km"
