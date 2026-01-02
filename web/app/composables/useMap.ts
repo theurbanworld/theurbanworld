@@ -511,6 +511,7 @@ export function useMap(options: UseMapOptions) {
       })
 
       // Add city labels layer with population-based sizing
+      // At zoom 8+, shows population below city name in compact format (1.2M, 543K)
       mapInstance.addLayer({
         'id': CITY_LABELS_LAYER,
         'type': 'symbol',
@@ -519,7 +520,32 @@ export function useMap(options: UseMapOptions) {
         'layout': {
           // Sort by population descending so larger cities' labels take precedence
           'symbol-sort-key': ['*', -1, ['get', 'population']],
-          'text-field': ['get', 'name'],
+          // Text field: name only at low zoom, name + population at zoom 8+
+          'text-field': [
+            'step', ['zoom'],
+            // At zoom < 8: just show name
+            ['get', 'name'],
+            // At zoom >= 8: show name + population in compact format
+            8, ['format',
+              ['get', 'name'], {},
+              '\n', {},
+              // Compact population format (7.2M, 149.7K, etc.)
+              ['case',
+                ['>=', ['get', 'population'], 1000000],
+                ['concat',
+                  ['number-format', ['/', ['get', 'population'], 1000000], { 'min-fraction-digits': 1, 'max-fraction-digits': 1 }],
+                  'M'
+                ],
+                ['>=', ['get', 'population'], 1000],
+                ['concat',
+                  ['number-format', ['/', ['get', 'population'], 1000], { 'min-fraction-digits': 1, 'max-fraction-digits': 1 }],
+                  'K'
+                ],
+                ['to-string', ['get', 'population']]
+              ],
+              { 'font-scale': 0.7 }
+            ]
+          ],
           // Font weight: bold for megacities, semibold for major cities
           'text-font': [
             'step', ['get', 'population'],
