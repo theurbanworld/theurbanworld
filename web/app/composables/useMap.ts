@@ -25,8 +25,45 @@ const CITY_BOUNDARIES_LAYER = 'city-boundaries-line'
 const CITY_LABELS_LAYER = 'city-labels'
 const CITY_BOUNDARIES_URL = 'https://data.theurban.world/tiles/city_boundaries.pmtiles'
 
-// Basemap label layers to hide (we show our own city labels)
-const BASEMAP_LABEL_LAYERS = ['places_locality', 'places_subplace', 'places_region', 'places_country']
+// Basemap layers to hide (we show only land/water/boundaries + our city data)
+const BASEMAP_LAYERS_TO_HIDE = [
+  // City name labels (we show our own from PMTiles)
+  'places_locality', 'places_subplace', 'places_region', 'places_country',
+
+  // Road rendering
+  'roads_highway', 'roads_highway_casing_early', 'roads_highway_casing_late',
+  'roads_major', 'roads_major_casing_early', 'roads_major_casing_late',
+  'roads_minor', 'roads_minor_casing', 'roads_minor_service', 'roads_minor_service_casing',
+  'roads_link', 'roads_link_casing', 'roads_other', 'roads_pier',
+
+  // Railway and airport infrastructure
+  'roads_rail', 'roads_runway', 'roads_taxiway',
+
+  // Tunnel variants
+  'roads_tunnels_highway', 'roads_tunnels_highway_casing',
+  'roads_tunnels_major', 'roads_tunnels_major_casing',
+  'roads_tunnels_minor', 'roads_tunnels_minor_casing',
+  'roads_tunnels_link', 'roads_tunnels_link_casing',
+  'roads_tunnels_other', 'roads_tunnels_other_casing',
+
+  // Bridge variants
+  'roads_bridges_highway', 'roads_bridges_highway_casing',
+  'roads_bridges_major', 'roads_bridges_major_casing',
+  'roads_bridges_minor', 'roads_bridges_minor_casing',
+  'roads_bridges_link', 'roads_bridges_link_casing',
+  'roads_bridges_other', 'roads_bridges_other_casing',
+
+  // Road name labels
+  'roads_labels_major', 'roads_labels_minor',
+
+  // POIs
+  'pois',
+
+  // Landuse features (parks, airports, etc.)
+  'landuse_park', 'landuse_urban_green', 'landuse_beach', 'landuse_zoo',
+  'landuse_aerodrome', 'landuse_runway', 'landuse_industrial',
+  'landuse_school', 'landuse_hospital', 'landuse_pedestrian'
+]
 
 /**
  * Create sepia theme based on the light theme with customizations
@@ -331,10 +368,10 @@ export function useMap(options: UseMapOptions) {
   }
 
   /**
-   * Hide basemap city labels (we show our own from city_boundaries PMTiles)
+   * Hide basemap layers (streets, POIs, etc.) - we show only land/water/boundaries
    */
-  function hideBasemapLabels(mapInstance: maplibregl.Map) {
-    BASEMAP_LABEL_LAYERS.forEach(layerId => {
+  function hideBasemapLayers(mapInstance: maplibregl.Map) {
+    BASEMAP_LAYERS_TO_HIDE.forEach(layerId => {
       if (mapInstance.getLayer(layerId)) {
         mapInstance.setLayoutProperty(layerId, 'visibility', 'none')
       }
@@ -359,7 +396,7 @@ export function useMap(options: UseMapOptions) {
 
     // Re-add city boundaries after style load
     mapInstance.once('style.load', () => {
-      hideBasemapLabels(mapInstance)
+      hideBasemapLayers(mapInstance)
       cityBoundariesLoaded.value = false
       addCityBoundariesLayer(mapInstance, darkMode)
       setupCityHoverEvents(mapInstance)
@@ -579,7 +616,7 @@ export function useMap(options: UseMapOptions) {
         isLoading.value = false
 
         // Hide basemap city labels (we show our own)
-        hideBasemapLabels(mapInstance)
+        hideBasemapLayers(mapInstance)
 
         // Add city boundaries layer after a short delay
         // to ensure deck.gl overlay is added first
