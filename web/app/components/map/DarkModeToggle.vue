@@ -2,9 +2,9 @@
   <UButton
     :icon="isDarkMode ? 'i-lucide-sun' : 'i-lucide-moon'"
     color="neutral"
-    variant="solid"
+    variant="ghost"
     size="lg"
-    class="dark-mode-toggle"
+    class="w-10 h-10 rounded-lg border-none transition-all duration-150 ease-out bg-forest-600 text-density-1 hover:bg-forest-700 hover:scale-105 active:scale-98 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-400 dark:bg-forest-500 dark:text-espresso dark:hover:bg-forest-400 dark:focus-visible:outline-forest-300"
     :aria-label="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
     @click="toggleDarkMode"
   />
@@ -28,49 +28,3 @@ onMounted(() => {
   initializeDarkMode()
 })
 </script>
-
-<style scoped>
-.dark-mode-toggle {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 100;
-  width: 44px;
-  height: 44px;
-  background-color: var(--color-forest-600, #4A6741) !important;
-  color: var(--color-density-1, #F7F3E8) !important;
-  border: none;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transition: background-color 0.15s ease, transform 0.15s ease;
-}
-
-.dark-mode-toggle:hover {
-  background-color: var(--color-forest-700, #3A5233) !important;
-  transform: scale(1.05);
-}
-
-.dark-mode-toggle:active {
-  transform: scale(0.98);
-}
-
-.dark-mode-toggle:focus-visible {
-  outline: 2px solid var(--color-forest-400, #8FAD85);
-  outline-offset: 2px;
-}
-
-/* Dark mode styles */
-:global(.dark) .dark-mode-toggle {
-  background-color: var(--color-forest-500, #6A8F5E) !important;
-  color: var(--color-espresso, #3D352C) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-:global(.dark) .dark-mode-toggle:hover {
-  background-color: var(--color-forest-400, #8FAD85) !important;
-}
-
-:global(.dark) .dark-mode-toggle:focus-visible {
-  outline-color: var(--color-forest-300, #B5C9AF);
-}
-</style>

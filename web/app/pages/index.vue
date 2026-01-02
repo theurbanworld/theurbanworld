@@ -35,7 +35,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="main-page">
+  <div class="w-full h-full relative overflow-hidden">
     <!-- Global Map (full viewport) -->
     <ClientOnly>
       <GlobalMap
@@ -54,12 +54,3 @@ onMounted(() => {
     </ClientOnly>
   </div>
 </template>
-
-<style scoped>
-.main-page {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  overflow: hidden;
-}
-</style>

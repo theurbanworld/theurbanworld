@@ -1,13 +1,17 @@
 <template>
   <UApp>
-    <div class="app-layout">
-      <UHeader>
+    <div class="flex flex-col h-screen overflow-hidden">
+      <UHeader :style="{ '--ui-header-height': '5rem' }">
         <template #title>
           <AppLogo />
         </template>
+
+        <template #right>
+          <DarkModeToggle />
+        </template>
       </UHeader>
 
-      <UMain class="app-main">
+      <UMain class="flex-1 !min-h-0 relative overflow-hidden">
         <NuxtPage />
       </UMain>
 
@@ -21,20 +25,3 @@
     </div>
   </UApp>
 </template>
-
-<style>
-.app-layout {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-}
-
-/* Override UMain's default min-height to use flex-1 instead */
-.app-main {
-  flex: 1;
-  min-height: 0 !important;
-  position: relative;
-  overflow: hidden;
-}
-</style>

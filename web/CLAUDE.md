@@ -1,0 +1,1 @@
+- Use Tailwind CSS classes by default, only add `<style>` if absolutely necessary. Document and justify these exceptions to this user.

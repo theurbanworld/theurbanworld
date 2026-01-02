@@ -1,9 +1,9 @@
 <template>
-  <div class="global-map">
+  <div class="absolute inset-0 w-full h-full overflow-hidden">
     <!-- Map container -->
     <div
       ref="mapContainer"
-      class="map-container"
+      class="w-full h-full"
     />
 
     <!-- H3 Population Layer (disabled for debugging hover)
@@ -17,9 +17,9 @@
     <!-- Loading indicator for map -->
     <div
       v-if="isMapLoading"
-      class="loading-overlay"
+      class="absolute inset-0 flex items-center justify-center bg-parchment/90 dark:bg-espresso/90 z-10"
     >
-      <div class="loading-spinner">
+      <div class="flex flex-col items-center text-center">
         <UIcon
           name="i-lucide-loader-2"
           class="animate-spin text-4xl text-forest-600"
@@ -33,9 +33,9 @@
     <!-- Loading indicator for H3 data (disabled)
     <div
       v-else-if="isH3Loading"
-      class="loading-overlay loading-overlay--data"
+      class="absolute inset-0 flex items-center justify-center bg-parchment/85 dark:bg-espresso/85 z-10"
     >
-      <div class="loading-content">
+      <div class="flex flex-col items-center text-center min-w-[250px]">
         <UIcon
           name="i-lucide-loader-2"
           class="animate-spin text-4xl text-forest-600"
@@ -43,9 +43,9 @@
         <p class="mt-2 text-body font-medium">
           Loading population data...
         </p>
-        <div class="progress-bar mt-4">
+        <div class="w-full h-2 bg-border/30 dark:bg-border/20 rounded overflow-hidden mt-4">
           <div
-            class="progress-fill"
+            class="h-full bg-forest-600 dark:bg-forest-500 rounded transition-[width] duration-300 ease-out"
             :style="{ width: `${h3LoadProgress}%` }"
           />
         </div>
@@ -59,9 +59,9 @@
     <!-- Error display -->
     <div
       v-if="displayError"
-      class="error-overlay"
+      class="absolute inset-0 flex items-center justify-center bg-parchment/90 dark:bg-espresso/90 z-10"
     >
-      <div class="error-content">
+      <div class="flex flex-col items-center text-center">
         <UIcon
           name="i-lucide-alert-triangle"
           class="text-4xl text-red-500"
@@ -305,79 +305,3 @@ defineExpose({
   zoomOut
 })
 </script>
-
-<style scoped>
-.global-map {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.map-container {
-  width: 100%;
-  height: 100%;
-}
-
-.loading-overlay,
-.error-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(245, 241, 230, 0.9); /* Parchment with opacity */
-  z-index: 10;
-}
-
-.loading-overlay--data {
-  background-color: rgba(245, 241, 230, 0.85);
-}
-
-.loading-spinner,
-.loading-content,
-.error-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.loading-content {
-  min-width: 250px;
-}
-
-.progress-bar {
-  width: 100%;
-  height: 8px;
-  background-color: rgba(154, 147, 133, 0.3); /* Border color with opacity */
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background-color: var(--color-forest-600, #4A6741);
-  border-radius: 4px;
-  transition: width 0.3s ease-out;
-}
-
-/* Dark mode styles for loading overlays */
-:global(.dark) .loading-overlay,
-:global(.dark) .error-overlay {
-  background-color: rgba(61, 53, 44, 0.9); /* Espresso with opacity */
-}
-
-:global(.dark) .loading-overlay--data {
-  background-color: rgba(61, 53, 44, 0.85);
-}
-
-:global(.dark) .progress-bar {
-  background-color: rgba(154, 147, 133, 0.2);
-}
-
-:global(.dark) .progress-fill {
-  background-color: var(--color-forest-500, #6A8F5E);
-}
-</style>
