@@ -424,9 +424,11 @@ export function useMap(options: UseMapOptions) {
       // Check if source already exists
       if (!mapInstance.getSource(CITY_BOUNDARIES_SOURCE)) {
         // Add city boundaries source
+        // promoteId tells MapLibre to use city_id as the feature ID for feature-state
         mapInstance.addSource(CITY_BOUNDARIES_SOURCE, {
           type: 'vector',
-          url: getCityBoundariesUrl()
+          url: getCityBoundariesUrl(),
+          promoteId: { 'city_boundaries': 'city_id' }
         })
       }
 
