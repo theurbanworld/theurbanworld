@@ -53,6 +53,7 @@ class R2Config(BaseSettings):
         ".json": "application/json",
         ".geojson": "application/geo+json",
         ".gpkg": "application/geopackage+sqlite3",
+        ".pbf": "application/x-protobuf",
     }
 
     # Cache control settings (in seconds)
