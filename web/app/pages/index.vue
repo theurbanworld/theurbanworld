@@ -1,33 +1,3 @@
-<template>
-  <div class="main-page">
-    <!-- Global Map (full viewport) -->
-    <ClientOnly>
-      <GlobalMap
-        ref="globalMapRef"
-        :is-dark-mode="isDarkMode"
-      />
-    </ClientOnly>
-
-    <!-- Year Slider Timeline (bottom center) -->
-    <ClientOnly>
-      <YearSlider />
-    </ClientOnly>
-
-    <!-- Map Controls (bottom right) -->
-    <ClientOnly>
-      <MapControls
-        @zoom-in="handleZoomIn"
-        @zoom-out="handleZoomOut"
-      />
-    </ClientOnly>
-
-    <!-- Dark Mode Toggle (top right) -->
-    <ClientOnly>
-      <DarkModeToggle />
-    </ClientOnly>
-  </div>
-</template>
-
 <script setup lang="ts">
 /**
  * Main application page
@@ -63,6 +33,27 @@ onMounted(() => {
   initializeDarkMode()
 })
 </script>
+
+<template>
+  <div class="main-page">
+    <!-- Global Map (full viewport) -->
+    <ClientOnly>
+      <GlobalMap
+        ref="globalMapRef"
+        :is-dark-mode="isDarkMode"
+      />
+
+      <YearSlider />
+
+      <MapControls
+        @zoom-in="handleZoomIn"
+        @zoom-out="handleZoomOut"
+      />
+
+      <DarkModeToggle />
+    </ClientOnly>
+  </div>
+</template>
 
 <style scoped>
 .main-page {

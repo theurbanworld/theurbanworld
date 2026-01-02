@@ -131,23 +131,26 @@ export function useDeckGL(options: UseDeckGLOptions) {
     onClickCallbacks.length = 0
   }
 
-  // Watch for map initialization
-  watch(
-    () => map.value,
-    (mapInstance) => {
-      if (mapInstance && !overlay.value) {
-        // Wait for map to be loaded before adding overlay
-        if (mapInstance.loaded()) {
-          initializeOverlay(mapInstance)
-        } else {
-          mapInstance.on('load', () => {
+  // Watch for map initialization using watchEffect for better reactivity tracking
+  // Use flush: 'post' to ensure we run after DOM updates
+  watchEffect(() => {
+    const mapInstance = map.value
+    if (mapInstance && !overlay.value) {
+      // Wait for map to be loaded before adding overlay
+      if (mapInstance.loaded()) {
+        initializeOverlay(mapInstance)
+      } else {
+        // Map not loaded yet, add a load listener
+        const onLoad = () => {
+          if (!overlay.value) {
             initializeOverlay(mapInstance)
-          })
+          }
+          mapInstance.off('load', onLoad)
         }
+        mapInstance.on('load', onLoad)
       }
-    },
-    { immediate: true }
-  )
+    }
+  }, { flush: 'post' })
 
   // Clean up on unmount
   onUnmounted(() => {

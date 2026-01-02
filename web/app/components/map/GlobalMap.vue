@@ -6,12 +6,13 @@
       class="map-container"
     />
 
-    <!-- H3 Population Layer (renderless) -->
+    <!-- H3 Population Layer (disabled for debugging hover)
     <H3PopulationLayer
       v-if="isDeckInitialized"
       :is-dark-mode="isDarkMode"
       @layer-update="onH3LayerUpdate"
     />
+    -->
 
     <!-- Loading indicator for map -->
     <div
@@ -29,7 +30,7 @@
       </div>
     </div>
 
-    <!-- Loading indicator for H3 data -->
+    <!-- Loading indicator for H3 data (disabled)
     <div
       v-else-if="isH3Loading"
       class="loading-overlay loading-overlay--data"
@@ -53,6 +54,7 @@
         </p>
       </div>
     </div>
+    -->
 
     <!-- Error display -->
     <div
@@ -146,11 +148,13 @@ const MAX_ZOOM = 18
  * Handle H3 layer updates from the renderless component
  */
 function onH3LayerUpdate(layer: Layer | null) {
+  console.log('[GlobalMap] onH3LayerUpdate called, layer:', layer ? 'exists' : 'null', 'isDeckInitialized:', isDeckInitialized.value)
   currentLayer.value = layer
 
   // Update deck.gl layers
   if (isDeckInitialized.value) {
     const layersArray = layer ? [layer] : []
+    console.log('[GlobalMap] Calling setLayers with', layersArray.length, 'layers')
     setLayers(layersArray as Layer[])
   }
 }
@@ -215,19 +219,19 @@ watch(isDeckInitialized, (initialized) => {
   }
 })
 
-// Start loading H3 data when map is ready
-watch(
-  () => isMapLoading.value,
-  (loading) => {
-    if (!loading && !mapError.value) {
-      // Map is loaded, start loading data
-      loadH3Data().catch(() => {
-        // Error is handled in the composable
-      })
-    }
-  },
-  { immediate: true }
-)
+// Start loading H3 data when map is ready (disabled for debugging hover)
+// watch(
+//   () => isMapLoading.value,
+//   (loading) => {
+//     if (!loading && !mapError.value) {
+//       // Map is loaded, start loading data
+//       loadH3Data().catch(() => {
+//         // Error is handled in the composable
+//       })
+//     }
+//   },
+//   { immediate: true }
+// )
 
 // Watch for view state changes and update map
 watch(

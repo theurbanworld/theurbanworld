@@ -1,7 +1,7 @@
 """
-Generate MapLibre-compatible font glyphs for Inter fonts.
+Generate MapLibre-compatible font glyphs for Inter and Crimson Pro fonts.
 
-Purpose: Download Inter font files from GitHub, generate SDF (Signed Distance
+Purpose: Download font files from GitHub/Google Fonts, generate SDF (Signed Distance
          Field) PBF glyphs using build_pbf_glyphs, and upload to R2 for use with
          MapLibre GL city labels.
 
@@ -18,7 +18,6 @@ Date: 2026-01-02
 """
 
 import os
-import re
 import shutil
 import subprocess
 import tempfile
@@ -36,15 +35,27 @@ load_dotenv()
 OUTPUT_DIR = Path("data/processed/fonts")
 R2_PREFIX = "fonts"
 
-# Inter font variants: MapLibre name -> TTF filename pattern
-FONT_VARIANTS = {
-    "Inter Regular": "Inter-Regular.ttf",
-    "Inter Medium": "Inter-Medium.ttf",
-    "Inter Bold": "Inter-Bold.ttf",
+# Font families to generate
+# "type": "zip" = download zip and extract, "type": "direct" = download individual TTF files
+FONT_FAMILIES = {
+    "Inter": {
+        "type": "zip",
+        "url": "https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip",
+        "variants": {
+            "Inter Regular": "Inter-Regular.ttf",
+            "Inter Medium": "Inter-Medium.ttf",
+            "Inter Bold": "Inter-Bold.ttf",
+        }
+    },
+    "Crimson Pro": {
+        "type": "direct",
+        "variants": {
+            "Crimson Pro Regular": "https://cdn.jsdelivr.net/fontsource/fonts/crimson-pro@latest/latin-400-normal.ttf",
+            "Crimson Pro SemiBold": "https://cdn.jsdelivr.net/fontsource/fonts/crimson-pro@latest/latin-600-normal.ttf",
+            "Crimson Pro Bold": "https://cdn.jsdelivr.net/fontsource/fonts/crimson-pro@latest/latin-700-normal.ttf",
+        }
+    }
 }
-
-# Inter GitHub release URL (latest stable)
-INTER_RELEASE_URL = "https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip"
 
 
 def check_prerequisites() -> None:
@@ -76,54 +87,91 @@ def check_prerequisites() -> None:
         print(f"  FreeType: {version}")
 
 
-def download_inter_fonts(output_dir: Path) -> dict[str, Path]:
-    """Download Inter font files from GitHub release.
+def download_font_family(family_name: str, family_config: dict, output_dir: Path) -> dict[str, Path]:
+    """Download font files for a font family.
+
+    Supports two download types:
+    - "zip": Download a zip file and extract specific TTF files
+    - "direct": Download individual TTF files directly from URLs
+
+    Args:
+        family_name: Display name of the font family (e.g., "Inter", "Crimson Pro")
+        family_config: Dict with "type", "variants", and optionally "url" keys
+        output_dir: Directory to download/extract fonts to
 
     Returns:
         Dict mapping MapLibre font name to local TTF path
     """
-    print(f"\nDownloading Inter fonts from GitHub...")
+    print(f"\nDownloading {family_name} fonts...")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Download the release zip
-    print(f"  Fetching {INTER_RELEASE_URL}...")
-    response = requests.get(INTER_RELEASE_URL, stream=True)
-    response.raise_for_status()
-
-    zip_path = output_dir / "inter.zip"
-    with open(zip_path, "wb") as f:
-        for chunk in response.iter_content(chunk_size=8192):
-            f.write(chunk)
-
-    zip_size = zip_path.stat().st_size / 1024 / 1024
-    print(f"  Downloaded {zip_size:.1f} MB")
-
-    # Extract the zip
-    print("  Extracting...")
-    with zipfile.ZipFile(zip_path, "r") as zf:
-        zf.extractall(output_dir)
-
-    # Find the TTF files we need
+    download_type = family_config.get("type", "zip")
+    variants = family_config["variants"]
     font_paths = {}
-    for maplibre_name, ttf_filename in FONT_VARIANTS.items():
-        # Search for the TTF file in extracted contents
-        matches = list(output_dir.rglob(ttf_filename))
-        if not matches:
-            raise RuntimeError(f"Could not find {ttf_filename} in Inter release")
 
-        # Use the first match (should be in Inter Desktop or similar)
-        source_path = matches[0]
+    if download_type == "direct":
+        # Download individual TTF files directly
+        for maplibre_name, url in variants.items():
+            print(f"  Fetching {maplibre_name}...")
+            response = requests.get(url)
+            response.raise_for_status()
 
-        # Copy to output with MapLibre-compatible name
-        # build_pbf_glyphs uses the filename (without extension) as the output folder name
-        dest_path = output_dir / f"{maplibre_name}.ttf"
-        shutil.copy(source_path, dest_path)
+            dest_path = output_dir / f"{maplibre_name}.ttf"
+            dest_path.write_bytes(response.content)
 
-        font_paths[maplibre_name] = dest_path
-        print(f"  Found {maplibre_name}: {source_path.name}")
+            font_paths[maplibre_name] = dest_path
+            file_size = dest_path.stat().st_size / 1024
+            print(f"    Saved {dest_path.name} ({file_size:.1f} KB)")
 
-    # Clean up zip and extracted folders
-    zip_path.unlink()
+    else:  # zip
+        url = family_config["url"]
+
+        # Download the release zip
+        print(f"  Fetching {url}...")
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+
+        zip_path = output_dir / f"{family_name.lower().replace(' ', '_')}.zip"
+        with open(zip_path, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+        zip_size = zip_path.stat().st_size / 1024 / 1024
+        print(f"  Downloaded {zip_size:.1f} MB")
+
+        # Extract the zip
+        print("  Extracting...")
+        extract_dir = output_dir / f"{family_name.lower().replace(' ', '_')}_extract"
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            zf.extractall(extract_dir)
+
+        # Find the TTF files we need
+        for maplibre_name, ttf_filename in variants.items():
+            # Search for the TTF file in extracted contents
+            matches = list(extract_dir.rglob(ttf_filename))
+            if not matches:
+                # Try case-insensitive search
+                matches = [p for p in extract_dir.rglob("*.ttf") if p.name.lower() == ttf_filename.lower()]
+            if not matches:
+                # List available files for debugging
+                all_ttf = list(extract_dir.rglob("*.ttf"))
+                print(f"  Available TTF files: {[f.name for f in all_ttf[:10]]}")
+                raise RuntimeError(f"Could not find {ttf_filename} in {family_name} archive")
+
+            # Use the first match
+            source_path = matches[0]
+
+            # Copy to output with MapLibre-compatible name
+            # build_pbf_glyphs uses the filename (without extension) as the output folder name
+            dest_path = output_dir / f"{maplibre_name}.ttf"
+            shutil.copy(source_path, dest_path)
+
+            font_paths[maplibre_name] = dest_path
+            print(f"  Found {maplibre_name}: {source_path.name}")
+
+        # Clean up zip and extracted folders
+        zip_path.unlink()
+        shutil.rmtree(extract_dir)
 
     return font_paths
 
@@ -162,7 +210,7 @@ def generate_pbf_glyphs(font_dir: Path, output_dir: Path) -> None:
     print(f"  stdout: {result.stdout.strip()}")
 
     # Count generated files per variant
-    for variant_dir in output_dir.iterdir():
+    for variant_dir in sorted(output_dir.iterdir()):
         if variant_dir.is_dir():
             pbf_files = list(variant_dir.glob("*.pbf"))
             print(f"  {variant_dir.name}: {len(pbf_files)} PBF files")
@@ -224,9 +272,9 @@ def upload_fonts_to_r2(fonts_dir: Path) -> int:
 
 
 def main(local_only: bool = False) -> None:
-    """Generate Inter font glyphs and upload to R2."""
+    """Generate font glyphs for all font families and upload to R2."""
     print("=" * 60)
-    print("Inter Font Glyph Generator")
+    print("Font Glyph Generator (Inter + Crimson Pro)")
     print("=" * 60)
 
     # Check prerequisites
@@ -236,11 +284,17 @@ def main(local_only: bool = False) -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         download_dir = Path(tmpdir)
 
-        # Download fonts (TTF files will be in download_dir with MapLibre-compatible names)
-        font_paths = download_inter_fonts(download_dir)
+        # Download all font families
+        for family_name, family_config in FONT_FAMILIES.items():
+            download_font_family(family_name, family_config, download_dir)
 
-        # Generate PBF glyphs
-        # build_pbf_glyphs reads all TTF files from input dir
+        # List TTF files in download dir
+        ttf_files = list(download_dir.glob("*.ttf"))
+        print(f"\nFont files ready for processing: {len(ttf_files)}")
+        for ttf in sorted(ttf_files):
+            print(f"  {ttf.name}")
+
+        # Generate PBF glyphs for all fonts
         generate_pbf_glyphs(download_dir, OUTPUT_DIR)
 
     # Print output summary
@@ -263,7 +317,7 @@ def main(local_only: bool = False) -> None:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Generate Inter font glyphs for MapLibre")
+    parser = argparse.ArgumentParser(description="Generate font glyphs for MapLibre")
     parser.add_argument("--local", action="store_true", help="Skip R2 upload")
     args = parser.parse_args()
 

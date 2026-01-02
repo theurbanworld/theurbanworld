@@ -8,4 +8,4 @@
 - **Consistent Naming**: Use clear, descriptive names that indicate the component's purpose and follow team conventions
 - **State Management**: Keep state as local as possible; lift it up only when needed by multiple components
 - **Minimal Props**: Keep the number of props manageable; if a component needs many props, consider composition or splitting it
-- **Documentation**: Document component usage, props, and provide examples for easier adoption by team members
+- **Documentation**: Document the purpose of a component at the top of the `<script>` tag. Keep the rest of the documentation at a minimum, only explaining things that are non-obvious in the code.

@@ -21,12 +21,16 @@ let pmtilesProtocolRegistered = false
 
 // City boundaries source and layer IDs
 const CITY_BOUNDARIES_SOURCE = 'city-boundaries'
+const CITY_BOUNDARIES_HOVER_LAYER = 'city-boundaries-hover-pattern'
 const CITY_BOUNDARIES_LAYER = 'city-boundaries-line'
 const CITY_LABELS_LAYER = 'city-labels'
 const CITY_BOUNDARIES_URL = 'https://data.theurban.world/tiles/city_boundaries.pmtiles'
 
-// Basemap layers to hide (we show only land/water/boundaries + our city data)
+// Basemap layers to hide (we show only land/water + our city data)
 const BASEMAP_LAYERS_TO_HIDE = [
+  // Country and admin boundaries (we focus on cities vs natural features)
+  'boundaries', 'boundaries_country',
+
   // City name labels (we show our own from PMTiles)
   'places_locality', 'places_subplace', 'places_region', 'places_country',
 
@@ -168,7 +172,12 @@ function createSepiaTheme(): Theme {
     industrial: '#E5DDD0',
     school: '#E8E0D0',
     zoo: '#E5DDD0',
-    military: '#E0D8C8'
+    military: '#E0D8C8',
+
+    // Fonts - use Inter for all basemap labels
+    regular: 'Inter Regular',
+    italic: 'InterVariable-Italic',
+    bold: 'Inter Bold'
   }
 }
 
@@ -275,7 +284,12 @@ function createDarkSepiaTheme(): Theme {
     industrial: '#302B22',
     school: '#353025',
     zoo: '#302B22',
-    military: '#383028'
+    military: '#383028',
+
+    // Fonts - use Inter for all basemap labels
+    regular: 'Inter Regular',
+    italic: 'InterVariable-Italic',
+    bold: 'Inter Bold'
   }
 }
 
@@ -339,16 +353,18 @@ export function useMap(options: UseMapOptions) {
     const tileSourceUrl = getTileSourceUrl()
     const isPMTiles = tileSourceUrl.startsWith('pmtiles://')
 
-    // Generate layers with appropriate theme
+    // Generate layers with appropriate theme, filtering out unwanted layers
     const theme = darkMode ? createDarkSepiaTheme() : createSepiaTheme()
-    const themeLayers = layersWithCustomTheme('protomaps', theme, 'en')
+    const allLayers = layersWithCustomTheme('protomaps', theme, 'en')
+    const themeLayers = allLayers.filter(
+      layer => !BASEMAP_LAYERS_TO_HIDE.includes(layer.id)
+    )
 
     const style: maplibregl.StyleSpecification = {
       version: 8,
-      glyphs: 'https://protomaps.github.io/basemaps-assets/fonts/{fontstack}/{range}.pbf',
-      sprite: darkMode
-        ? 'https://protomaps.github.io/basemaps-assets/sprites/v4/dark'
-        : 'https://protomaps.github.io/basemaps-assets/sprites/v4/light',
+      glyphs: 'https://data.theurban.world/fonts/{fontstack}/{range}.pbf',
+      // Custom sprites for hover patterns (includes diagonal stripes)
+      sprite: 'https://data.theurban.world/sprites/patterns',
       sources: {
         protomaps: isPMTiles
           ? {
@@ -368,17 +384,6 @@ export function useMap(options: UseMapOptions) {
   }
 
   /**
-   * Hide basemap layers (streets, POIs, etc.) - we show only land/water/boundaries
-   */
-  function hideBasemapLayers(mapInstance: maplibregl.Map) {
-    BASEMAP_LAYERS_TO_HIDE.forEach(layerId => {
-      if (mapInstance.getLayer(layerId)) {
-        mapInstance.setLayoutProperty(layerId, 'visibility', 'none')
-      }
-    })
-  }
-
-  /**
    * Update map style for dark mode toggle
    */
   function updateMapTheme(darkMode: boolean) {
@@ -394,9 +399,8 @@ export function useMap(options: UseMapOptions) {
     // Set the new style
     mapInstance.setStyle(newStyle)
 
-    // Re-add city boundaries after style load
-    mapInstance.once('style.load', () => {
-      hideBasemapLayers(mapInstance)
+    // Re-add city boundaries after map is idle (all layers rendered)
+    mapInstance.once('idle', () => {
       cityBoundariesLoaded.value = false
       addCityBoundariesLayer(mapInstance, darkMode)
       setupCityHoverEvents(mapInstance)
@@ -426,27 +430,70 @@ export function useMap(options: UseMapOptions) {
         })
       }
 
-      // Check if layers already exist
+      // Check if layers already exist and remove them
       if (mapInstance.getLayer(CITY_LABELS_LAYER)) {
         mapInstance.removeLayer(CITY_LABELS_LAYER)
       }
       if (mapInstance.getLayer(CITY_BOUNDARIES_LAYER)) {
         mapInstance.removeLayer(CITY_BOUNDARIES_LAYER)
       }
+      if (mapInstance.getLayer(CITY_BOUNDARIES_HOVER_LAYER)) {
+        mapInstance.removeLayer(CITY_BOUNDARIES_HOVER_LAYER)
+      }
 
       // Colors based on dark mode
-      const boundaryColor = darkMode ? '#8A8275' : '#4A4238'
       const labelColor = darkMode ? '#E8E0D5' : '#4A4238'
       const labelHaloColor = darkMode ? '#2A2420' : '#F5F1E6'
 
-      // Add city boundaries line layer
+      // Boundary color palettes (hash-based hue, population-based brightness)
+      const lightPalette = ['#D4B896', '#96B8D4', '#B8D496', '#D496B8', '#96D4B8', '#B896D4'] as const
+      const darkPalette = ['#8B5A2B', '#2B5A8B', '#5A8B2B', '#8B2B5A', '#2B8B5A', '#5A2B8B'] as const
+      const defaultLight = darkMode ? '#6B6560' : '#C4B8A8'
+      const defaultDark = darkMode ? '#8A8275' : '#6B5A4B'
+
+      // Add hover pattern fill layer (Paradox-style diagonal stripes)
+      // Base opacity of 0.15 makes it queryable by queryRenderedFeatures
+      // and provides subtle territory feel like Paradox maps
+      mapInstance.addLayer({
+        'id': CITY_BOUNDARIES_HOVER_LAYER,
+        'type': 'fill',
+        'source': CITY_BOUNDARIES_SOURCE,
+        'source-layer': 'city_boundaries',
+        'paint': {
+          // Select pattern based on city_id hash (same logic as border color)
+          'fill-pattern': [
+            'match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
+            0, 'diagonal-0', 1, 'diagonal-1', 2, 'diagonal-2',
+            3, 'diagonal-3', 4, 'diagonal-4', 5, 'diagonal-5', 'diagonal-0'
+          ],
+          'fill-opacity': [
+            'case',
+            ['boolean', ['feature-state', 'hover'], false],
+            0.7,  // Full pattern on hover
+            0.15  // Faint pattern always visible (for queryability + subtle territory fill)
+          ]
+        }
+      })
+
+      // Add city boundaries line layer with hash-based colors
       mapInstance.addLayer({
         'id': CITY_BOUNDARIES_LAYER,
         'type': 'line',
         'source': CITY_BOUNDARIES_SOURCE,
         'source-layer': 'city_boundaries',
         'paint': {
-          'line-color': boundaryColor,
+          // Color varies by city_id hash (hue) and population (brightness)
+          'line-color': [
+            'interpolate', ['linear'], ['get', 'population'],
+            // Small cities: lighter colors
+            0, ['match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
+              0, lightPalette[0], 1, lightPalette[1], 2, lightPalette[2],
+              3, lightPalette[3], 4, lightPalette[4], 5, lightPalette[5], defaultLight],
+            // Large cities: darker colors
+            5000000, ['match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
+              0, darkPalette[0], 1, darkPalette[1], 2, darkPalette[2],
+              3, darkPalette[3], 4, darkPalette[4], 5, darkPalette[5], defaultDark]
+          ],
           'line-width': [
             'case',
             ['boolean', ['feature-state', 'hover'], false],
@@ -461,25 +508,53 @@ export function useMap(options: UseMapOptions) {
         }
       })
 
-      // Add city labels layer
+      // Add city labels layer with population-based sizing
       mapInstance.addLayer({
         'id': CITY_LABELS_LAYER,
         'type': 'symbol',
         'source': CITY_BOUNDARIES_SOURCE,
         'source-layer': 'city_boundaries',
         'layout': {
+          // Sort by population descending so larger cities' labels take precedence
+          'symbol-sort-key': ['*', -1, ['get', 'population']],
           'text-field': ['get', 'name'],
-          'text-font': ['Noto Sans Regular'],
+          // Font weight: bold for megacities, semibold for major cities
+          'text-font': [
+            'step', ['get', 'population'],
+            ['literal', ['Crimson Pro Regular']],
+            1000000, ['literal', ['Crimson Pro SemiBold']],
+            5000000, ['literal', ['Crimson Pro Bold']]
+          ],
+          // Size based on population, scaling with zoom (1.5x)
           'text-size': [
             'interpolate', ['linear'], ['zoom'],
-            4, 10,
-            8, 12,
-            12, 14
+            // At zoom 4: smaller sizes
+            4, ['step', ['get', 'population'],
+              12,        // < 100k
+              100000, 14,
+              500000, 15,
+              1000000, 18,
+              5000000, 21
+            ],
+            // At zoom 10: larger sizes
+            10, ['step', ['get', 'population'],
+              15,        // < 100k
+              100000, 18,
+              500000, 21,
+              1000000, 24,
+              5000000, 30
+            ]
           ],
           'text-anchor': 'center',
           'text-allow-overlap': false,
           'text-ignore-placement': false,
-          'symbol-placement': 'point'
+          'symbol-placement': 'point',
+          // Moderate padding to reduce duplicate labels while still showing dense areas
+          'text-padding': ['interpolate', ['linear'], ['zoom'],
+            4, 10,
+            8, 20,
+            12, 40
+          ]
         },
         'paint': {
           'text-color': labelColor,
@@ -488,10 +563,22 @@ export function useMap(options: UseMapOptions) {
         }
       })
 
-      // Apply epoch filter to both layers
+      // Apply epoch filter to boundary layers
       const epochFilter: maplibregl.FilterSpecification = ['==', ['get', 'epoch'], selectedYear.value]
+      mapInstance.setFilter(CITY_BOUNDARIES_HOVER_LAYER, epochFilter)
       mapInstance.setFilter(CITY_BOUNDARIES_LAYER, epochFilter)
-      mapInstance.setFilter(CITY_LABELS_LAYER, epochFilter)
+
+      // Apply epoch + zoom-based population filter to labels
+      // At low zoom, only show cities > 1M to reduce clutter
+      const labelFilter: maplibregl.FilterSpecification = [
+        'all',
+        ['==', ['get', 'epoch'], selectedYear.value],
+        ['any',
+          ['>=', ['zoom'], 6],
+          ['>=', ['get', 'population'], 1000000]
+        ]
+      ]
+      mapInstance.setFilter(CITY_LABELS_LAYER, labelFilter)
 
       cityBoundariesLoaded.value = true
       console.log('City boundaries and labels added for epoch:', selectedYear.value)
@@ -506,81 +593,75 @@ export function useMap(options: UseMapOptions) {
   function updateCityBoundariesFilter(year: number) {
     if (!map.value || !cityBoundariesLoaded.value) return
 
+    // Epoch filter for boundary layers
     const epochFilter: maplibregl.FilterSpecification = ['==', ['get', 'epoch'], year]
+    map.value.setFilter(CITY_BOUNDARIES_HOVER_LAYER, epochFilter)
     map.value.setFilter(CITY_BOUNDARIES_LAYER, epochFilter)
-    map.value.setFilter(CITY_LABELS_LAYER, epochFilter)
+
+    // Epoch + zoom-based population filter for labels
+    const labelFilter: maplibregl.FilterSpecification = [
+      'all',
+      ['==', ['get', 'epoch'], year],
+      ['any',
+        ['>=', ['zoom'], 6],
+        ['>=', ['get', 'population'], 1000000]
+      ]
+    ]
+    map.value.setFilter(CITY_LABELS_LAYER, labelFilter)
   }
 
   /**
    * Set up hover event handlers for city boundaries
+   * Uses global mousemove with queryRenderedFeatures for reliable hover detection
    */
   function setupCityHoverEvents(mapInstance: maplibregl.Map) {
-    // Remove existing handlers to avoid duplicates
-    mapInstance.off('mouseenter', CITY_BOUNDARIES_LAYER, onMouseEnter)
-    mapInstance.off('mouseleave', CITY_BOUNDARIES_LAYER, onMouseLeave)
-    mapInstance.off('mousemove', CITY_BOUNDARIES_LAYER, onMouseMove)
+    // Use global mousemove instead of layer-specific events
+    // This is more reliable as it doesn't depend on layer hit-testing
+    mapInstance.on('mousemove', (e) => {
+      // Query features at cursor position from both hover and line layers
+      const features = mapInstance.queryRenderedFeatures(e.point, {
+        layers: [CITY_BOUNDARIES_HOVER_LAYER, CITY_BOUNDARIES_LAYER]
+      })
 
-    // Add handlers
-    mapInstance.on('mouseenter', CITY_BOUNDARIES_LAYER, onMouseEnter)
-    mapInstance.on('mouseleave', CITY_BOUNDARIES_LAYER, onMouseLeave)
-    mapInstance.on('mousemove', CITY_BOUNDARIES_LAYER, onMouseMove)
-  }
+      const feature = features[0]
+      if (feature) {
+        mapInstance.getCanvas().style.cursor = 'pointer'
 
-  function onMouseEnter() {
-    if (map.value) {
-      map.value.getCanvas().style.cursor = 'pointer'
-    }
-  }
+        // Clear previous hover state if different feature
+        if (hoveredFeatureId !== null && hoveredFeatureId !== feature.id) {
+          mapInstance.setFeatureState(
+            { source: CITY_BOUNDARIES_SOURCE, sourceLayer: 'city_boundaries', id: hoveredFeatureId },
+            { hover: false }
+          )
+        }
 
-  function onMouseLeave() {
-    if (!map.value) return
+        // Set new hover state
+        if (feature.id !== undefined) {
+          hoveredFeatureId = feature.id
+          mapInstance.setFeatureState(
+            { source: CITY_BOUNDARIES_SOURCE, sourceLayer: 'city_boundaries', id: feature.id },
+            { hover: true }
+          )
 
-    map.value.getCanvas().style.cursor = ''
-
-    // Clear feature state for previous hovered feature
-    if (hoveredFeatureId !== null) {
-      map.value.setFeatureState(
-        { source: CITY_BOUNDARIES_SOURCE, sourceLayer: 'city_boundaries', id: hoveredFeatureId },
-        { hover: false }
-      )
-      hoveredFeatureId = null
-    }
-
-    // Clear hover state
-    clearHover()
-  }
-
-  function onMouseMove(e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) {
-    if (!map.value) return
-
-    const features = e.features
-    if (!features || features.length === 0) return
-
-    const feature = features[0]
-    if (!feature) return
-
-    // Clear previous hover state
-    if (hoveredFeatureId !== null && hoveredFeatureId !== feature.id) {
-      map.value.setFeatureState(
-        { source: CITY_BOUNDARIES_SOURCE, sourceLayer: 'city_boundaries', id: hoveredFeatureId },
-        { hover: false }
-      )
-    }
-
-    // Set new hover state
-    if (feature.id !== undefined) {
-      hoveredFeatureId = feature.id
-      map.value.setFeatureState(
-        { source: CITY_BOUNDARIES_SOURCE, sourceLayer: 'city_boundaries', id: feature.id },
-        { hover: true }
-      )
-    }
-
-    // Set hovered city ID for boundary highlighting
-    const cityId = feature.properties?.city_id as string | undefined
-    if (cityId) {
-      setHoveredCityId(cityId)
-    }
+          // Set hovered city ID for external use
+          const cityId = feature.properties?.city_id as string | undefined
+          if (cityId) {
+            setHoveredCityId(cityId)
+          }
+        }
+      } else {
+        // Clear hover when not over any city
+        mapInstance.getCanvas().style.cursor = ''
+        if (hoveredFeatureId !== null) {
+          mapInstance.setFeatureState(
+            { source: CITY_BOUNDARIES_SOURCE, sourceLayer: 'city_boundaries', id: hoveredFeatureId },
+            { hover: false }
+          )
+          hoveredFeatureId = null
+          clearHover()
+        }
+      }
+    })
   }
 
   /**
@@ -614,9 +695,6 @@ export function useMap(options: UseMapOptions) {
       // Handle map load
       mapInstance.on('load', () => {
         isLoading.value = false
-
-        // Hide basemap city labels (we show our own)
-        hideBasemapLayers(mapInstance)
 
         // Add city boundaries layer after a short delay
         // to ensure deck.gl overlay is added first
