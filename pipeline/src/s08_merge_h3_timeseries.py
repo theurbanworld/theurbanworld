@@ -85,6 +85,15 @@ def load_and_merge_epochs() -> pl.DataFrame:
         pl.col(col).fill_null(0.0) for col in pop_cols
     ])
 
+    # Convert h3_index from int64 to hex string for browser compatibility
+    # (JavaScript can't handle int64 values > Number.MAX_SAFE_INTEGER)
+    result = result.with_columns(
+        pl.col("h3_index").map_elements(
+            lambda x: format(x, 'x'),
+            return_dtype=pl.Utf8
+        ).alias("h3_index")
+    )
+
     # Ensure consistent column order
     ordered_cols = ["h3_index", "city_id"] + pop_cols
     result = result.select([c for c in ordered_cols if c in result.columns])
@@ -96,10 +105,12 @@ def load_and_merge_epochs() -> pl.DataFrame:
 
 
 def save_parquet(df: pl.DataFrame, output_path: Path) -> None:
-    """Save DataFrame to parquet."""
+    """Save DataFrame to parquet with snappy compression (browser-compatible)."""
     print(f"\nSaving to {output_path}...")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    df.write_parquet(output_path)
+    # Use snappy compression for browser compatibility
+    # (zstd default causes issues with @loaders.gl/parquet in browsers)
+    df.write_parquet(output_path, compression="snappy")
     file_size = output_path.stat().st_size / 1e6
     print(f"  Saved {output_path} ({file_size:.1f} MB)")
 

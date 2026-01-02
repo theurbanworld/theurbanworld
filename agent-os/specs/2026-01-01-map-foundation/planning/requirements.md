@@ -24,7 +24,7 @@ Cartography spec defines:
 - Accent: Muted forest green (#4A6741)
 
 **Q4:** How should H3 data be loaded (full file vs viewport-based)?
-**Answer:** Implement viewport-based loading (not full 62MB file load).
+**Answer:** Load full timeseries parquet file (62MB). Instant year switching is critical for UX when scrubbing 1975-2030.
 
 **Q5:** What basemap solution should be used?
 **Answer:** Protomaps CDN for dev, self-hosted PMTiles on R2 for prod. Implement dark mode toggle.
@@ -51,10 +51,13 @@ Cartography spec defines:
   - `H3PopulationLayer.vue` - H3 hexagon layer (skeleton)
   - `MapControls.vue` - Zoom controls (skeleton)
 
-**Data Files Available:**
-- `h3_r8_pop_timeseries.parquet` (62MB, ~1M hexagons) - H3 population data
+**Data Files Available (hosted on R2):**
+- `h3_r8_pop_timeseries.parquet` (62MB, ~1M hexagons) - H3 population data with all years
+  - URL: https://data.theurban.world/data/h3_r8_pop_timeseries.parquet
 - `city_boundaries.pmtiles` - City boundary vector tiles
+  - URL: https://data.theurban.world/tiles/city_boundaries.pmtiles
 - `cities_index.json` - City metadata index
+  - URL: https://data.theurban.world/data/cities_index.json
 
 **Tech Stack Already Configured:**
 - deck.gl 9.2.5
@@ -75,21 +78,7 @@ Cartography spec defines:
 - No auto-animate play button (document as possible future feature)
 
 **Q12:** What approach should be used for viewport-based loading?
-**Answer:** Recommend based on simplicity and existing infrastructure.
-
-**Recommendation:** Convert H3 data to PMTiles format. This is the simplest approach because:
-- PMTiles infrastructure already exists (used for city_boundaries.pmtiles)
-- Cloudflare R2 already configured for hosting PMTiles
-- pmtiles library already included in the frontend
-- MapLibre natively supports PMTiles via protocol handler
-- No new server-side infrastructure needed
-- Range-request based loading works automatically with viewport
-
-Implementation approach:
-1. Pipeline: Convert `h3_r8_pop_timeseries.parquet` to vector tiles with H3 hexagon geometries
-2. Pipeline: Package as PMTiles (one file per epoch, or single file with year as property)
-3. Frontend: Load via existing pmtiles protocol, render with deck.gl MVTLayer or MapLibre native layer
-4. Alternative: Use deck.gl's TileLayer with MVT tiles if H3HexagonLayer is preferred
+**Answer:** Deferred. Full file load for MVP (see Final Data Loading Decision below).
 
 **Q13:** What styling should city boundaries have?
 **Answer:**
@@ -97,6 +86,31 @@ Implementation approach:
 - Stroke weight: 3px
 - Fill: None, outline only
 - Hover state: Yes - highlight boundary when hovering over city
+
+### Final Data Loading Decision
+
+**Decision:** Load full timeseries parquet file upfront.
+
+**Rationale:**
+- Instant year switching is critical for UX when scrubbing 1975-2030 timeline
+- 62MB initial load is acceptable for MVP
+- Avoids complexity of viewport-based loading or tile conversion
+
+**Implementation:**
+- Use `h3_r8_pop_timeseries.parquet` (62MB, ~1M rows) directly
+- Load via @loaders.gl/parquet in browser
+- deck.gl H3HexagonLayer for native H3 rendering (best performance)
+- City hover detection via `city_boundaries.pmtiles` layer (already loading)
+- Filter displayed hexagons by selected year in-memory
+
+**Deferred to Future Optimization:**
+- Viewport-based loading
+- PMTiles conversion for H3 data
+- Progressive loading strategies
+
+**Deferred to Later Specs:**
+- Population tooltips on hexagon hover
+- Click-to-zoom to city
 
 ## Visual Assets
 
@@ -130,8 +144,8 @@ N/A - No visual files found in `/Users/jonathan/_code/urbanworld/agent-os/specs/
 - Hover: Highlight boundary when cursor enters city extent
 
 **Tooltips:**
-- Show city NAME when hovering over city boundary
-- No hexagon-level population tooltips
+- Show city NAME when hovering over city boundary (via city_boundaries.pmtiles)
+- No hexagon-level population tooltips (deferred)
 
 **Controls:**
 - Zoom +/- buttons visible
@@ -145,17 +159,22 @@ N/A - No visual files found in `/Users/jonathan/_code/urbanworld/agent-os/specs/
 
 ### Technical Considerations
 
-**Data Loading (Recommended Approach):**
-- Convert H3 parquet to PMTiles format in pipeline
-- Leverage existing PMTiles infrastructure (already used for city boundaries)
-- Host on Cloudflare R2 alongside other PMTiles
-- Use range-request based viewport loading (automatic with PMTiles)
+**Data Loading Strategy (Final Decision):**
+- Load full `h3_r8_pop_timeseries.parquet` (62MB) from https://data.theurban.world/data/h3_r8_pop_timeseries.parquet
+- Use @loaders.gl/parquet for browser-based parquet loading
+- Store all years in memory for instant year switching
+- Filter by selected year when rendering
 
 **Rendering Stack:**
-- deck.gl H3HexagonLayer or MVTLayer for hexagon rendering
-- MapLibre GL for basemap and city boundaries
+- deck.gl H3HexagonLayer for native H3 hexagon rendering (performance optimized)
+- MapLibre GL for basemap and city boundaries layer
 - Protomaps CDN for development basemap
 - Self-hosted PMTiles on R2 for production basemap
+
+**City Hover Detection:**
+- Use city_boundaries.pmtiles layer for hover detection
+- MapLibre queryRenderedFeatures or layer event handlers
+- Display city name from boundary feature properties
 
 **Color Scales:**
 - Light mode density gradient: Cream -> Warm sand -> Tan -> Ochre -> Sienna -> Deep brown
@@ -169,7 +188,7 @@ N/A - No visual files found in `/Users/jonathan/_code/urbanworld/agent-os/specs/
 
 ### Reusability Opportunities
 - Skeleton components already exist for GlobalMap, H3PopulationLayer, MapControls
-- PMTiles loading pattern from city_boundaries can be reused for H3 data
+- City boundaries PMTiles already available and configured
 - Nuxt UI v4 components for slider and buttons
 - protomaps-themes-base as foundation for custom sepia theme
 
@@ -183,18 +202,22 @@ N/A - No visual files found in `/Users/jonathan/_code/urbanworld/agent-os/specs/
 - Sepia color theme (light mode)
 - Dark mode with inverted sepia palette
 - Zoom +/- controls
-- Viewport-based data loading via PMTiles
+- Full parquet file load (62MB) for instant year switching
 
 **Out of Scope:**
 - City search functionality (separate spec)
 - City info panel (separate spec)
 - 3D/tilted map view
 - Compass/rotation controls
-- Hexagon-level population tooltips
-- Click-to-select city functionality (roadmap item 2)
+- Hexagon-level population tooltips (deferred)
+- Click-to-zoom to city (deferred)
 - Year slider auto-play animation (future feature)
+- Viewport-based loading optimization (future optimization)
 
 ### Future Features (Documented for Later)
 - Year slider auto-play/animate button
 - Smooth transitions between years
 - Hexagon-level tooltips with population data
+- Click-to-zoom to city extent
+- Viewport-based loading for performance optimization
+- PMTiles conversion for H3 data

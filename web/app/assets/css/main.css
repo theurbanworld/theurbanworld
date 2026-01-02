@@ -24,4 +24,66 @@
   --color-espresso: #3D352C;
   --color-body: #4A4238;
   --color-data: #5C4A3D;
+
+  /* Basemap sepia colors (light mode) */
+  --color-parchment: #F5F1E6;
+  --color-water: #B8C5CE;
+  --color-border: #9A9385;
+
+  /* Density gradient (6 steps, light mode) */
+  --color-density-1: #F7F3E8;
+  --color-density-2: #E8DCC8;
+  --color-density-3: #D4C4A8;
+  --color-density-4: #B89F72;
+  --color-density-5: #8B7355;
+  --color-density-6: #5C4A3D;
+
+  /* City boundary color (light mode) */
+  --color-city-boundary: #4A4238;
+
+  /* Selection highlight */
+  --color-selection: #D4DED0;
+
+  /* Dark mode basemap sepia colors */
+  --color-dark-parchment: #2A2420;
+  --color-dark-water: #3A4550;
+  --color-dark-border: #6A6258;
+
+  /* Dark mode density gradient (6 steps, inverted) */
+  --color-dark-density-1: #5C4A3D;
+  --color-dark-density-2: #8B7355;
+  --color-dark-density-3: #B89F72;
+  --color-dark-density-4: #D4C4A8;
+  --color-dark-density-5: #E8DCC8;
+  --color-dark-density-6: #F7F3E8;
+
+  /* Dark mode city boundary color */
+  --color-dark-city-boundary: #8A8275;
+
+  /* Dark mode typography colors */
+  --color-dark-espresso: #E8E0D5;
+  --color-dark-body: #D8D0C5;
+  --color-dark-data: #C8C0B5;
+}
+
+/* Dark mode variable overrides */
+.dark {
+  --color-parchment: #2A2420;
+  --color-water: #3A4550;
+  --color-border: #6A6258;
+
+  --color-density-1: #5C4A3D;
+  --color-density-2: #8B7355;
+  --color-density-3: #B89F72;
+  --color-density-4: #D4C4A8;
+  --color-density-5: #E8DCC8;
+  --color-density-6: #F7F3E8;
+
+  --color-city-boundary: #8A8275;
+
+  --color-espresso: #E8E0D5;
+  --color-body: #D8D0C5;
+  --color-data: #C8C0B5;
+
+  --color-selection: #3A5233;
 }

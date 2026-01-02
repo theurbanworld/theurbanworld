@@ -1,11 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 //
 // Urban Data Platform - Nuxt Configuration
-//
-// TODO:
-// - Configure Cloudflare Pages deployment preset
-// - Add MapLibre GL CSS import
-// - Configure SSR settings for map components
 
 export default defineNuxtConfig({
   modules: [
@@ -14,11 +9,21 @@ export default defineNuxtConfig({
     '@nuxt/fonts'
   ],
 
+  components: [
+    {
+      path: '~/components',
+      pathPrefix: false
+    }
+  ],
+
   devtools: {
     enabled: true
   },
 
-  css: ['~/assets/css/main.css'],
+  css: [
+    '~/assets/css/main.css',
+    'maplibre-gl/dist/maplibre-gl.css'
+  ],
 
   // Runtime configuration for environment variables
   runtimeConfig: {

@@ -24,6 +24,7 @@ from pathlib import Path
 
 import boto3
 import geopandas as gpd
+import pandas as pd
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -36,10 +37,31 @@ R2_KEY = "tiles/city_boundaries.pmtiles"
 
 
 def load_geometries() -> gpd.GeoDataFrame:
-    """Load city geometries from parquet."""
+    """Load city geometries with names and populations."""
     print(f"Loading geometries from {GEOMETRIES_PARQUET}...")
     gdf = gpd.read_parquet(GEOMETRIES_PARQUET)
     print(f"  Loaded {len(gdf):,} geometries ({gdf['city_id'].nunique():,} cities)")
+
+    # Load city names
+    print("Loading city names...")
+    cities = pd.read_parquet("data/processed/cities/cities.parquet")[["city_id", "name"]]
+    print(f"  Loaded {len(cities):,} city names")
+
+    # Load per-epoch population
+    print("Loading per-epoch populations...")
+    populations = pd.read_parquet("data/processed/cities/city_populations.parquet")[
+        ["city_id", "epoch", "population"]
+    ]
+    print(f"  Loaded {len(populations):,} population records")
+
+    # Join name (one per city)
+    gdf = gdf.merge(cities, on="city_id", how="left")
+    print(f"  Joined names: {gdf['name'].notna().sum():,} matched")
+
+    # Join population (per city-epoch)
+    gdf = gdf.merge(populations, on=["city_id", "epoch"], how="left")
+    print(f"  Joined populations: {gdf['population'].notna().sum():,} matched")
+
     return gdf
 
 
@@ -47,12 +69,14 @@ def generate_geojson(gdf: gpd.GeoDataFrame, output_path: Path) -> None:
     """Convert GeoDataFrame to GeoJSON for tippecanoe."""
     print(f"Converting to GeoJSON...")
 
-    # Keep only needed columns
-    gdf_export = gdf[["city_id", "epoch", "geometry"]].copy()
+    # Keep needed columns including name and population
+    gdf_export = gdf[["city_id", "epoch", "name", "population", "geometry"]].copy()
 
-    # Ensure city_id is string for tippecanoe
+    # Ensure proper types for tippecanoe
     gdf_export["city_id"] = gdf_export["city_id"].astype(str)
     gdf_export["epoch"] = gdf_export["epoch"].astype(int)
+    gdf_export["name"] = gdf_export["name"].fillna("")
+    gdf_export["population"] = gdf_export["population"].fillna(0).astype(int)
 
     # Write to GeoJSON
     gdf_export.to_file(output_path, driver="GeoJSON")

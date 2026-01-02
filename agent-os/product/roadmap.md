@@ -4,7 +4,7 @@
 
 Goal: Ship a functional observatory that demonstrates the core value proposition - data as a lens for understanding cities, starting with Bertaud's radial density model.
 
-1. [ ] Map Foundation — Implement deck.gl H3HexagonLayer displaying global population density from GeoParquet on R2, with MapLibre basemap using Protomaps PMTiles `M`
+1. [x] Map Foundation — Implement deck.gl H3HexagonLayer displaying global population density from GeoParquet on R2, with MapLibre basemap using Protomaps PMTiles `M`
 2. [ ] City Selection — Click or tap a city on the map to select it; highlight selected city boundary; pan/zoom to city extent `S`
 3. [ ] City Info Panel — Display selected city's name, country, population, area, and density with clean typography and layout `S`
 4. [ ] City Search — Implement Fuse.js client-side search over city index; show results dropdown; select to navigate to city `S`
@@ -50,9 +50,9 @@ Goal: Add the narrative layer that transforms data visualization into urban educ
 
 ---
 
-## Phase 4: Bridging Ville and Cité (2-3 Months)
+## Phase 4: Bridging Ville and Cite (2-3 Months)
 
-Goal: Connect measurable form (ville) to lived experience (cité). Help users understand what cities feel like, not just how they measure.
+Goal: Connect measurable form (ville) to lived experience (cite). Help users understand what cities feel like, not just how they measure.
 
 23. [ ] Geographic Context Layer — Visualize natural constraints (water, elevation, agricultural land) that shape urban form `M`
 24. [ ] Climate Context — Show climate classification; enable comparison of cities with similar density but different climates `M`
@@ -99,7 +99,7 @@ Goal: Build sustainable model for ongoing development while maintaining accessib
 
 - **Mental models over metrics:** Each feature should teach a way of seeing, not just display more data
 - **Show first, explain later:** Let curious users discover patterns; add explanatory content based on real questions
-- **Ville and cité together:** Connect measurable form to lived experience wherever possible
+- **Ville and cite together:** Connect measurable form to lived experience wherever possible
 - **Objective to interpretive, not normative:** Teach how to see, not what to conclude
 - **Ship incrementally:** Each item should be independently deployable and valuable
 - **Mobile-first:** Urban exploration happens on phones
