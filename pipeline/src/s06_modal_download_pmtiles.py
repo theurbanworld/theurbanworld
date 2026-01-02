@@ -81,14 +81,15 @@ image = (
 # Constants
 PROTOMAPS_URL_TEMPLATE = "https://build.protomaps.com/{date}.pmtiles"
 PROTOMAPS_HASH_TEMPLATE = "https://build.protomaps.com/{date}.pmtiles.b3"
-R2_PREFIX = "pmtiles"
+R2_PREFIX = "tiles"
 
 
 @app.function(
     image=image,
-    memory=2048,  # 2GB - streaming so low memory needed
-    cpu=0.5,
+    memory=4096,  # 4GB for larger buffers
+    cpu=4.0,  # More CPU for TLS/network throughput
     timeout=28800,  # 8 hours max
+    region="eu-west-1",  # Protomaps server is in Europe
     secrets=[modal.Secret.from_name("r2-credentials")],
 )
 def download_and_upload_pmtiles(date: str, verify: bool = False) -> dict:
@@ -162,13 +163,13 @@ def download_and_upload_pmtiles(date: str, verify: bool = False) -> dict:
     upload_id = mpu["UploadId"]
 
     try:
-        # Stream download and upload in 100MB chunks
-        chunk_size = 100 * 1024 * 1024  # 100MB
+        # Stream download and upload in 256MB chunks (fewer S3 API calls)
+        chunk_size = 256 * 1024 * 1024  # 256MB
         parts = []
         part_number = 1
         total_bytes = 0
 
-        print(f"Streaming download/upload with {chunk_size / 1e6:.0f}MB chunks...")
+        print(f"Streaming download/upload with {chunk_size / 1e6:.0f}MB upload chunks...")
 
         with httpx.Client(timeout=httpx.Timeout(600.0, connect=30.0)) as client:
             with client.stream("GET", source_url, follow_redirects=True) as response:
@@ -184,7 +185,7 @@ def download_and_upload_pmtiles(date: str, verify: bool = False) -> dict:
                     print("Total size: unknown (streaming)")
 
                 buffer = b""
-                for chunk in response.iter_bytes(chunk_size=1024 * 1024):  # 1MB read chunks
+                for chunk in response.iter_bytes(chunk_size=8 * 1024 * 1024):  # 8MB read chunks
                     buffer += chunk
                     total_bytes += len(chunk)
 
