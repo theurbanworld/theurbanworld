@@ -298,11 +298,12 @@ watch(
     mapInstance.on('zoom', () => {
       if (isUpdatingFromViewState) return
 
+      const center = mapInstance.getCenter()
       const zoom = mapInstance.getZoom()
 
       onViewStateChange({
-        longitude: viewState.value.longitude,
-        latitude: viewState.value.latitude,
+        longitude: center.lng,
+        latitude: center.lat,
         zoom: zoom,
         pitch: 0,
         bearing: 0

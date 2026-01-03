@@ -28,14 +28,15 @@
         />
       </div>
 
-      <!-- Level icons with labels (right side, Building at top to Metropolitan at bottom) -->
-      <div class="flex-1 flex flex-col justify-between h-52">
+      <!-- Level icons with labels (right side, proportionally positioned) -->
+      <div class="flex-1 relative h-52">
         <button
-          v-for="level in reversedLevels"
+          v-for="level in ZOOM_LEVELS"
           :key="level.name"
           :data-testid="`level-button-${level.name.toLowerCase()}`"
+          :style="{ bottom: `${getLevelPosition(level.centerZoom)}%` }"
           :class="[
-            'flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors w-full',
+            'absolute left-0 right-0 -translate-y-1/2 flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors',
             'hover:bg-forest-100 dark:hover:bg-forest-900/50',
             currentLevelName === level.name
               ? 'bg-forest-200 dark:bg-forest-800 text-forest-700 dark:text-forest-300 font-medium'
@@ -62,22 +63,29 @@
  * Displays a vertical slider for map zoom control with clickable
  * level icons and labels for snap-to-level navigation. Positioned
  * at bottom-right corner, matching GlobalContextPanel width.
+ * Levels (Globe, Metropolitan, City, Street) are positioned proportionally
+ * along the slider based on their zoom values.
  * On mobile, labels are hidden but icons remain visible.
  */
 
 import { useViewState } from '../../composables/useViewState'
 import { useZoomLevel, type ZoomLevelName } from '../../composables/useZoomLevel'
 
-// Zoom range constants
-const MIN_ZOOM = 0
-const MAX_ZOOM = 18
+// Zoom range constants (Globe to Street)
+const MIN_ZOOM = 1.5
+const MAX_ZOOM = 16
 
 // Composables
 const { viewState, setZoom, setZoomAnimated } = useViewState()
 const { ZOOM_LEVELS, getCenterZoomForLevel, currentLevelName } = useZoomLevel()
 
-// Reverse levels for display (Building at top, Metropolitan at bottom)
-const reversedLevels = computed(() => [...ZOOM_LEVELS].reverse())
+/**
+ * Calculate the proportional position (0-100%) for a zoom level
+ * Used to position buttons along the slider proportionally
+ */
+function getLevelPosition(centerZoom: number): number {
+  return ((centerZoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100
+}
 
 // Two-way binding for slider
 const sliderValue = computed({

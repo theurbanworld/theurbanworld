@@ -10,7 +10,7 @@ import { useViewState } from './useViewState'
 /**
  * Zoom level name type
  */
-export type ZoomLevelName = 'Metropolitan' | 'City' | 'Neighborhood' | 'Street' | 'Building'
+export type ZoomLevelName = 'Globe' | 'Metropolitan' | 'City' | 'Street'
 
 /**
  * Zoom level definition
@@ -29,47 +29,40 @@ export interface ZoomLevel {
 }
 
 /**
- * All zoom levels ordered from low zoom (global view) to high zoom (building view)
+ * All zoom levels ordered from low zoom (globe view) to high zoom (street view)
  */
 const ZOOM_LEVELS: ZoomLevel[] = [
   {
-    name: 'Metropolitan',
+    name: 'Globe',
     icon: 'i-streamline-earth-1-remix',
     minZoom: 0,
     maxZoom: 5,
-    centerZoom: 2.5
+    centerZoom: 1.5
+  },
+  {
+    name: 'Metropolitan',
+    icon: 'i-lucide-building-2',
+    minZoom: 5,
+    maxZoom: 10.5,
+    centerZoom: 8
   },
   {
     name: 'City',
-    icon: 'i-lucide-building-2',
-    minZoom: 5,
-    maxZoom: 10,
-    centerZoom: 7.5
-  },
-  {
-    name: 'Neighborhood',
     icon: 'i-lucide-trees',
-    minZoom: 10,
-    maxZoom: 13,
-    centerZoom: 11.5
+    minZoom: 10.5,
+    maxZoom: 14.5,
+    centerZoom: 13
   },
   {
     name: 'Street',
     icon: 'i-streamline-street-road-remix',
-    minZoom: 13,
-    maxZoom: 16,
-    centerZoom: 14.5
-  },
-  {
-    name: 'Building',
-    icon: 'i-lucide-building',
-    minZoom: 16,
-    maxZoom: 22, // MapLibre max zoom
-    centerZoom: 17
+    minZoom: 14.5,
+    maxZoom: 22,
+    centerZoom: 16
   }
 ]
 
-// Default fallback level (Building)
+// Default fallback level (Street)
 const DEFAULT_LEVEL: ZoomLevel = ZOOM_LEVELS[ZOOM_LEVELS.length - 1]!
 
 export function useZoomLevel() {
@@ -88,7 +81,7 @@ export function useZoomLevel() {
         return level
       }
     }
-    // Default to the last level (Building) for very high zooms
+    // Default to the last level (Street) for very high zooms
     return DEFAULT_LEVEL
   }
 
@@ -100,7 +93,7 @@ export function useZoomLevel() {
    */
   function getCenterZoomForLevel(name: ZoomLevelName): number {
     const level = ZOOM_LEVELS.find(l => l.name === name)
-    return level?.centerZoom ?? 7.5 // Default to City level
+    return level?.centerZoom ?? 8 // Default to Metropolitan level
   }
 
   /**

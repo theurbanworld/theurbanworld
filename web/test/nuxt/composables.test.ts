@@ -69,28 +69,25 @@ describe('useZoomLevel', () => {
     const { getLevelForZoom } = useZoomLevel()
 
     // Test each zoom range
-    expect(getLevelForZoom(2).name).toBe('Metropolitan')
-    expect(getLevelForZoom(7).name).toBe('City')
-    expect(getLevelForZoom(11).name).toBe('Neighborhood')
-    expect(getLevelForZoom(14).name).toBe('Street')
-    expect(getLevelForZoom(17).name).toBe('Building')
+    expect(getLevelForZoom(2).name).toBe('Globe')
+    expect(getLevelForZoom(7).name).toBe('Metropolitan')
+    expect(getLevelForZoom(12).name).toBe('City')
+    expect(getLevelForZoom(15).name).toBe('Street')
 
     // Test boundary cases
-    expect(getLevelForZoom(0).name).toBe('Metropolitan')
-    expect(getLevelForZoom(5).name).toBe('City') // At boundary, goes to next level
-    expect(getLevelForZoom(10).name).toBe('Neighborhood')
-    expect(getLevelForZoom(13).name).toBe('Street')
-    expect(getLevelForZoom(16).name).toBe('Building')
+    expect(getLevelForZoom(0).name).toBe('Globe')
+    expect(getLevelForZoom(5).name).toBe('Metropolitan') // At boundary, goes to next level
+    expect(getLevelForZoom(10.5).name).toBe('City')
+    expect(getLevelForZoom(14.5).name).toBe('Street')
   })
 
   it('returns correct center zoom for snap-to-level functionality', () => {
     const { getCenterZoomForLevel, ZOOM_LEVELS } = useZoomLevel()
 
-    expect(getCenterZoomForLevel('Metropolitan')).toBe(2.5)
-    expect(getCenterZoomForLevel('City')).toBe(7.5)
-    expect(getCenterZoomForLevel('Neighborhood')).toBe(11.5)
-    expect(getCenterZoomForLevel('Street')).toBe(14.5)
-    expect(getCenterZoomForLevel('Building')).toBe(17)
+    expect(getCenterZoomForLevel('Globe')).toBe(1.5)
+    expect(getCenterZoomForLevel('Metropolitan')).toBe(8)
+    expect(getCenterZoomForLevel('City')).toBe(13)
+    expect(getCenterZoomForLevel('Street')).toBe(16)
 
     // Verify all levels have defined centers
     for (const level of ZOOM_LEVELS) {
@@ -101,29 +98,25 @@ describe('useZoomLevel', () => {
   it('provides all level definitions with correct icons', () => {
     const { ZOOM_LEVELS } = useZoomLevel()
 
-    expect(ZOOM_LEVELS).toHaveLength(5)
+    expect(ZOOM_LEVELS).toHaveLength(4)
 
-    // Verify level order (Metropolitan to Building, low to high zoom)
-    const metropolitan = ZOOM_LEVELS[0]
-    const city = ZOOM_LEVELS[1]
-    const neighborhood = ZOOM_LEVELS[2]
+    // Verify level order (Globe to Street, low to high zoom)
+    const globe = ZOOM_LEVELS[0]
+    const metropolitan = ZOOM_LEVELS[1]
+    const city = ZOOM_LEVELS[2]
     const street = ZOOM_LEVELS[3]
-    const building = ZOOM_LEVELS[4]
+
+    expect(globe?.name).toBe('Globe')
+    expect(globe?.icon).toBe('i-streamline-earth-1-remix')
 
     expect(metropolitan?.name).toBe('Metropolitan')
-    expect(metropolitan?.icon).toBe('i-lucide-globe')
+    expect(metropolitan?.icon).toBe('i-lucide-building-2')
 
     expect(city?.name).toBe('City')
-    expect(city?.icon).toBe('i-lucide-building-2')
-
-    expect(neighborhood?.name).toBe('Neighborhood')
-    expect(neighborhood?.icon).toBe('i-lucide-trees')
+    expect(city?.icon).toBe('i-lucide-trees')
 
     expect(street?.name).toBe('Street')
-    expect(street?.icon).toBe('i-lucide-road')
-
-    expect(building?.name).toBe('Building')
-    expect(building?.icon).toBe('i-lucide-building')
+    expect(street?.icon).toBe('i-streamline-street-road-remix')
   })
 })
 
