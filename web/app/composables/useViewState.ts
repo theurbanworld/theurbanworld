@@ -28,6 +28,10 @@ const DEFAULT_VIEW_STATE: ViewState = {
 // Singleton reactive state shared across composable instances
 const viewState = ref<ViewState>({ ...DEFAULT_VIEW_STATE })
 
+// Animation flag for smooth transitions (used by GlobalMap)
+const shouldAnimate = ref(false)
+const ANIMATION_DURATION = 300 // ms
+
 export function useViewState() {
   /**
    * Set the view state programmatically
@@ -75,6 +79,24 @@ export function useViewState() {
   }
 
   /**
+   * Set zoom level with smooth animation
+   * Used for snap-to-level buttons where animation improves UX
+   *
+   * @param zoom - New zoom level to set
+   */
+  function setZoomAnimated(zoom: number) {
+    shouldAnimate.value = true
+    setZoom(zoom)
+  }
+
+  /**
+   * Clear the animation flag (called by GlobalMap after animating)
+   */
+  function clearAnimationFlag() {
+    shouldAnimate.value = false
+  }
+
+  /**
    * Reset to default global view
    */
   function resetViewState() {
@@ -85,7 +107,12 @@ export function useViewState() {
     viewState: readonly(viewState),
     setViewState,
     setZoom,
+    setZoomAnimated,
     onViewStateChange,
-    resetViewState
+    resetViewState,
+    // Animation support
+    shouldAnimate: readonly(shouldAnimate),
+    animationDuration: ANIMATION_DURATION,
+    clearAnimationFlag
   }
 }

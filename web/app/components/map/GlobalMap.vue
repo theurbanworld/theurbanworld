@@ -117,7 +117,7 @@ const { isInitialized: isDeckInitialized, setLayers } = useDeckGL({
 })
 
 // View state management
-const { viewState, onViewStateChange } = useViewState()
+const { viewState, onViewStateChange, shouldAnimate, animationDuration, clearAnimationFlag } = useViewState()
 
 // H3 data loading
 const {
@@ -235,7 +235,7 @@ watch(isDeckInitialized, (initialized) => {
 
 // Watch for view state changes and update map
 watch(
-  viewState,
+  () => viewState.value,
   (newViewState) => {
     if (!map.value || isUpdatingFromViewState) return
 
@@ -251,10 +251,21 @@ watch(
     const zoomChanged = Math.abs(currentZoom - newViewState.zoom) > 0.01
 
     if (centerChanged || zoomChanged) {
-      map.value.jumpTo({
-        center: [newViewState.longitude, newViewState.latitude],
-        zoom: newViewState.zoom
-      })
+      if (shouldAnimate.value) {
+        // Smooth animated transition for snap-to-level actions
+        map.value.easeTo({
+          center: [newViewState.longitude, newViewState.latitude],
+          zoom: newViewState.zoom,
+          duration: animationDuration
+        })
+        clearAnimationFlag()
+      } else {
+        // Instant transition for slider dragging
+        map.value.jumpTo({
+          center: [newViewState.longitude, newViewState.latitude],
+          zoom: newViewState.zoom
+        })
+      }
     }
 
     isUpdatingFromViewState = false
@@ -277,6 +288,21 @@ watch(
       onViewStateChange({
         longitude: center.lng,
         latitude: center.lat,
+        zoom: zoom,
+        pitch: 0,
+        bearing: 0
+      })
+    })
+
+    // Real-time zoom sync for smooth slider updates during zooming
+    mapInstance.on('zoom', () => {
+      if (isUpdatingFromViewState) return
+
+      const zoom = mapInstance.getZoom()
+
+      onViewStateChange({
+        longitude: viewState.value.longitude,
+        latitude: viewState.value.latitude,
         zoom: zoom,
         pitch: 0,
         bearing: 0

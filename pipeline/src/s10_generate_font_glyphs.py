@@ -1,13 +1,14 @@
 """
-Generate MapLibre-compatible font glyphs for Inter and Crimson Pro fonts.
+Generate MapLibre-compatible font glyphs for Inter, Crimson Pro, and JetBrains Mono fonts.
 
 Purpose: Download font files from GitHub/Google Fonts, generate SDF (Signed Distance
          Field) PBF glyphs using build_pbf_glyphs, and upload to R2 for use with
          MapLibre GL city labels.
 
 Usage:
-  uv run python -m src.s10_generate_font_glyphs           # Generate and upload
-  uv run python -m src.s10_generate_font_glyphs --local   # Generate only (no upload)
+  uv run python -m src.s10_generate_font_glyphs                           # Generate all and upload
+  uv run python -m src.s10_generate_font_glyphs --local                   # Generate all, no upload
+  uv run python -m src.s10_generate_font_glyphs --family "JetBrains Mono" # Generate one family only
 
 Requirements:
   - build_pbf_glyphs installed (cargo install build_pbf_glyphs)
@@ -53,6 +54,14 @@ FONT_FAMILIES = {
             "Crimson Pro Regular": "https://cdn.jsdelivr.net/fontsource/fonts/crimson-pro@latest/latin-400-normal.ttf",
             "Crimson Pro SemiBold": "https://cdn.jsdelivr.net/fontsource/fonts/crimson-pro@latest/latin-600-normal.ttf",
             "Crimson Pro Bold": "https://cdn.jsdelivr.net/fontsource/fonts/crimson-pro@latest/latin-700-normal.ttf",
+        }
+    },
+    "JetBrains Mono": {
+        "type": "direct",
+        "variants": {
+            # Full font from GitHub (1372 glyphs) - includes arrows ↗↘→
+            # Fontsource latin subset only has 229 glyphs without arrows
+            "JetBrains Mono Regular": "https://github.com/JetBrains/JetBrainsMono/raw/master/fonts/ttf/JetBrainsMono-Regular.ttf",
         }
     }
 }
@@ -271,10 +280,20 @@ def upload_fonts_to_r2(fonts_dir: Path) -> int:
     return uploaded_count
 
 
-def main(local_only: bool = False) -> None:
-    """Generate font glyphs for all font families and upload to R2."""
+def main(local_only: bool = False, family: str | None = None) -> None:
+    """Generate font glyphs for font families and upload to R2."""
+    # Determine which families to process
+    if family:
+        if family not in FONT_FAMILIES:
+            available = ", ".join(FONT_FAMILIES.keys())
+            raise ValueError(f"Unknown family: {family}. Available: {available}")
+        families_to_process = {family: FONT_FAMILIES[family]}
+    else:
+        families_to_process = FONT_FAMILIES
+
+    family_names = ", ".join(families_to_process.keys())
     print("=" * 60)
-    print("Font Glyph Generator (Inter + Crimson Pro)")
+    print(f"Font Glyph Generator ({family_names})")
     print("=" * 60)
 
     # Check prerequisites
@@ -284,8 +303,8 @@ def main(local_only: bool = False) -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         download_dir = Path(tmpdir)
 
-        # Download all font families
-        for family_name, family_config in FONT_FAMILIES.items():
+        # Download selected font families
+        for family_name, family_config in families_to_process.items():
             download_font_family(family_name, family_config, download_dir)
 
         # List TTF files in download dir
@@ -319,6 +338,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Generate font glyphs for MapLibre")
     parser.add_argument("--local", action="store_true", help="Skip R2 upload")
+    parser.add_argument("--family", type=str, help="Generate only this font family (e.g., 'JetBrains Mono')")
     args = parser.parse_args()
 
-    main(local_only=args.local)
+    main(local_only=args.local, family=args.family)

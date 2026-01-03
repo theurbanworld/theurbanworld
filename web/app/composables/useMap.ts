@@ -14,7 +14,7 @@ import maplibregl from 'maplibre-gl'
 import { Protocol } from 'pmtiles'
 import { layersWithCustomTheme, namedTheme } from 'protomaps-themes-base'
 import type { Theme } from 'protomaps-themes-base'
-import type { ShallowRef } from 'vue'
+import { markRaw, type ShallowRef } from 'vue'
 
 // PMTiles protocol singleton to avoid re-registration
 let pmtilesProtocolRegistered = false
@@ -549,7 +549,7 @@ export function useMap(options: UseMapOptions) {
                 // Population trend arrow
                 ['match', ['get', 'pop_trend'], 1, ' ↗', -1, ' ↘', ' →'],
                 // Separator
-                ' ‧ ',
+                ' • ',
                 // Density compact format (K/km²)
                 ['case',
                   ['>=', ['get', 'density_per_km2'], 1000],
@@ -565,7 +565,7 @@ export function useMap(options: UseMapOptions) {
                 // Density trend arrow
                 ['match', ['get', 'density_trend'], 1, ' ↗', -1, ' ↘', ' →']
               ],
-              { 'font-scale': 0.65 }
+              { 'font-scale': 0.6, 'text-font': ['literal', ['JetBrains Mono Regular']] }
             ]
           ],
           // Font weight: bold for megacities, semibold for major cities
@@ -760,7 +760,7 @@ export function useMap(options: UseMapOptions) {
         error.value = new Error(e.error?.message || 'Map loading failed')
       })
 
-      map.value = mapInstance
+      map.value = markRaw(mapInstance)
     } catch (e) {
       console.error('Failed to initialize map:', e)
       error.value = e instanceof Error ? e : new Error('Failed to initialize map')

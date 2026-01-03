@@ -1,8 +1,8 @@
 <template>
   <div
     data-testid="global-context-panel"
-    class="fixed z-100 p-4 rounded-xl shadow-lg bg-parchment/95 dark:bg-espresso/95 backdrop-blur-sm
-           right-4 top-20 w-56
+    class="absolute z-100 p-4 rounded-xl shadow-lg bg-parchment/95 dark:bg-espresso/95 backdrop-blur-sm
+           right-4 top-4 w-56
            max-sm:right-2 max-sm:top-2 max-sm:w-auto max-sm:min-w-40"
   >
     <!-- Epoch Year Display -->
