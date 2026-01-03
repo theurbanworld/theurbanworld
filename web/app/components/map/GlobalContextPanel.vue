@@ -39,9 +39,12 @@
     <!-- World Population - hidden on small screens -->
     <div class="max-sm:hidden">
       <DataPoint
+        id="world-population"
         label="World Population"
         :value="worldPopulation"
         :raw-value="worldPopulationRaw"
+        :trend-previous="worldPopulationTrendPrevious"
+        :trend-next="worldPopulationTrendNext"
       />
 
       <!-- Spacer -->
@@ -49,13 +52,16 @@
 
       <!-- Urban Population -->
       <DataPoint
+        id="urban-population"
         label="Urban Population"
         :value="urbanPopulation"
         :raw-value="urbanPopulationRaw"
         :trend-previous="urbanPopulationTrendPrevious"
         :trend-next="urbanPopulationTrendNext"
         :percentage-value="urbanPercentageOfWorld"
-        percentage-label="of World Population"
+        percentage-label="of"
+        percentage-ref-label="World Population"
+        percentage-ref-id="world-population"
       />
     </div>
   </div>
@@ -84,6 +90,8 @@ const { selectedYear, setYear } = useSelectedYear()
 const {
   worldPopulation,
   worldPopulationRaw,
+  worldPopulationTrendPrevious,
+  worldPopulationTrendNext,
   urbanPopulation,
   urbanPopulationRaw,
   urbanPopulationTrendPrevious,

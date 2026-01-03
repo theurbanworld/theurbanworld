@@ -5,10 +5,11 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { useGlobalStats, humanizeNumber, getTrendInfo, calculatePercentage } from '../../app/composables/useGlobalStats'
+import { useGlobalStats, humanizeNumber, getTrendInfo, calculatePercentage, toAnnualRate } from '../../app/composables/useGlobalStats'
 import { useSelectedYear } from '../../app/composables/useSelectedYear'
 import { useZoomLevel } from '../../app/composables/useZoomLevel'
 import { useViewState } from '../../app/composables/useViewState'
+import { useDataPointHighlight } from '../../app/composables/useDataPointHighlight'
 
 describe('useGlobalStats', () => {
   beforeEach(() => {
@@ -63,14 +64,24 @@ describe('useGlobalStats', () => {
     expect(humanizeNumber(1500000)).toBe('1.5 million')
   })
 
-  it('calculates urban population trend from previous epoch', () => {
+  it('calculates annualized urban population trend from previous epoch', () => {
     const { setYear } = useSelectedYear()
     setYear(2025)
 
     const { urbanPopulationTrendPrevious } = useGlobalStats()
 
-    // 2020->2025: (3569570193 - 3350187245) / 3350187245 * 100 ≈ 6.55%
-    expect(urbanPopulationTrendPrevious.value).toBeCloseTo(6.55, 1)
+    // 2020->2025: 5-year rate ~6.55% → annualized ~1.28%
+    expect(urbanPopulationTrendPrevious.value).toBeCloseTo(1.28, 1)
+  })
+
+  it('calculates annualized world population trend from previous epoch', () => {
+    const { setYear } = useSelectedYear()
+    setYear(2025)
+
+    const { worldPopulationTrendPrevious } = useGlobalStats()
+
+    // 2020->2025: 5-year rate ~4.48% → annualized ~0.88%
+    expect(worldPopulationTrendPrevious.value).toBeCloseTo(0.88, 1)
   })
 
   it('returns null for trendPrevious at first epoch (1975)', () => {
@@ -101,45 +112,45 @@ describe('useGlobalStats', () => {
 })
 
 describe('getTrendInfo', () => {
-  it('returns strong-up with -40° rotation and emerald color for >= 10% change', () => {
-    expect(getTrendInfo(10).level).toBe('strong-up')
-    expect(getTrendInfo(15).level).toBe('strong-up')
-    expect(getTrendInfo(10).icon).toBe('i-lucide-move-right')
-    expect(getTrendInfo(10).rotation).toBe(-40)
-    expect(getTrendInfo(10).colorClass).toContain('emerald')
-  })
-
-  it('returns moderate-up with -20° rotation and green color for 5% to <10% change', () => {
-    expect(getTrendInfo(5).level).toBe('moderate-up')
-    expect(getTrendInfo(9.9).level).toBe('moderate-up')
-    expect(getTrendInfo(7).icon).toBe('i-lucide-move-right')
-    expect(getTrendInfo(7).rotation).toBe(-20)
-    expect(getTrendInfo(7).colorClass).toContain('green')
-  })
-
-  it('returns stable with 0° rotation and gray color for -2% to <5% change', () => {
-    expect(getTrendInfo(0).level).toBe('stable')
-    expect(getTrendInfo(4.9).level).toBe('stable')
-    expect(getTrendInfo(-1.9).level).toBe('stable')
+  it('returns strong-up with -40° rotation and emerald color for >= 2% change', () => {
+    expect(getTrendInfo(2).level).toBe('strong-up')
+    expect(getTrendInfo(3).level).toBe('strong-up')
     expect(getTrendInfo(2).icon).toBe('i-lucide-move-right')
-    expect(getTrendInfo(2).rotation).toBe(0)
-    expect(getTrendInfo(2).colorClass).toContain('gray')
+    expect(getTrendInfo(2).rotation).toBe(-40)
+    expect(getTrendInfo(2).colorClass).toContain('emerald')
   })
 
-  it('returns moderate-down with +20° rotation and amber color for -5% to <=-2% change', () => {
-    expect(getTrendInfo(-2).level).toBe('moderate-down')
-    expect(getTrendInfo(-4.9).level).toBe('moderate-down')
-    expect(getTrendInfo(-3).icon).toBe('i-lucide-move-right')
-    expect(getTrendInfo(-3).rotation).toBe(20)
-    expect(getTrendInfo(-3).colorClass).toContain('amber')
+  it('returns moderate-up with -20° rotation and green color for 1% to <2% change', () => {
+    expect(getTrendInfo(1).level).toBe('moderate-up')
+    expect(getTrendInfo(1.9).level).toBe('moderate-up')
+    expect(getTrendInfo(1.5).icon).toBe('i-lucide-move-right')
+    expect(getTrendInfo(1.5).rotation).toBe(-20)
+    expect(getTrendInfo(1.5).colorClass).toContain('green')
   })
 
-  it('returns strong-down with +40° rotation and red color for <= -5% change', () => {
-    expect(getTrendInfo(-5).level).toBe('strong-down')
-    expect(getTrendInfo(-10).level).toBe('strong-down')
-    expect(getTrendInfo(-5).icon).toBe('i-lucide-move-right')
-    expect(getTrendInfo(-5).rotation).toBe(40)
-    expect(getTrendInfo(-5).colorClass).toContain('red')
+  it('returns stable with 0° rotation and gray color for -0.4% to <1% change', () => {
+    expect(getTrendInfo(0).level).toBe('stable')
+    expect(getTrendInfo(0.9).level).toBe('stable')
+    expect(getTrendInfo(-0.3).level).toBe('stable')
+    expect(getTrendInfo(0.5).icon).toBe('i-lucide-move-right')
+    expect(getTrendInfo(0.5).rotation).toBe(0)
+    expect(getTrendInfo(0.5).colorClass).toContain('gray')
+  })
+
+  it('returns moderate-down with +20° rotation and amber color for -1% to <=-0.4% change', () => {
+    expect(getTrendInfo(-0.4).level).toBe('moderate-down')
+    expect(getTrendInfo(-0.9).level).toBe('moderate-down')
+    expect(getTrendInfo(-0.6).icon).toBe('i-lucide-move-right')
+    expect(getTrendInfo(-0.6).rotation).toBe(20)
+    expect(getTrendInfo(-0.6).colorClass).toContain('amber')
+  })
+
+  it('returns strong-down with +40° rotation and red color for <= -1% change', () => {
+    expect(getTrendInfo(-1).level).toBe('strong-down')
+    expect(getTrendInfo(-2).level).toBe('strong-down')
+    expect(getTrendInfo(-1).icon).toBe('i-lucide-move-right')
+    expect(getTrendInfo(-1).rotation).toBe(40)
+    expect(getTrendInfo(-1).colorClass).toContain('red')
   })
 })
 
@@ -155,6 +166,22 @@ describe('calculatePercentage', () => {
 
   it('handles large numbers', () => {
     expect(calculatePercentage(3569570193, 8191988536)).toBeCloseTo(43.6, 1)
+  })
+})
+
+describe('toAnnualRate', () => {
+  it('converts 5-year rate to annualized rate', () => {
+    // 6.55% over 5 years → ~1.28% per year
+    expect(toAnnualRate(6.55)).toBeCloseTo(1.28, 1)
+  })
+
+  it('handles zero rate', () => {
+    expect(toAnnualRate(0)).toBe(0)
+  })
+
+  it('handles negative rates', () => {
+    // -5% over 5 years → ~-1.02% per year
+    expect(toAnnualRate(-5)).toBeCloseTo(-1.02, 1)
   })
 })
 
@@ -251,5 +278,51 @@ describe('useViewState.setZoom', () => {
     expect(viewState.value.latitude).toBe(20)
     expect(viewState.value.pitch).toBe(0)
     expect(viewState.value.bearing).toBe(0)
+  })
+})
+
+describe('useDataPointHighlight', () => {
+  beforeEach(() => {
+    // Clear highlight state before each test
+    const { setHighlight } = useDataPointHighlight()
+    setHighlight(null)
+  })
+
+  it('starts with null highlighted ID', () => {
+    const { highlightedId } = useDataPointHighlight()
+    expect(highlightedId.value).toBeNull()
+  })
+
+  it('setHighlight updates the highlighted ID', () => {
+    const { highlightedId, setHighlight } = useDataPointHighlight()
+
+    setHighlight('world-population')
+    expect(highlightedId.value).toBe('world-population')
+
+    setHighlight('urban-population')
+    expect(highlightedId.value).toBe('urban-population')
+
+    setHighlight(null)
+    expect(highlightedId.value).toBeNull()
+  })
+
+  it('isHighlighted returns correct boolean for given ID', () => {
+    const { setHighlight, isHighlighted } = useDataPointHighlight()
+
+    setHighlight('world-population')
+
+    expect(isHighlighted('world-population').value).toBe(true)
+    expect(isHighlighted('urban-population').value).toBe(false)
+    expect(isHighlighted('other-id').value).toBe(false)
+  })
+
+  it('state is shared across multiple calls to useDataPointHighlight', () => {
+    const instance1 = useDataPointHighlight()
+    const instance2 = useDataPointHighlight()
+
+    instance1.setHighlight('test-id')
+
+    expect(instance2.highlightedId.value).toBe('test-id')
+    expect(instance2.isHighlighted('test-id').value).toBe(true)
   })
 })

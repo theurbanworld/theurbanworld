@@ -30,7 +30,7 @@ export interface TrendInfo {
 }
 
 /**
- * Get trend display info based on percentage change
+ * Get trend display info based on annualized percentage change
  *
  * Uses a single icon (i-lucide-move-right) rotated at 5 levels:
  * - Strong up: -40° rotation (emerald)
@@ -39,23 +39,23 @@ export interface TrendInfo {
  * - Moderate down: +20° rotation (amber)
  * - Strong down: +40° rotation (red)
  *
- * Thresholds:
- * - Strong up: >= 10%
- * - Moderate up: >= 5%
- * - Stable: -2% to 5%
- * - Moderate down: -5% to -2%
- * - Strong down: < -5%
+ * Thresholds (annualized rates):
+ * - Strong up: >= 2%
+ * - Moderate up: >= 1%
+ * - Stable: -0.4% to 1%
+ * - Moderate down: -1% to -0.4%
+ * - Strong down: < -1%
  */
 export function getTrendInfo(percentChange: number): TrendInfo {
   const icon = 'i-lucide-move-right'
 
-  if (percentChange >= 10) {
+  if (percentChange >= 2) {
     return { level: 'strong-up', icon, colorClass: 'text-emerald-600 dark:text-emerald-400', rotation: -40 }
-  } else if (percentChange >= 5) {
+  } else if (percentChange >= 1) {
     return { level: 'moderate-up', icon, colorClass: 'text-green-600 dark:text-green-400', rotation: -20 }
-  } else if (percentChange > -2) {
+  } else if (percentChange > -0.4) {
     return { level: 'stable', icon, colorClass: 'text-gray-500 dark:text-gray-400', rotation: 0 }
-  } else if (percentChange > -5) {
+  } else if (percentChange > -1) {
     return { level: 'moderate-down', icon, colorClass: 'text-amber-600 dark:text-amber-400', rotation: 20 }
   } else {
     return { level: 'strong-down', icon, colorClass: 'text-red-600 dark:text-red-400', rotation: 40 }
@@ -69,6 +69,14 @@ export function getTrendInfo(percentChange: number): TrendInfo {
 export function calculatePercentage(part: number, whole: number): number {
   if (whole === 0) return 0
   return Math.round((part / whole) * 1000) / 10
+}
+
+/**
+ * Convert a 5-year percentage change to annualized rate (CAGR)
+ * E.g., 6.55% over 5 years → ~1.27% per year
+ */
+export function toAnnualRate(fiveYearPercent: number): number {
+  return (Math.pow(1 + fiveYearPercent / 100, 1 / 5) - 1) * 100
 }
 
 /**
@@ -162,6 +170,34 @@ export function useGlobalStats() {
   })
 
   /**
+   * Annualized growth rate from previous epoch for world population
+   * Returns null if no previous epoch exists (at 1975)
+   */
+  const worldPopulationTrendPrevious = computed((): number | null => {
+    const currentIndex = YEAR_EPOCHS.indexOf(selectedYear.value)
+    if (currentIndex <= 0) return null
+    const prevYear = YEAR_EPOCHS[currentIndex - 1]!
+    const prevValue = WORLD_POPULATION[prevYear]
+    const currValue = WORLD_POPULATION[selectedYear.value]
+    const fiveYearRate = ((currValue - prevValue) / prevValue) * 100
+    return toAnnualRate(fiveYearRate)
+  })
+
+  /**
+   * Annualized growth rate to next epoch for world population
+   * Returns null if no next epoch exists (at 2030)
+   */
+  const worldPopulationTrendNext = computed((): number | null => {
+    const currentIndex = YEAR_EPOCHS.indexOf(selectedYear.value)
+    if (currentIndex >= YEAR_EPOCHS.length - 1) return null
+    const nextYear = YEAR_EPOCHS[currentIndex + 1]!
+    const nextValue = WORLD_POPULATION[nextYear]
+    const currValue = WORLD_POPULATION[selectedYear.value]
+    const fiveYearRate = ((nextValue - currValue) / currValue) * 100
+    return toAnnualRate(fiveYearRate)
+  })
+
+  /**
    * Raw urban population for selected year
    */
   const urbanPopulationRaw = computed(() => {
@@ -176,7 +212,7 @@ export function useGlobalStats() {
   })
 
   /**
-   * Calculate percentage change from previous epoch for urban population
+   * Annualized growth rate from previous epoch for urban population
    * Returns null if no previous epoch exists (at 1975)
    */
   const urbanPopulationTrendPrevious = computed((): number | null => {
@@ -185,11 +221,12 @@ export function useGlobalStats() {
     const prevYear = YEAR_EPOCHS[currentIndex - 1]!
     const prevValue = URBAN_POPULATION[prevYear]
     const currValue = URBAN_POPULATION[selectedYear.value]
-    return ((currValue - prevValue) / prevValue) * 100
+    const fiveYearRate = ((currValue - prevValue) / prevValue) * 100
+    return toAnnualRate(fiveYearRate)
   })
 
   /**
-   * Calculate percentage change to next epoch for urban population
+   * Annualized growth rate to next epoch for urban population
    * Returns null if no next epoch exists (at 2030)
    */
   const urbanPopulationTrendNext = computed((): number | null => {
@@ -198,7 +235,8 @@ export function useGlobalStats() {
     const nextYear = YEAR_EPOCHS[currentIndex + 1]!
     const nextValue = URBAN_POPULATION[nextYear]
     const currValue = URBAN_POPULATION[selectedYear.value]
-    return ((nextValue - currValue) / currValue) * 100
+    const fiveYearRate = ((nextValue - currValue) / currValue) * 100
+    return toAnnualRate(fiveYearRate)
   })
 
   /**
@@ -213,13 +251,17 @@ export function useGlobalStats() {
     worldPopulationRaw,
     /** Humanized world population string (e.g., "8.2 billion") */
     worldPopulation,
+    /** Annualized growth rate from previous epoch for world population (null at 1975) */
+    worldPopulationTrendPrevious,
+    /** Annualized growth rate to next epoch for world population (null at 2030) */
+    worldPopulationTrendNext,
     /** Raw urban population value */
     urbanPopulationRaw,
     /** Humanized urban population string (e.g., "3.6 billion") */
     urbanPopulation,
-    /** Percentage change from previous epoch for urban population (null at 1975) */
+    /** Annualized growth rate from previous epoch for urban population (null at 1975) */
     urbanPopulationTrendPrevious,
-    /** Percentage change to next epoch for urban population (null at 2030) */
+    /** Annualized growth rate to next epoch for urban population (null at 2030) */
     urbanPopulationTrendNext,
     /** Urban population as percentage of world population */
     urbanPercentageOfWorld,

@@ -1,5 +1,10 @@
 <template>
-  <div class="flex flex-col gap-0.5">
+  <div
+    :class="[
+      'flex flex-col gap-0.5 rounded-lg transition-shadow duration-200',
+      isCurrentlyHighlighted && 'ring-2 ring-forest-400/50'
+    ]"
+  >
     <!-- Label -->
     <span
       data-testid="datapoint-label"
@@ -11,17 +16,17 @@
     <!-- Value row with optional trend indicator -->
     <div class="flex items-center gap-2">
       <!-- Trend indicator (if trend data provided) -->
-      <UTooltip v-if="showTrend" :text="trendTooltip">
+      <UTooltip v-if="showTrend" :text="trendTooltip" :delay-duration="0">
         <UIcon
           data-testid="datapoint-trend-icon"
           :name="trendInfo.icon"
-          :class="['w-5 h-5 shrink-0 transition-transform', trendInfo.colorClass]"
+          :class="['w-5 h-5 shrink-0 transition-transform cursor-help', trendInfo.colorClass]"
           :style="{ transform: `rotate(${trendInfo.rotation}deg)` }"
         />
       </UTooltip>
 
       <!-- Value with tooltip -->
-      <UTooltip :text="formattedRawValue">
+      <UTooltip :text="formattedRawValue" :delay-duration="0">
         <div
           data-testid="datapoint-value-wrapper"
           class="cursor-help"
@@ -44,12 +49,23 @@
       >
         {{ formattedPercentage }}
       </span>
+      <!-- Connector text (plain, non-hoverable) -->
       <span
         v-if="percentageLabel"
         data-testid="datapoint-percentage-label"
         class="text-xs text-body/60 dark:text-cream/60"
       >
         {{ percentageLabel }}
+      </span>
+      <!-- Reference label (hoverable, triggers highlight) -->
+      <span
+        v-if="percentageRefLabel"
+        data-testid="datapoint-percentage-ref-label"
+        class="text-xs px-1.5 py-0.5 rounded bg-forest-100/50 dark:bg-forest-900/30 cursor-pointer transition-colors hover:bg-forest-200/70 dark:hover:bg-forest-800/50 text-body/70 dark:text-cream/70"
+        @mouseenter="onPercentageLabelMouseEnter"
+        @mouseleave="onPercentageLabelMouseLeave"
+      >
+        {{ percentageRefLabel }}
       </span>
     </div>
 
@@ -74,6 +90,7 @@
  */
 
 import { formatExactNumber, getTrendInfo, type TrendInfo } from '../../composables/useGlobalStats'
+import { useDataPointHighlight } from '../../composables/useDataPointHighlight'
 
 interface Props {
   /** Small label text (e.g., "World Population") */
@@ -90,11 +107,43 @@ interface Props {
   trendNext?: number | null
   /** Percentage value to display (e.g., 43.6 for "43.6%") */
   percentageValue?: number
-  /** Label for the percentage (e.g., "of World Population") */
+  /** Connector text before the reference (e.g., "of") */
   percentageLabel?: string
+  /** Reference label name - hoverable (e.g., "World Population") */
+  percentageRefLabel?: string
+  /** Unique identifier for this DataPoint (for cross-referencing) */
+  id?: string
+  /** ID of another DataPoint that this percentage references */
+  percentageRefId?: string
 }
 
 const props = defineProps<Props>()
+
+// Cross-reference highlight state
+const { setHighlight, isHighlighted } = useDataPointHighlight()
+
+/**
+ * Is THIS DataPoint currently highlighted by another DataPoint?
+ */
+const isCurrentlyHighlighted = computed(() =>
+  props.id ? isHighlighted(props.id).value : false
+)
+
+/**
+ * Handle mouse enter on percentage label - highlight referenced DataPoint
+ */
+function onPercentageLabelMouseEnter() {
+  if (props.percentageRefId) {
+    setHighlight(props.percentageRefId)
+  }
+}
+
+/**
+ * Handle mouse leave on percentage label - clear highlight
+ */
+function onPercentageLabelMouseLeave() {
+  setHighlight(null)
+}
 
 /**
  * Format raw value for tooltip display with locale-aware separators
@@ -150,7 +199,7 @@ const showTrend = computed(() => trendDirection.value !== null)
  */
 const trendInfo = computed((): TrendInfo => {
   if (trendDirection.value === null) {
-    return { level: 'stable', icon: 'i-lucide-minus', colorClass: 'text-gray-400' }
+    return { level: 'stable', icon: 'i-lucide-move-right', colorClass: 'text-gray-400', rotation: 0 }
   }
   return getTrendInfo(trendDirection.value)
 })
@@ -161,7 +210,7 @@ const trendInfo = computed((): TrendInfo => {
 const trendTooltip = computed(() => {
   if (trendDirection.value === null) return ''
   const sign = trendDirection.value >= 0 ? '+' : ''
-  return `${sign}${trendDirection.value.toFixed(1)}% per epoch`
+  return `about ${sign}${trendDirection.value.toFixed(1)}% per year`
 })
 
 /**

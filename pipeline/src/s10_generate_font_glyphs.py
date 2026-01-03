@@ -13,6 +13,7 @@ Usage:
 Requirements:
   - build_pbf_glyphs installed (cargo install build_pbf_glyphs)
   - FreeType 2.10+ available
+  - rclone installed (brew install rclone)
   - R2 credentials in .env
 
 Date: 2026-01-02
@@ -25,7 +26,6 @@ import tempfile
 import zipfile
 from pathlib import Path
 
-import boto3
 import requests
 from dotenv import load_dotenv
 
@@ -228,59 +228,48 @@ def generate_pbf_glyphs(font_dir: Path, output_dir: Path) -> None:
             print(f"  {variant_dir.name}: {len(pbf_files)} PBF files")
 
 
-def upload_fonts_to_r2(fonts_dir: Path) -> int:
-    """Upload all font PBF files to R2.
+def upload_fonts_to_r2(fonts_dir: Path) -> None:
+    """Upload all font PBF files to R2 using rclone.
 
     Args:
         fonts_dir: Directory containing font variant subdirectories
-
-    Returns:
-        Number of files uploaded
     """
-    print("\nUploading fonts to R2...")
+    print("\nUploading fonts to R2 via rclone...")
 
     endpoint_url = os.environ["R2_ENDPOINT_URL"]
     access_key = os.environ["R2_ACCESS_KEY_ID"]
     secret_key = os.environ["R2_SECRET_ACCESS_KEY"]
     bucket_name = os.environ["R2_BUCKET_NAME"]
 
-    s3 = boto3.client(
-        "s3",
-        endpoint_url=endpoint_url,
-        aws_access_key_id=access_key,
-        aws_secret_access_key=secret_key,
-    )
+    # Configure rclone for R2 via environment variables
+    env = os.environ.copy()
+    env["RCLONE_CONFIG_R2_TYPE"] = "s3"
+    env["RCLONE_CONFIG_R2_PROVIDER"] = "Cloudflare"
+    env["RCLONE_CONFIG_R2_ACCESS_KEY_ID"] = access_key
+    env["RCLONE_CONFIG_R2_SECRET_ACCESS_KEY"] = secret_key
+    env["RCLONE_CONFIG_R2_ENDPOINT"] = endpoint_url
+    env["RCLONE_CONFIG_R2_ACL"] = "private"
 
-    uploaded_count = 0
+    # Sync fonts directory to R2
+    # --transfers=8 for parallel uploads
+    # --header-upload for cache headers
+    cmd = [
+        "rclone", "sync",
+        str(fonts_dir),
+        f"r2:{bucket_name}/{R2_PREFIX}",
+        "--transfers=8",
+        "--header-upload", "Cache-Control: public, max-age=31536000",
+        "--header-upload", "Content-Type: application/x-protobuf",
+        "--progress",
+    ]
 
-    # Iterate through font variant directories
-    for variant_dir in sorted(fonts_dir.iterdir()):
-        if not variant_dir.is_dir():
-            continue
+    print(f"  Running: rclone sync {fonts_dir} r2:{bucket_name}/{R2_PREFIX}")
+    result = subprocess.run(cmd, env=env)
 
-        variant_name = variant_dir.name
-        print(f"  Uploading {variant_name}...")
+    if result.returncode != 0:
+        raise RuntimeError(f"rclone sync failed with exit code {result.returncode}")
 
-        # Upload each PBF file
-        pbf_files = list(variant_dir.glob("*.pbf"))
-        for pbf_file in pbf_files:
-            r2_key = f"{R2_PREFIX}/{variant_name}/{pbf_file.name}"
-
-            s3.upload_file(
-                str(pbf_file),
-                bucket_name,
-                r2_key,
-                ExtraArgs={
-                    "ContentType": "application/x-protobuf",
-                    "CacheControl": "public, max-age=31536000",  # 1 year (fonts rarely change)
-                }
-            )
-            uploaded_count += 1
-
-        print(f"    Uploaded {len(pbf_files)} files")
-
-    print(f"\nTotal uploaded: {uploaded_count} files")
-    return uploaded_count
+    print("\nUpload complete!")
 
 
 def main(local_only: bool = False, family: str | None = None) -> None:
