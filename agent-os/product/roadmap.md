@@ -12,7 +12,7 @@ Goal: Ship a functional observatory that demonstrates the core value proposition
 6. [ ] Radial Density Profile Chart — Chart.js line chart showing Bertaud-style density vs distance profile; include log-scale toggle `S`
 7. [ ] Context Rankings — Show city's global rank, percentile, and regional rank for population and density alongside raw numbers `XS`
 8. [ ] Mobile Responsive Layout — Ensure map and panel work on mobile; collapsible panel; touch-friendly controls `S`
-9. [ ] Deploy to Production — Configure Cloudflare Workers deployment; verify R2 data access; set up theurban.world domain `S`
+9. [x] Deploy to Production — Configure Cloudflare Workers deployment; verify R2 data access; set up theurban.world domain `S`
 
 > Notes
 > - Items 1-2 are foundational and should be completed first
@@ -23,67 +23,77 @@ Goal: Ship a functional observatory that demonstrates the core value proposition
 
 ---
 
-## Phase 2: Context and Comparison (2-4 Weeks)
+## Phase 2: Global Data View and Context
+
+Goal: Enhance the global view with temporal and zoom controls, plus a context panel for aggregate data insights.
+
+10. [ ] Epoch Slider Improvements — Enhance the epoch slider with better visual design, smoother transitions, and clearer year labels `S`
+11. [ ] Zoom Slider — Add a zoom level slider control for precise map zoom adjustment alongside scroll/pinch gestures `S`
+12. [ ] Global Context Panel — Add a right-side panel displaying aggregate global data: total urban population, number of cities, regional breakdowns `M`
+
+---
+
+## Phase 3: Context and Comparison (2-4 Weeks)
 
 Goal: Deepen the contextual value; enable meaningful city comparisons; learn from user behavior.
 
-10. [ ] Density Peer Comparison — Show 3-5 cities with similar density profiles; enable one-click navigation to compare `S`
-11. [ ] Growth Context — Classify city growth pattern (rapid growth, stable, declining); show comparison to regional average `S`
-12. [ ] Improved Tooltips — Rich hover states on map showing city name and key stats before full selection `XS`
-13. [ ] Shareable City URLs — Deep links to specific cities (theurban.world/city/lagos-nigeria) with OG meta tags for social sharing `S`
-14. [ ] Methodology Page — Document data sources, what GHSL measures and does not measure, processing approach, limitations `M`
-15. [ ] About Page — Project story, vision for understanding cities, GHSL attribution, open source acknowledgments `XS`
-16. [ ] Performance Optimization — Lazy load charts; optimize initial bundle; target sub-2s time-to-interactive `M`
-17. [ ] Analytics Integration — Privacy-respecting analytics to understand which cities users explore and which features resonate `XS`
+13. [ ] Density Peer Comparison — Show 3-5 cities with similar density profiles; enable one-click navigation to compare `S`
+14. [ ] Growth Context — Classify city growth pattern (rapid growth, stable, declining); show comparison to regional average `S`
+15. [ ] Improved Tooltips — Rich hover states on map showing city name and key stats before full selection `XS`
+16. [ ] Shareable City URLs — Deep links to specific cities (theurban.world/city/lagos-nigeria) with OG meta tags for social sharing `S`
+17. [ ] Methodology Page — Document data sources, what GHSL measures and does not measure, processing approach, limitations `M`
+18. [ ] About Page — Project story, vision for understanding cities, GHSL attribution, open source acknowledgments `XS`
+19. [ ] Performance Optimization — Lazy load charts; optimize initial bundle; target sub-2s time-to-interactive `M`
+20. [ ] Analytics Integration — Privacy-respecting analytics to understand which cities users explore and which features resonate `XS`
 
 ---
 
-## Phase 3: Content System - Teaching Mental Models (1-2 Months)
+## Phase 4: Content System - Teaching Mental Models (1-2 Months)
 
 Goal: Add the narrative layer that transforms data visualization into urban education. Articles should be powered by the tool, not separate from it.
 
-18. [ ] MDC Content Infrastructure — Set up Nuxt Content with MDC for rich articles that embed interactive charts and map views `L`
-19. [ ] Methodology Articles — "Reading Radial Profiles: A Guide", "What GHSL Measures", "Why Population-Weighted Centroids Matter" `M`
-20. [ ] City Deep-Dives — Template for applying mental models to specific places: "The Geography of Lagos: Three Cities in One" `M`
-21. [ ] Comparative Analysis Articles — "The World's Most Monocentric Cities", "Where Density Meets Geography: Coastal Megacities" `L`
-22. [ ] Thematic City Collections — Curated sets teaching forces that shape cities: geography-constrained, transit-shaped, regulation-bounded `M`
+21. [ ] MDC Content Infrastructure — Set up Nuxt Content with MDC for rich articles that embed interactive charts and map views `L`
+22. [ ] Methodology Articles — "Reading Radial Profiles: A Guide", "What GHSL Measures", "Why Population-Weighted Centroids Matter" `M`
+23. [ ] City Deep-Dives — Template for applying mental models to specific places: "The Geography of Lagos: Three Cities in One" `M`
+24. [ ] Comparative Analysis Articles — "The World's Most Monocentric Cities", "Where Density Meets Geography: Coastal Megacities" `L`
+25. [ ] Thematic City Collections — Curated sets teaching forces that shape cities: geography-constrained, transit-shaped, regulation-bounded `M`
 
 ---
 
-## Phase 4: Bridging Ville and Cite (2-3 Months)
+## Phase 5: Bridging Ville and Cite (2-3 Months)
 
 Goal: Connect measurable form (ville) to lived experience (cite). Help users understand what cities feel like, not just how they measure.
 
-23. [ ] Geographic Context Layer — Visualize natural constraints (water, elevation, agricultural land) that shape urban form `M`
-24. [ ] Climate Context — Show climate classification; enable comparison of cities with similar density but different climates `M`
-25. [ ] Regulatory Archaeology — Where available, show administrative boundaries and how they create visible density patterns `L`
-26. [ ] Historical Growth Animation — Visualize how cities expanded epoch by epoch from 1975-2025 `L`
-27. [ ] Street-Level Connection — Link to or embed representative street-level imagery for visual context `M`
-28. [ ] Comparative Mode — Side-by-side city comparison with synchronized charts, metrics, and map views `L`
+26. [ ] Geographic Context Layer — Visualize natural constraints (water, elevation, agricultural land) that shape urban form `M`
+27. [ ] Climate Context — Show climate classification; enable comparison of cities with similar density but different climates `M`
+28. [ ] Regulatory Archaeology — Where available, show administrative boundaries and how they create visible density patterns `L`
+29. [ ] Historical Growth Animation — Visualize how cities expanded epoch by epoch from 1975-2025 `L`
+30. [ ] Street-Level Connection — Link to or embed representative street-level imagery for visual context `M`
+31. [ ] Comparative Mode — Side-by-side city comparison with synchronized charts, metrics, and map views `L`
 
 ---
 
-## Phase 5: Additional Mental Models (3-6 Months)
+## Phase 6: Additional Mental Models (3-6 Months)
 
 Goal: Expand the library of analytical lenses. Each new model should teach a way of seeing, not just show more data.
 
-29. [ ] Connectivity Analysis — Street network patterns (grid vs organic), intersection density, block sizes `L`
-30. [ ] Accessibility Modeling — Isochrone analysis from city centers; 15-minute city metrics where data permits `L`
-31. [ ] Urban Primacy — Zipf's law analysis for country/regional urban systems `M`
-32. [ ] Growth Pattern Classification — Expansion vs densification; greenfield vs infill patterns over time `L`
-33. [ ] Land Use Entropy — Where data available, measure mixing vs segregation of uses `L`
+32. [ ] Connectivity Analysis — Street network patterns (grid vs organic), intersection density, block sizes `L`
+33. [ ] Accessibility Modeling — Isochrone analysis from city centers; 15-minute city metrics where data permits `L`
+34. [ ] Urban Primacy — Zipf's law analysis for country/regional urban systems `M`
+35. [ ] Growth Pattern Classification — Expansion vs densification; greenfield vs infill patterns over time `L`
+36. [ ] Land Use Entropy — Where data available, measure mixing vs segregation of uses `L`
 
 ---
 
-## Phase 6: Sustainability and Professional Features (6+ Months)
+## Phase 7: Sustainability and Professional Features (6+ Months)
 
 Goal: Build sustainable model for ongoing development while maintaining accessibility.
 
-34. [ ] Data Export — Download city data as CSV/JSON for research and journalism use `M`
-35. [ ] Embed Widgets — Embeddable charts and maps for blogs, articles, reports `M`
-36. [ ] API Access — Public API for programmatic access to city metrics `L`
-37. [ ] Supporter Model — Optional tier for advanced features, early access, higher API limits `L`
-38. [ ] Custom Analysis — User-defined peer groups, saved comparisons, personal collections `L`
+37. [ ] Data Export — Download city data as CSV/JSON for research and journalism use `M`
+38. [ ] Embed Widgets — Embeddable charts and maps for blogs, articles, reports `M`
+39. [ ] API Access — Public API for programmatic access to city metrics `L`
+40. [ ] Supporter Model — Optional tier for advanced features, early access, higher API limits `L`
+41. [ ] Custom Analysis — User-defined peer groups, saved comparisons, personal collections `L`
 
 ---
 
