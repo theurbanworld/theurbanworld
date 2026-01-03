@@ -59,6 +59,22 @@ export function useViewState() {
   }
 
   /**
+   * Set zoom level while preserving current position
+   * Convenience method for snap-to-level functionality
+   *
+   * @param zoom - New zoom level to set
+   */
+  function setZoom(zoom: number) {
+    viewState.value = {
+      ...viewState.value,
+      zoom,
+      // Lock pitch and bearing to 0
+      pitch: 0,
+      bearing: 0
+    }
+  }
+
+  /**
    * Reset to default global view
    */
   function resetViewState() {
@@ -68,6 +84,7 @@ export function useViewState() {
   return {
     viewState: readonly(viewState),
     setViewState,
+    setZoom,
     onViewStateChange,
     resetViewState
   }

@@ -428,7 +428,7 @@ export function useMap(options: UseMapOptions) {
         mapInstance.addSource(CITY_BOUNDARIES_SOURCE, {
           type: 'vector',
           url: getCityBoundariesUrl(),
-          promoteId: { 'city_boundaries': 'city_id' }
+          promoteId: { city_boundaries: 'city_id' }
         })
       }
 
@@ -471,8 +471,8 @@ export function useMap(options: UseMapOptions) {
           'fill-opacity': [
             'case',
             ['boolean', ['feature-state', 'hover'], false],
-            0.7,  // Full pattern on hover
-            0.15  // Faint pattern always visible (for queryability + subtle territory fill)
+            0.7, // Full pattern on hover
+            0.15 // Faint pattern always visible (for queryability + subtle territory fill)
           ]
         }
       })
@@ -520,30 +520,52 @@ export function useMap(options: UseMapOptions) {
         'layout': {
           // Sort by population descending so larger cities' labels take precedence
           'symbol-sort-key': ['*', -1, ['get', 'population']],
-          // Text field: name only at low zoom, name + population at zoom 8+
+          // Text field: name only at low zoom, name + stats at zoom 8+
+          // Format at zoom 8+: "City Name\n1.5M ↗ ‧ 2.3K/km² ↘"
           'text-field': [
             'step', ['zoom'],
             // At zoom < 8: just show name
             ['get', 'name'],
-            // At zoom >= 8: show name + population in compact format
+            // At zoom >= 8: show name + population trend + density trend
             8, ['format',
               ['get', 'name'], {},
               '\n', {},
-              // Compact population format (7.2M, 149.7K, etc.)
-              ['case',
-                ['>=', ['get', 'population'], 1000000],
-                ['concat',
-                  ['number-format', ['/', ['get', 'population'], 1000000], { 'min-fraction-digits': 1, 'max-fraction-digits': 1 }],
-                  'M'
+              // Stats line: "1.5M ↗ ‧ 2.3K/km² ↘"
+              ['concat',
+                // Population compact format
+                ['case',
+                  ['>=', ['get', 'population'], 1000000],
+                  ['concat',
+                    ['number-format', ['/', ['get', 'population'], 1000000], { 'min-fraction-digits': 1, 'max-fraction-digits': 1 }],
+                    'M'
+                  ],
+                  ['>=', ['get', 'population'], 1000],
+                  ['concat',
+                    ['number-format', ['/', ['get', 'population'], 1000], { 'min-fraction-digits': 1, 'max-fraction-digits': 1 }],
+                    'K'
+                  ],
+                  ['to-string', ['round', ['get', 'population']]]
                 ],
-                ['>=', ['get', 'population'], 1000],
-                ['concat',
-                  ['number-format', ['/', ['get', 'population'], 1000], { 'min-fraction-digits': 1, 'max-fraction-digits': 1 }],
-                  'K'
+                // Population trend arrow
+                ['match', ['get', 'pop_trend'], 1, ' ↗', -1, ' ↘', ' →'],
+                // Separator
+                ' ‧ ',
+                // Density compact format (K/km²)
+                ['case',
+                  ['>=', ['get', 'density_per_km2'], 1000],
+                  ['concat',
+                    ['number-format', ['/', ['get', 'density_per_km2'], 1000], { 'min-fraction-digits': 1, 'max-fraction-digits': 1 }],
+                    'K/km²'
+                  ],
+                  ['concat',
+                    ['to-string', ['round', ['get', 'density_per_km2']]],
+                    '/km²'
+                  ]
                 ],
-                ['to-string', ['get', 'population']]
+                // Density trend arrow
+                ['match', ['get', 'density_trend'], 1, ' ↗', -1, ' ↘', ' →']
               ],
-              { 'font-scale': 0.7 }
+              { 'font-scale': 0.65 }
             ]
           ],
           // Font weight: bold for megacities, semibold for major cities
@@ -558,7 +580,7 @@ export function useMap(options: UseMapOptions) {
             'interpolate', ['linear'], ['zoom'],
             // At zoom 4: smaller sizes
             4, ['step', ['get', 'population'],
-              12,        // < 100k
+              12, // < 100k
               100000, 14,
               500000, 15,
               1000000, 18,
@@ -566,7 +588,7 @@ export function useMap(options: UseMapOptions) {
             ],
             // At zoom 10: larger sizes
             10, ['step', ['get', 'population'],
-              15,        // < 100k
+              15, // < 100k
               100000, 18,
               500000, 21,
               1000000, 24,

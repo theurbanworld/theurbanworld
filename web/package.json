@@ -8,7 +8,10 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
-    "typecheck": "nuxt typecheck"
+    "typecheck": "nuxt typecheck",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@deck.gl/core": "^9.2.5",
@@ -17,6 +20,7 @@
     "@deck.gl/mapbox": "^9.2.5",
     "@iconify-json/lucide": "^1.2.74",
     "@iconify-json/simple-icons": "^1.2.59",
+    "@iconify-json/streamline": "^1.2.5",
     "@loaders.gl/core": "^4.3.4",
     "@loaders.gl/parquet": "^4.3.4",
     "@nuxt/ui": "^4.2.1",
@@ -31,8 +35,12 @@
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.10.0",
+    "@nuxt/test-utils": "^3.21.0",
+    "@vue/test-utils": "^2.4.6",
     "eslint": "^9.39.1",
+    "happy-dom": "^20.0.11",
     "typescript": "^5.9.3",
+    "vitest": "^4.0.16",
     "vue-tsc": "^3.1.5"
   },
   "packageManager": "pnpm@10.25.0+sha512.5e82639027af37cf832061bcc6d639c219634488e0f2baebe785028a793de7b525ffcd3f7ff574f5e9860654e098fe852ba8ac5dd5cefe1767d23a020a92f501"

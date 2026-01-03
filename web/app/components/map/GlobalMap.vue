@@ -121,14 +121,14 @@ const { viewState, onViewStateChange } = useViewState()
 
 // H3 data loading
 const {
-  isLoading: isH3Loading,
-  loadProgress: h3LoadProgress,
+  isLoading: _isH3Loading,
+  loadProgress: _h3LoadProgress,
   error: h3Error,
   loadData: loadH3Data
 } = useH3Data()
 
 // Local state for dark mode (can be controlled via prop or internal)
-const isDarkMode = computed(() => props.isDarkMode ?? false)
+const _isDarkMode = computed(() => props.isDarkMode ?? false)
 
 // Combined error display
 const displayError = computed(() => mapError.value || h3Error.value)
@@ -147,7 +147,7 @@ const MAX_ZOOM = 18
 /**
  * Handle H3 layer updates from the renderless component
  */
-function onH3LayerUpdate(layer: Layer | null) {
+function _onH3LayerUpdate(layer: Layer | null) {
   console.log('[GlobalMap] onH3LayerUpdate called, layer:', layer ? 'exists' : 'null', 'isDeckInitialized:', isDeckInitialized.value)
   currentLayer.value = layer
 

@@ -6,7 +6,8 @@ export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
     '@nuxt/ui',
-    '@nuxt/fonts'
+    '@nuxt/fonts',
+    '@nuxt/test-utils/module'
   ],
 
   components: [
@@ -70,5 +71,5 @@ export default defineNuxtConfig({
       { name: 'Inter', weights: [300, 400, 500, 600, 700] },
       { name: 'JetBrains Mono', weights: [400, 500, 600, 700] }
     ]
-  },
+  }
 })

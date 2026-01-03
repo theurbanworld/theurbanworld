@@ -27,9 +27,9 @@ Goal: Ship a functional observatory that demonstrates the core value proposition
 
 Goal: Enhance the global view with temporal and zoom controls, plus a context panel for aggregate data insights.
 
-10. [ ] Epoch Slider Improvements — Enhance the epoch slider with better visual design, smoother transitions, and clearer year labels `S`
-11. [ ] Zoom Slider — Add a zoom level slider control for precise map zoom adjustment alongside scroll/pinch gestures `S`
-12. [ ] Global Context Panel — Add a right-side panel displaying aggregate global data: total urban population, number of cities, regional breakdowns `M`
+10. [x] Epoch Slider Improvements — Enhance the epoch slider with better visual design, smoother transitions, and clearer year labels `S`
+11. [x] Zoom Slider — Add a zoom level slider control for precise map zoom adjustment alongside scroll/pinch gestures `S`
+12. [x] Global Context Panel — Add a right-side panel displaying aggregate global data: total urban population, number of cities, regional breakdowns `M`
 
 ---
 

@@ -1,7 +1,10 @@
 <template>
   <div class="app-logo">
     <div class="logo-main">
-      <UIcon name="i-lucide-globe" class="logo-icon" />
+      <UIcon
+        name="i-lucide-globe"
+        class="logo-icon"
+      />
       <span class="logo-title">The Urban World</span>
     </div>
     <div class="logo-subtitle">

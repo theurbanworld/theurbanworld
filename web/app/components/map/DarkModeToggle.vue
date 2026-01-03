@@ -1,10 +1,10 @@
 <template>
   <UButton
     :icon="isDarkMode ? 'i-lucide-sun' : 'i-lucide-moon'"
-    color="neutral"
+    color="primary"
     variant="ghost"
     size="lg"
-    class="w-10 h-10 rounded-lg border-none transition-all duration-150 ease-out bg-forest-600 text-density-1 hover:bg-forest-700 hover:scale-105 active:scale-98 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-400 dark:bg-forest-500 dark:text-espresso dark:hover:bg-forest-400 dark:focus-visible:outline-forest-300"
+    class="cursor-pointer"
     :aria-label="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
     @click="toggleDarkMode"
   />
