@@ -15,7 +15,8 @@
         <UIcon
           data-testid="datapoint-trend-icon"
           :name="trendInfo.icon"
-          :class="['w-5 h-5 shrink-0', trendInfo.colorClass]"
+          :class="['w-5 h-5 shrink-0 transition-transform', trendInfo.colorClass]"
+          :style="{ transform: `rotate(${trendInfo.rotation}deg)` }"
         />
       </UTooltip>
 

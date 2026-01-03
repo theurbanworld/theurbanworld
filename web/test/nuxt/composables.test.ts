@@ -101,35 +101,45 @@ describe('useGlobalStats', () => {
 })
 
 describe('getTrendInfo', () => {
-  it('returns strong-up for >= 10% change', () => {
+  it('returns strong-up with -40° rotation and emerald color for >= 10% change', () => {
     expect(getTrendInfo(10).level).toBe('strong-up')
     expect(getTrendInfo(15).level).toBe('strong-up')
-    expect(getTrendInfo(10).icon).toBe('i-lucide-chevrons-up')
+    expect(getTrendInfo(10).icon).toBe('i-lucide-move-right')
+    expect(getTrendInfo(10).rotation).toBe(-40)
+    expect(getTrendInfo(10).colorClass).toContain('emerald')
   })
 
-  it('returns moderate-up for 5% to <10% change', () => {
+  it('returns moderate-up with -20° rotation and green color for 5% to <10% change', () => {
     expect(getTrendInfo(5).level).toBe('moderate-up')
     expect(getTrendInfo(9.9).level).toBe('moderate-up')
-    expect(getTrendInfo(7).icon).toBe('i-lucide-chevron-up')
+    expect(getTrendInfo(7).icon).toBe('i-lucide-move-right')
+    expect(getTrendInfo(7).rotation).toBe(-20)
+    expect(getTrendInfo(7).colorClass).toContain('green')
   })
 
-  it('returns stable for -2% to <5% change', () => {
+  it('returns stable with 0° rotation and gray color for -2% to <5% change', () => {
     expect(getTrendInfo(0).level).toBe('stable')
     expect(getTrendInfo(4.9).level).toBe('stable')
     expect(getTrendInfo(-1.9).level).toBe('stable')
-    expect(getTrendInfo(2).icon).toBe('i-lucide-minus')
+    expect(getTrendInfo(2).icon).toBe('i-lucide-move-right')
+    expect(getTrendInfo(2).rotation).toBe(0)
+    expect(getTrendInfo(2).colorClass).toContain('gray')
   })
 
-  it('returns moderate-down for -5% to <=-2% change', () => {
+  it('returns moderate-down with +20° rotation and amber color for -5% to <=-2% change', () => {
     expect(getTrendInfo(-2).level).toBe('moderate-down')
     expect(getTrendInfo(-4.9).level).toBe('moderate-down')
-    expect(getTrendInfo(-3).icon).toBe('i-lucide-chevron-down')
+    expect(getTrendInfo(-3).icon).toBe('i-lucide-move-right')
+    expect(getTrendInfo(-3).rotation).toBe(20)
+    expect(getTrendInfo(-3).colorClass).toContain('amber')
   })
 
-  it('returns strong-down for <= -5% change', () => {
+  it('returns strong-down with +40° rotation and red color for <= -5% change', () => {
     expect(getTrendInfo(-5).level).toBe('strong-down')
     expect(getTrendInfo(-10).level).toBe('strong-down')
-    expect(getTrendInfo(-5).icon).toBe('i-lucide-chevrons-down')
+    expect(getTrendInfo(-5).icon).toBe('i-lucide-move-right')
+    expect(getTrendInfo(-5).rotation).toBe(40)
+    expect(getTrendInfo(-5).colorClass).toContain('red')
   })
 })
 

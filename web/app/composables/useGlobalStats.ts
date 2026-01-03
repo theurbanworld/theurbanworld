@@ -19,16 +19,25 @@ export const YEAR_EPOCHS: YearEpoch[] = [1975, 1980, 1985, 1990, 1995, 2000, 200
 export type TrendLevel = 'strong-up' | 'moderate-up' | 'stable' | 'moderate-down' | 'strong-down'
 
 /**
- * Trend display information including icon and color
+ * Trend display information including icon, color, and rotation
  */
 export interface TrendInfo {
   level: TrendLevel
   icon: string
   colorClass: string
+  /** Rotation in degrees (-66 to 66) for visual angle */
+  rotation: number
 }
 
 /**
  * Get trend display info based on percentage change
+ *
+ * Uses a single icon (i-lucide-move-right) rotated at 5 levels:
+ * - Strong up: -40° rotation (emerald)
+ * - Moderate up: -20° rotation (green)
+ * - Stable: 0° rotation (gray)
+ * - Moderate down: +20° rotation (amber)
+ * - Strong down: +40° rotation (red)
  *
  * Thresholds:
  * - Strong up: >= 10%
@@ -38,36 +47,18 @@ export interface TrendInfo {
  * - Strong down: < -5%
  */
 export function getTrendInfo(percentChange: number): TrendInfo {
+  const icon = 'i-lucide-move-right'
+
   if (percentChange >= 10) {
-    return {
-      level: 'strong-up',
-      icon: 'i-lucide-chevrons-up',
-      colorClass: 'text-emerald-600 dark:text-emerald-400'
-    }
+    return { level: 'strong-up', icon, colorClass: 'text-emerald-600 dark:text-emerald-400', rotation: -40 }
   } else if (percentChange >= 5) {
-    return {
-      level: 'moderate-up',
-      icon: 'i-lucide-chevron-up',
-      colorClass: 'text-green-600 dark:text-green-400'
-    }
+    return { level: 'moderate-up', icon, colorClass: 'text-green-600 dark:text-green-400', rotation: -20 }
   } else if (percentChange > -2) {
-    return {
-      level: 'stable',
-      icon: 'i-lucide-minus',
-      colorClass: 'text-gray-500 dark:text-gray-400'
-    }
+    return { level: 'stable', icon, colorClass: 'text-gray-500 dark:text-gray-400', rotation: 0 }
   } else if (percentChange > -5) {
-    return {
-      level: 'moderate-down',
-      icon: 'i-lucide-chevron-down',
-      colorClass: 'text-amber-600 dark:text-amber-400'
-    }
+    return { level: 'moderate-down', icon, colorClass: 'text-amber-600 dark:text-amber-400', rotation: 20 }
   } else {
-    return {
-      level: 'strong-down',
-      icon: 'i-lucide-chevrons-down',
-      colorClass: 'text-red-600 dark:text-red-400'
-    }
+    return { level: 'strong-down', icon, colorClass: 'text-red-600 dark:text-red-400', rotation: 40 }
   }
 }
 
