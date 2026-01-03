@@ -4,7 +4,7 @@
 @theme static {
   /* Typography */
   --font-sans: 'Inter', sans-serif;
-  --font-serif: 'Crimson Pro', serif;
+  --font-serif: 'Goudy Bookletter 1911', serif;
   --font-mono: 'JetBrains Mono', monospace;
 
   /* Forest green color scale (primary accent) */

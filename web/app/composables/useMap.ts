@@ -15,6 +15,7 @@ import { Protocol } from 'pmtiles'
 import { layersWithCustomTheme, namedTheme } from 'protomaps-themes-base'
 import type { Theme } from 'protomaps-themes-base'
 import { markRaw, type ShallowRef } from 'vue'
+import { MIN_ZOOM, MAX_ZOOM } from './useZoomLevel'
 
 // PMTiles protocol singleton to avoid re-registration
 let pmtilesProtocolRegistered = false
@@ -732,6 +733,8 @@ export function useMap(options: UseMapOptions) {
         style: createMapStyle(isDarkMode.value),
         center: [viewState.value.longitude, viewState.value.latitude],
         zoom: viewState.value.zoom,
+        minZoom: MIN_ZOOM,
+        maxZoom: MAX_ZOOM,
         pitch: 0, // Locked to 0 for 2D
         bearing: 0, // Locked to 0 (north up)
         minPitch: 0,

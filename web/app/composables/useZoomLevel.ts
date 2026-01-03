@@ -8,9 +8,15 @@
 import { useViewState } from './useViewState'
 
 /**
+ * Global zoom constraints - used by slider and MapLibre
+ */
+export const MIN_ZOOM = 1.5
+export const MAX_ZOOM = 16
+
+/**
  * Zoom level name type
  */
-export type ZoomLevelName = 'Globe' | 'Metropolitan' | 'City' | 'Street'
+export type ZoomLevelName = 'Globe' | 'Country' | 'Region' | 'City' | 'Street'
 
 /**
  * Zoom level definition
@@ -36,13 +42,20 @@ const ZOOM_LEVELS: ZoomLevel[] = [
     name: 'Globe',
     icon: 'i-streamline-earth-1-remix',
     minZoom: 0,
-    maxZoom: 5,
+    maxZoom: 3,
     centerZoom: 1.5
   },
   {
-    name: 'Metropolitan',
-    icon: 'i-lucide-building-2',
-    minZoom: 5,
+    name: 'Country',
+    icon: 'i-lucide-flag',
+    minZoom: 3,
+    maxZoom: 6.5,
+    centerZoom: 4.5
+  },
+  {
+    name: 'Region',
+    icon: 'i-lucide-train-front',
+    minZoom: 6.5,
     maxZoom: 10.5,
     centerZoom: 8
   },
@@ -93,7 +106,7 @@ export function useZoomLevel() {
    */
   function getCenterZoomForLevel(name: ZoomLevelName): number {
     const level = ZOOM_LEVELS.find(l => l.name === name)
-    return level?.centerZoom ?? 8 // Default to Metropolitan level
+    return level?.centerZoom ?? 8 // Default to Region level
   }
 
   /**

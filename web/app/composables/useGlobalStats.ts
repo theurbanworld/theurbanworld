@@ -9,6 +9,78 @@ import type { YearEpoch } from '../../types/h3'
 import { useSelectedYear } from './useSelectedYear'
 
 /**
+ * Ordered list of epoch years for trend calculations
+ */
+export const YEAR_EPOCHS: YearEpoch[] = [1975, 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020, 2025, 2030]
+
+/**
+ * Trend magnitude levels for visual indicators
+ */
+export type TrendLevel = 'strong-up' | 'moderate-up' | 'stable' | 'moderate-down' | 'strong-down'
+
+/**
+ * Trend display information including icon and color
+ */
+export interface TrendInfo {
+  level: TrendLevel
+  icon: string
+  colorClass: string
+}
+
+/**
+ * Get trend display info based on percentage change
+ *
+ * Thresholds:
+ * - Strong up: >= 10%
+ * - Moderate up: >= 5%
+ * - Stable: -2% to 5%
+ * - Moderate down: -5% to -2%
+ * - Strong down: < -5%
+ */
+export function getTrendInfo(percentChange: number): TrendInfo {
+  if (percentChange >= 10) {
+    return {
+      level: 'strong-up',
+      icon: 'i-lucide-chevrons-up',
+      colorClass: 'text-emerald-600 dark:text-emerald-400'
+    }
+  } else if (percentChange >= 5) {
+    return {
+      level: 'moderate-up',
+      icon: 'i-lucide-chevron-up',
+      colorClass: 'text-green-600 dark:text-green-400'
+    }
+  } else if (percentChange > -2) {
+    return {
+      level: 'stable',
+      icon: 'i-lucide-minus',
+      colorClass: 'text-gray-500 dark:text-gray-400'
+    }
+  } else if (percentChange > -5) {
+    return {
+      level: 'moderate-down',
+      icon: 'i-lucide-chevron-down',
+      colorClass: 'text-amber-600 dark:text-amber-400'
+    }
+  } else {
+    return {
+      level: 'strong-down',
+      icon: 'i-lucide-chevrons-down',
+      colorClass: 'text-red-600 dark:text-red-400'
+    }
+  }
+}
+
+/**
+ * Calculate percentage of part relative to whole
+ * Returns value rounded to one decimal place (e.g., 43.6)
+ */
+export function calculatePercentage(part: number, whole: number): number {
+  if (whole === 0) return 0
+  return Math.round((part / whole) * 1000) / 10
+}
+
+/**
  * World population by epoch year
  * Source: GHSL Table 20 - UN WPP 2022 calibrated (from pipeline WORLD_POPULATION constant)
  */
@@ -112,6 +184,39 @@ export function useGlobalStats() {
     return humanizeNumber(urbanPopulationRaw.value)
   })
 
+  /**
+   * Calculate percentage change from previous epoch for urban population
+   * Returns null if no previous epoch exists (at 1975)
+   */
+  const urbanPopulationTrendPrevious = computed((): number | null => {
+    const currentIndex = YEAR_EPOCHS.indexOf(selectedYear.value)
+    if (currentIndex <= 0) return null
+    const prevYear = YEAR_EPOCHS[currentIndex - 1]!
+    const prevValue = URBAN_POPULATION[prevYear]
+    const currValue = URBAN_POPULATION[selectedYear.value]
+    return ((currValue - prevValue) / prevValue) * 100
+  })
+
+  /**
+   * Calculate percentage change to next epoch for urban population
+   * Returns null if no next epoch exists (at 2030)
+   */
+  const urbanPopulationTrendNext = computed((): number | null => {
+    const currentIndex = YEAR_EPOCHS.indexOf(selectedYear.value)
+    if (currentIndex >= YEAR_EPOCHS.length - 1) return null
+    const nextYear = YEAR_EPOCHS[currentIndex + 1]!
+    const nextValue = URBAN_POPULATION[nextYear]
+    const currValue = URBAN_POPULATION[selectedYear.value]
+    return ((nextValue - currValue) / currValue) * 100
+  })
+
+  /**
+   * Urban population as percentage of world population
+   */
+  const urbanPercentageOfWorld = computed((): number => {
+    return calculatePercentage(urbanPopulationRaw.value, worldPopulationRaw.value)
+  })
+
   return {
     /** Raw world population value */
     worldPopulationRaw,
@@ -121,6 +226,12 @@ export function useGlobalStats() {
     urbanPopulationRaw,
     /** Humanized urban population string (e.g., "3.6 billion") */
     urbanPopulation,
+    /** Percentage change from previous epoch for urban population (null at 1975) */
+    urbanPopulationTrendPrevious,
+    /** Percentage change to next epoch for urban population (null at 2030) */
+    urbanPopulationTrendNext,
+    /** Urban population as percentage of world population */
+    urbanPercentageOfWorld,
     /** Helper function to humanize numbers */
     humanizeNumber,
     /** Helper function to format exact numbers */

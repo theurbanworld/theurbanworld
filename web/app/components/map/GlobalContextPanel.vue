@@ -52,6 +52,10 @@
         label="Urban Population"
         :value="urbanPopulation"
         :raw-value="urbanPopulationRaw"
+        :trend-previous="urbanPopulationTrendPrevious"
+        :trend-next="urbanPopulationTrendNext"
+        :percentage-value="urbanPercentageOfWorld"
+        percentage-label="of World Population"
       />
     </div>
   </div>
@@ -77,7 +81,15 @@ const STEP = 5
 
 // Composables for state
 const { selectedYear, setYear } = useSelectedYear()
-const { worldPopulation, worldPopulationRaw, urbanPopulation, urbanPopulationRaw } = useGlobalStats()
+const {
+  worldPopulation,
+  worldPopulationRaw,
+  urbanPopulation,
+  urbanPopulationRaw,
+  urbanPopulationTrendPrevious,
+  urbanPopulationTrendNext,
+  urbanPercentageOfWorld
+} = useGlobalStats()
 
 // Two-way binding for slider
 const sliderValue = computed({

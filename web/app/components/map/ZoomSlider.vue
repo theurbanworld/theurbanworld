@@ -34,9 +34,9 @@
           v-for="level in ZOOM_LEVELS"
           :key="level.name"
           :data-testid="`level-button-${level.name.toLowerCase()}`"
-          :style="{ bottom: `${getLevelPosition(level.centerZoom)}%` }"
+          :style="getLevelStyle(level.centerZoom)"
           :class="[
-            'absolute left-0 right-0 -translate-y-1/2 flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors',
+            'absolute left-0 right-0 flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors',
             'hover:bg-forest-100 dark:hover:bg-forest-900/50',
             currentLevelName === level.name
               ? 'bg-forest-200 dark:bg-forest-800 text-forest-700 dark:text-forest-300 font-medium'
@@ -69,22 +69,27 @@
  */
 
 import { useViewState } from '../../composables/useViewState'
-import { useZoomLevel, type ZoomLevelName } from '../../composables/useZoomLevel'
-
-// Zoom range constants (Globe to Street)
-const MIN_ZOOM = 1.5
-const MAX_ZOOM = 16
+import { useZoomLevel, type ZoomLevelName, MIN_ZOOM, MAX_ZOOM } from '../../composables/useZoomLevel'
 
 // Composables
 const { viewState, setZoom, setZoomAnimated } = useViewState()
 const { ZOOM_LEVELS, getCenterZoomForLevel, currentLevelName } = useZoomLevel()
 
+// Button height in pixels (py-1.5 padding + icon/text height)
+const BUTTON_HEIGHT = 36
+// Container height in pixels (h-52 = 13rem = 208px)
+const CONTAINER_HEIGHT = 208
+
 /**
- * Calculate the proportional position (0-100%) for a zoom level
- * Used to position buttons along the slider proportionally
+ * Calculate the style for positioning a level button
+ * Accounts for button height so buttons don't overflow container
  */
-function getLevelPosition(centerZoom: number): number {
-  return ((centerZoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100
+function getLevelStyle(centerZoom: number): Record<string, string> {
+  const position = (centerZoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)
+  // Scale to usable range (container height minus one button height)
+  const usableHeight = CONTAINER_HEIGHT - BUTTON_HEIGHT
+  const bottomPx = position * usableHeight
+  return { bottom: `${bottomPx}px` }
 }
 
 // Two-way binding for slider

@@ -202,8 +202,11 @@ def generate_pbf_glyphs(font_dir: Path, output_dir: Path) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Run build_pbf_glyphs on the font directory
+    # Always use --overwrite to ensure fresh generation (the tool skips
+    # existing files by default, which can leave stale/corrupt files)
     cmd = [
         "build_pbf_glyphs",
+        "--overwrite",
         str(font_dir),
         str(output_dir)
     ]
