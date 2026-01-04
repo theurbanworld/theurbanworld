@@ -6,14 +6,21 @@
  * - Global context panel (right side) - epoch controls and population data
  * - Zoom slider (right side) - vertical zoom control with named scale levels
  * - Dark mode toggle (top right header)
+ *
+ * This is the global view (no city selected). City selection is cleared
+ * when navigating to this page.
  */
 
 // Get dark mode state
 const { isDarkMode, initializeDarkMode } = useDarkMode()
 
-// Initialize dark mode on mount
+// Get city selection state
+const { clearSelection } = useCitySelection()
+
+// Initialize dark mode and clear city selection on mount
 onMounted(() => {
   initializeDarkMode()
+  clearSelection()
 })
 </script>
 

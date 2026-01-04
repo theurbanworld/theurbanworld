@@ -5,8 +5,8 @@
 Goal: Ship a functional observatory that demonstrates the core value proposition - data as a lens for understanding cities, starting with Bertaud's radial density model.
 
 1. [x] Map Foundation — Implement deck.gl H3HexagonLayer displaying global population density from GeoParquet on R2, with MapLibre basemap using Protomaps PMTiles `M`
-2. [ ] City Selection — Click or tap a city on the map to select it; highlight selected city boundary; pan/zoom to city extent `S`
-3. [ ] City Info Panel — Display selected city's name, country, population, area, and density with clean typography and layout `S`
+2. [x] City Selection — Click or tap a city on the map to select it; highlight selected city boundary; pan/zoom to city extent `S`
+3. [x] City Info Panel — Display selected city's name, country, population, area, and density with clean typography and layout `S`
 4. [ ] City Search — Implement Fuse.js client-side search over city index; show results dropdown; select to navigate to city `S`
 5. [ ] Population Time Series Chart — Chart.js line chart showing 1975-2030 population for selected city with proper axis labels and tooltips `S`
 6. [ ] Radial Density Profile Chart — Chart.js line chart showing Bertaud-style density vs distance profile; include log-scale toggle `S`
@@ -112,5 +112,5 @@ Goal: Build sustainable model for ongoing development while maintaining accessib
 - **Ville and cite together:** Connect measurable form to lived experience wherever possible
 - **Objective to interpretive, not normative:** Teach how to see, not what to conclude
 - **Ship incrementally:** Each item should be independently deployable and valuable
-- **Mobile-first:** Urban exploration happens on phones
+- **Best effort Mobile:** The primary experience should work well on mobile devices, but not at the expense of desktop
 - **Performance matters:** Fast loads build trust and enable exploration

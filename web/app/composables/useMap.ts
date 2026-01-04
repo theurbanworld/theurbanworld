@@ -6,7 +6,7 @@
  * - Production: uses self-hosted PMTiles on R2
  *
  * Applies a sepia "old atlas" theme using protomaps-themes-base.
- * Includes city boundaries layer with hover interaction.
+ * Includes city boundaries layer with hover and selection interaction.
  * Supports dark mode theme switching.
  */
 
@@ -26,6 +26,11 @@ const CITY_BOUNDARIES_HOVER_LAYER = 'city-boundaries-hover-pattern'
 const CITY_BOUNDARIES_LAYER = 'city-boundaries-line'
 const CITY_LABELS_LAYER = 'city-labels'
 const CITY_BOUNDARIES_URL = 'https://data.theurban.world/tiles/city_boundaries.pmtiles'
+
+// Zoom constraints for fitBounds when selecting a city
+const FIT_BOUNDS_MIN_ZOOM = 8
+const FIT_BOUNDS_MAX_ZOOM = 14
+const FIT_BOUNDS_PADDING = 80
 
 // Basemap layers to hide (we show only land/water + our city data)
 const BASEMAP_LAYERS_TO_HIDE = [
@@ -312,6 +317,12 @@ export function useMap(options: UseMapOptions) {
   // Get city hover state management (for boundary highlighting)
   const { setHoveredCityId, clearHover } = useCityHover()
 
+  // Get city selection state management
+  const { selectedCityId } = useCitySelection()
+
+  // Get cities index for bbox lookup
+  const { getCity } = useCitiesIndex()
+
   // Get dark mode state
   const { isDarkMode } = useDarkMode()
 
@@ -320,6 +331,9 @@ export function useMap(options: UseMapOptions) {
 
   // Track currently hovered feature for feature state
   let hoveredFeatureId: string | number | null = null
+
+  // Track currently selected feature for feature state
+  let selectedFeatureId: string | number | null = null
 
   /**
    * Register PMTiles protocol with MapLibre (once)
@@ -404,7 +418,7 @@ export function useMap(options: UseMapOptions) {
     mapInstance.once('idle', () => {
       cityBoundariesLoaded.value = false
       addCityBoundariesLayer(mapInstance, darkMode)
-      setupCityHoverEvents(mapInstance)
+      setupCityInteractionEvents(mapInstance)
     })
 
     // Restore view
@@ -479,6 +493,7 @@ export function useMap(options: UseMapOptions) {
       })
 
       // Add city boundaries line layer with hash-based colors
+      // Supports hover and selected states with distinct styling
       mapInstance.addLayer({
         'id': CITY_BOUNDARIES_LAYER,
         'type': 'line',
@@ -497,8 +512,11 @@ export function useMap(options: UseMapOptions) {
               0, darkPalette[0], 1, darkPalette[1], 2, darkPalette[2],
               3, darkPalette[3], 4, darkPalette[4], 5, darkPalette[5], defaultDark]
           ],
+          // Line width: selected = 6, hover = 4, default = 3
           'line-width': [
             'case',
+            ['boolean', ['feature-state', 'selected'], false],
+            6,
             ['boolean', ['feature-state', 'hover'], false],
             4,
             3
@@ -662,10 +680,70 @@ export function useMap(options: UseMapOptions) {
   }
 
   /**
-   * Set up hover event handlers for city boundaries
-   * Uses global mousemove with queryRenderedFeatures for reliable hover detection
+   * Update the selected feature state on the map
+   * Called when selectedCityId changes
    */
-  function setupCityHoverEvents(mapInstance: maplibregl.Map) {
+  function updateSelectedFeatureState(cityId: string | null) {
+    if (!map.value || !cityBoundariesLoaded.value) return
+
+    const mapInstance = map.value
+
+    // Clear previous selection
+    if (selectedFeatureId !== null) {
+      mapInstance.setFeatureState(
+        { source: CITY_BOUNDARIES_SOURCE, sourceLayer: 'city_boundaries', id: selectedFeatureId },
+        { selected: false }
+      )
+      selectedFeatureId = null
+    }
+
+    // Set new selection if a city is selected
+    if (cityId) {
+      // Use city_id as the feature ID (matches promoteId configuration)
+      selectedFeatureId = cityId
+      mapInstance.setFeatureState(
+        { source: CITY_BOUNDARIES_SOURCE, sourceLayer: 'city_boundaries', id: cityId },
+        { selected: true }
+      )
+    }
+  }
+
+  /**
+   * Fly to a city by animating the map to fit its bounding box
+   *
+   * @param cityId - City ID to fly to
+   */
+  function flyToCity(cityId: string) {
+    if (!map.value) return
+
+    const city = getCity(cityId)
+    if (!city || !city.bbox) {
+      console.warn('City not found or missing bbox:', cityId)
+      return
+    }
+
+    const mapInstance = map.value
+    const [minx, miny, maxx, maxy] = city.bbox
+
+    // Convert bbox to LngLatBounds format: [[sw], [ne]]
+    const bounds: [[number, number], [number, number]] = [
+      [minx, miny], // SW corner
+      [maxx, maxy]  // NE corner
+    ]
+
+    mapInstance.fitBounds(bounds, {
+      padding: FIT_BOUNDS_PADDING,
+      minZoom: FIT_BOUNDS_MIN_ZOOM,
+      maxZoom: FIT_BOUNDS_MAX_ZOOM,
+      duration: 1000 // Smooth 1 second animation
+    })
+  }
+
+  /**
+   * Set up hover and click event handlers for city boundaries
+   * Uses global mouse events with queryRenderedFeatures for reliable detection
+   */
+  function setupCityInteractionEvents(mapInstance: maplibregl.Map) {
     // Use global mousemove instead of layer-specific events
     // This is more reliable as it doesn't depend on layer hit-testing
     mapInstance.on('mousemove', (e) => {
@@ -713,6 +791,27 @@ export function useMap(options: UseMapOptions) {
         }
       }
     })
+
+    // Click handler for city selection
+    // Clicking a city navigates to /city/[city_id]
+    // Clicking empty space does NOT deselect (close button only)
+    mapInstance.on('click', (e) => {
+      // Query features at click position from both layers
+      const features = mapInstance.queryRenderedFeatures(e.point, {
+        layers: [CITY_BOUNDARIES_HOVER_LAYER, CITY_BOUNDARIES_LAYER]
+      })
+
+      const feature = features[0]
+      if (feature) {
+        const cityId = feature.properties?.city_id as string | undefined
+        if (cityId) {
+          // Navigate to city page - this will trigger the route change
+          // which in turn updates useCitySelection state
+          navigateTo(`/city/${cityId}`)
+        }
+      }
+      // Do NOT handle empty space clicks - deselection is via close button only
+    })
   }
 
   /**
@@ -753,7 +852,12 @@ export function useMap(options: UseMapOptions) {
         // to ensure deck.gl overlay is added first
         setTimeout(() => {
           addCityBoundariesLayer(mapInstance, isDarkMode.value)
-          setupCityHoverEvents(mapInstance)
+          setupCityInteractionEvents(mapInstance)
+
+          // If a city is already selected (e.g., from URL), update feature state
+          if (selectedCityId.value) {
+            updateSelectedFeatureState(selectedCityId.value)
+          }
         }, 100)
       })
 
@@ -781,6 +885,7 @@ export function useMap(options: UseMapOptions) {
     }
     cityBoundariesLoaded.value = false
     hoveredFeatureId = null
+    selectedFeatureId = null
   }
 
   // Initialize map when container is available
@@ -810,6 +915,16 @@ export function useMap(options: UseMapOptions) {
     updateCityBoundariesFilter(year)
   })
 
+  // Watch for selected city changes and update feature state + fly to city
+  watch(selectedCityId, (cityId) => {
+    if (map.value && cityBoundariesLoaded.value) {
+      updateSelectedFeatureState(cityId)
+      if (cityId) {
+        flyToCity(cityId)
+      }
+    }
+  })
+
   // Clean up on unmount
   onUnmounted(() => {
     cleanup()
@@ -820,6 +935,7 @@ export function useMap(options: UseMapOptions) {
     isLoading: readonly(isLoading),
     error: readonly(error),
     cityBoundariesLoaded: readonly(cityBoundariesLoaded),
-    updateMapTheme
+    updateMapTheme,
+    flyToCity
   }
 }
