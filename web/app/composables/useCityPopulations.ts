@@ -1,6 +1,7 @@
 /**
  * City population data loading by epoch
  *
+ * Uses Nuxt's useAsyncData for SSR-compatible data fetching.
  * Loads city population timeseries data from JSON and provides
  * methods for looking up population, area, and density by city and epoch.
  *
@@ -30,14 +31,6 @@ export interface CityPopulationRecord {
   epochs: Record<YearEpoch, CityPopulationEpoch>
 }
 
-// Singleton state for city populations data
-let populationsMap: Map<string, Record<YearEpoch, CityPopulationEpoch>> | null = null
-let loadPromise: Promise<void> | null = null
-
-const isLoading = ref(false)
-const error = ref<Error | null>(null)
-const isLoaded = ref(false)
-
 export function useCityPopulations() {
   const runtimeConfig = useRuntimeConfig()
 
@@ -52,63 +45,37 @@ export function useCityPopulations() {
     return CITY_POPULATIONS_URL
   }
 
-  /**
-   * Load the city populations JSON file
-   */
-  async function loadData(): Promise<void> {
-    // If already loading, wait for existing promise
-    if (loadPromise) {
-      return loadPromise
-    }
-
-    // If already loaded, return immediately
-    if (populationsMap) {
-      return
-    }
-
-    isLoading.value = true
-    error.value = null
-
-    loadPromise = (async () => {
+  // useAsyncData with unique key for deduplication and SSR
+  const { data, status, error, execute, refresh } = useAsyncData<CityPopulationRecord[]>(
+    'city-populations',
+    async () => {
       try {
-        const dataUrl = getDataUrl()
-        const response = await fetch(dataUrl)
-
-        if (!response.ok) {
-          // If 404, data isn't deployed yet - that's OK, we'll fall back to cities index
-          if (response.status === 404) {
-            console.warn('City populations data not found, using fallback')
-            populationsMap = new Map()
-            isLoaded.value = true
-            return
-          }
-          throw new Error(`Failed to fetch city populations: ${response.status}`)
+        return await $fetch<CityPopulationRecord[]>(getDataUrl())
+      } catch (e: unknown) {
+        // Handle 404 gracefully - data may not be deployed
+        if (e && typeof e === 'object' && 'statusCode' in e && e.statusCode === 404) {
+          console.warn('City populations data not found, using fallback')
+          return []
         }
-
-        const data: CityPopulationRecord[] = await response.json()
-
-        // Build lookup map by city_id
-        populationsMap = new Map()
-        for (const record of data) {
-          populationsMap.set(record.city_id, record.epochs)
-        }
-
-        isLoaded.value = true
-        console.log(`Loaded city populations for ${populationsMap.size} cities`)
-      } catch (e) {
-        console.error('Failed to load city populations:', e)
-        // On error, set an empty map so we can use fallback
-        populationsMap = new Map()
-        error.value = e instanceof Error ? e : new Error('Failed to load city populations')
-        isLoaded.value = true
-      } finally {
-        isLoading.value = false
-        loadPromise = null
+        throw e
       }
-    })()
+    },
+    {
+      immediate: false, // Don't auto-fetch, trigger on-demand
+      server: true, // Enable SSR
+      default: () => []
+    }
+  )
 
-    return loadPromise
-  }
+  // Build Map from data for synchronous lookups
+  const populationsMapRef = computed(() => {
+    if (!data.value?.length) return null
+    return new Map(data.value.map(r => [r.city_id, r.epochs]))
+  })
+
+  // Computed states
+  const isLoading = computed(() => status.value === 'pending')
+  const isLoaded = computed(() => status.value === 'success')
 
   /**
    * Get population data for a city at a specific epoch
@@ -118,7 +85,7 @@ export function useCityPopulations() {
    * @returns Population data or undefined if not found
    */
   function getCityPopulationData(cityId: string, epoch: YearEpoch): CityPopulationEpoch | undefined {
-    return populationsMap?.get(cityId)?.[epoch]
+    return populationsMapRef.value?.get(cityId)?.[epoch]
   }
 
   /**
@@ -128,7 +95,7 @@ export function useCityPopulations() {
    * @returns All epoch data or undefined if not found
    */
   function getCityAllEpochs(cityId: string): Record<YearEpoch, CityPopulationEpoch> | undefined {
-    return populationsMap?.get(cityId)
+    return populationsMapRef.value?.get(cityId)
   }
 
   /**
@@ -138,25 +105,29 @@ export function useCityPopulations() {
    * @returns true if data exists
    */
   function hasCity(cityId: string): boolean {
-    return populationsMap?.has(cityId) ?? false
+    return populationsMapRef.value?.has(cityId) ?? false
   }
 
   /**
    * Check if data has been loaded
    */
   function hasData(): boolean {
-    return populationsMap !== null && populationsMap.size > 0
+    return populationsMapRef.value !== null && populationsMapRef.value.size > 0
   }
 
   return {
+    /** Loading status from useAsyncData */
+    status: readonly(status),
     /** Whether data is currently loading */
-    isLoading: readonly(isLoading),
+    isLoading,
+    /** Whether data has been loaded (may be empty if 404) */
+    isLoaded,
     /** Error if loading failed */
     error: readonly(error),
-    /** Whether data has been loaded (may be empty if 404) */
-    isLoaded: readonly(isLoaded),
-    /** Load the city populations data (call once on app start) */
-    loadData,
+    /** Trigger data loading (SSR-compatible) */
+    execute,
+    /** Force refresh data */
+    refresh,
     /** Get population data for a city at a specific epoch */
     getCityPopulationData,
     /** Get all epoch data for a city */

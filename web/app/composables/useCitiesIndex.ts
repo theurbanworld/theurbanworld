@@ -1,6 +1,7 @@
 /**
  * Cities index data loading and lookup
  *
+ * Uses Nuxt's useAsyncData for SSR-compatible data fetching.
  * Loads the cities_index.json file to provide city name lookup
  * by city_id. Used for hover tooltips on city boundaries.
  */
@@ -21,14 +22,6 @@ export interface CityIndexEntry {
   population: number
 }
 
-// Singleton state for cities index
-let citiesMap: Map<string, CityIndexEntry> | null = null
-let loadPromise: Promise<void> | null = null
-
-const isLoading = ref(false)
-const error = ref<Error | null>(null)
-const isLoaded = ref(false)
-
 export function useCitiesIndex() {
   const runtimeConfig = useRuntimeConfig()
 
@@ -43,54 +36,26 @@ export function useCitiesIndex() {
     return CITIES_INDEX_URL
   }
 
-  /**
-   * Load the cities index JSON file
-   */
-  async function loadIndex(): Promise<void> {
-    // If already loading, wait for existing promise
-    if (loadPromise) {
-      return loadPromise
+  // useAsyncData with unique key for deduplication and SSR
+  const { data, status, error, execute, refresh } = useAsyncData<CityIndexEntry[]>(
+    'cities-index',
+    () => $fetch<CityIndexEntry[]>(getDataUrl()),
+    {
+      immediate: false, // Don't auto-fetch, trigger on-demand
+      server: true, // Enable SSR
+      default: () => []
     }
+  )
 
-    // If already loaded, return immediately
-    if (citiesMap) {
-      return
-    }
+  // Build Map from data for synchronous lookups
+  const citiesMapRef = computed(() => {
+    if (!data.value?.length) return null
+    return new Map(data.value.map(city => [city.id, city]))
+  })
 
-    isLoading.value = true
-    error.value = null
-
-    loadPromise = (async () => {
-      try {
-        const dataUrl = getDataUrl()
-        const response = await fetch(dataUrl)
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch cities index: ${response.status}`)
-        }
-
-        const data: CityIndexEntry[] = await response.json()
-
-        // Build lookup map by city_id
-        citiesMap = new Map()
-        for (const city of data) {
-          citiesMap.set(city.id, city)
-        }
-
-        isLoaded.value = true
-        console.log(`Loaded cities index with ${citiesMap.size} cities`)
-      } catch (e) {
-        console.error('Failed to load cities index:', e)
-        error.value = e instanceof Error ? e : new Error('Failed to load cities index')
-        throw error.value
-      } finally {
-        isLoading.value = false
-        loadPromise = null
-      }
-    })()
-
-    return loadPromise
-  }
+  // Computed states
+  const isLoading = computed(() => status.value === 'pending')
+  const isLoaded = computed(() => status.value === 'success' && !!data.value?.length)
 
   /**
    * Get city by ID
@@ -99,7 +64,7 @@ export function useCitiesIndex() {
    * @returns City entry or undefined if not found
    */
   function getCity(cityId: string): CityIndexEntry | undefined {
-    return citiesMap?.get(cityId)
+    return citiesMapRef.value?.get(cityId)
   }
 
   /**
@@ -109,7 +74,7 @@ export function useCitiesIndex() {
    * @returns City name or undefined if not found
    */
   function getCityName(cityId: string): string | undefined {
-    return citiesMap?.get(cityId)?.name
+    return citiesMapRef.value?.get(cityId)?.name
   }
 
   /**
@@ -119,23 +84,32 @@ export function useCitiesIndex() {
    * @returns true if city exists
    */
   function hasCity(cityId: string): boolean {
-    return citiesMap?.has(cityId) ?? false
+    return citiesMapRef.value?.has(cityId) ?? false
   }
 
+  // Expose all cities for fuse.js search (future)
+  const allCities = computed(() => data.value ?? [])
+
   return {
+    /** Loading status from useAsyncData */
+    status: readonly(status),
     /** Whether the index is currently loading */
-    isLoading: readonly(isLoading),
+    isLoading,
+    /** Whether the index has been successfully loaded */
+    isLoaded,
     /** Error if loading failed */
     error: readonly(error),
-    /** Whether the index has been successfully loaded */
-    isLoaded: readonly(isLoaded),
-    /** Load the cities index (call once on app start) */
-    loadIndex,
+    /** Trigger data loading (SSR-compatible) */
+    execute,
+    /** Force refresh data */
+    refresh,
     /** Get city by ID */
     getCity,
     /** Get city name by ID */
     getCityName,
     /** Check if city exists */
-    hasCity
+    hasCity,
+    /** All cities array for search */
+    allCities
   }
 }

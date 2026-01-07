@@ -29,9 +29,10 @@ function handleClose() {
     <aside
       v-if="open"
       data-testid="app-sidebar"
-      class="fixed left-0 top-0 h-full z-200 w-80 max-sm:w-full
+      class="absolute left-4 top-24 bottom-4 z-200 w-80
+             max-sm:left-2 max-sm:top-16 max-sm:bottom-2 max-sm:w-[calc(100%-1rem)]
              bg-parchment/95 dark:bg-espresso/95 backdrop-blur-sm
-             shadow-lg rounded-r-xl max-sm:rounded-none
+             shadow-lg rounded-xl
              flex flex-col overflow-hidden"
     >
       <!-- Close button -->

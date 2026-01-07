@@ -18,6 +18,10 @@ import { humanizeNumber, toAnnualRate, YEAR_EPOCHS } from './useGlobalStats'
  * City statistics for the selected epoch
  */
 export interface CityStats {
+  /** Whether data is currently loading */
+  isLoading: ComputedRef<boolean>
+  /** Error if loading failed */
+  error: ComputedRef<Error | undefined>
   /** City name from cities index */
   cityName: ComputedRef<string>
   /** Country name from cities index */
@@ -83,6 +87,10 @@ export function useCityStats(cityId: MaybeRef<string>): CityStats {
   const citiesIndex = useCitiesIndex()
   const cityPopulations = useCityPopulations()
   const { selectedYear } = useSelectedYear()
+
+  // Aggregate loading/error states from both data sources
+  const isLoading = computed(() => citiesIndex.isLoading.value || cityPopulations.isLoading.value)
+  const error = computed(() => citiesIndex.error.value || cityPopulations.error.value)
 
   // Convert cityId to a computed for reactivity
   const cityIdRef = computed(() => toValue(cityId))
@@ -254,6 +262,8 @@ export function useCityStats(cityId: MaybeRef<string>): CityStats {
   })
 
   return {
+    isLoading,
+    error,
     cityName,
     countryName,
     populationRaw,

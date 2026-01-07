@@ -2,20 +2,22 @@
 /**
  * City view page
  *
- * Displays the city info panel sidebar when a city is selected.
- * Syncs route params with city selection state.
- *
  * Route: /city/[city_id]
+ *
+ * Triggers data loading for city statistics (SSR-compatible via useAsyncData).
+ * Syncs route params with city selection state.
+ * The sidebar and map are rendered in app.vue.
  */
 
 // Get route params
 const route = useRoute()
 
 // Get city selection state
-const { selectCity, clearSelection } = useCitySelection()
+const { selectCity } = useCitySelection()
 
-// Get dark mode state
-const { isDarkMode, initializeDarkMode } = useDarkMode()
+// Get data loading functions
+const { execute: loadCitiesIndex } = useCitiesIndex()
+const { execute: loadPopulations } = useCityPopulations()
 
 // Extract city_id from route params
 const cityId = computed(() => {
@@ -23,45 +25,21 @@ const cityId = computed(() => {
   return Array.isArray(id) ? id[0] : id
 })
 
+// Load data (SSR-compatible, deduped via useAsyncData keys)
+await Promise.all([
+  loadCitiesIndex(),
+  loadPopulations()
+])
+
 // Sync route param to city selection state
 watchEffect(() => {
   if (cityId.value) {
     selectCity(cityId.value)
   }
 })
-
-// Initialize dark mode on mount
-onMounted(() => {
-  initializeDarkMode()
-})
-
-// Clear selection when unmounting (navigating away)
-onUnmounted(() => {
-  clearSelection()
-})
-
-// Handle sidebar close - navigate back to global view
-function handleSidebarClose() {
-  navigateTo('/')
-}
 </script>
 
 <template>
-  <div class="w-full h-full relative overflow-hidden">
-    <!-- Global Map (full viewport) -->
-    <ClientOnly>
-      <GlobalMap :is-dark-mode="isDarkMode" />
-
-      <!-- City Info Panel Sidebar -->
-      <AppSidebar :open="true" @close="handleSidebarClose">
-        <CityInfoPanel v-if="cityId" :city-id="cityId" />
-      </AppSidebar>
-
-      <!-- Global Context Panel (epoch controls and population data) -->
-      <GlobalContextPanel />
-
-      <!-- Zoom Slider (scale level control) -->
-      <ZoomSlider />
-    </ClientOnly>
-  </div>
+  <!-- Route-specific content rendered here if needed -->
+  <div />
 </template>

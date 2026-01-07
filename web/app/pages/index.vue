@@ -1,40 +1,23 @@
 <script setup lang="ts">
 /**
- * Main application page
+ * Home page (global view)
  *
- * Renders the full-screen GlobalMap component with:
- * - Global context panel (right side) - epoch controls and population data
- * - Zoom slider (right side) - vertical zoom control with named scale levels
- * - Dark mode toggle (top right header)
+ * Route: /
  *
- * This is the global view (no city selected). City selection is cleared
- * when navigating to this page.
+ * Clears city selection when navigating to this route.
+ * All map components are rendered in app.vue.
  */
-
-// Get dark mode state
-const { isDarkMode, initializeDarkMode } = useDarkMode()
 
 // Get city selection state
 const { clearSelection } = useCitySelection()
 
-// Initialize dark mode and clear city selection on mount
+// Clear city selection on mount (navigating to global view)
 onMounted(() => {
-  initializeDarkMode()
   clearSelection()
 })
 </script>
 
 <template>
-  <div class="w-full h-full relative overflow-hidden">
-    <!-- Global Map (full viewport) -->
-    <ClientOnly>
-      <GlobalMap :is-dark-mode="isDarkMode" />
-
-      <!-- Global Context Panel (epoch controls and population data) -->
-      <GlobalContextPanel />
-
-      <!-- Zoom Slider (scale level control) -->
-      <ZoomSlider />
-    </ClientOnly>
-  </div>
+  <!-- Route-specific content rendered here if needed -->
+  <div />
 </template>
