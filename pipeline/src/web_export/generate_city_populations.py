@@ -5,8 +5,8 @@ Purpose: Convert city_populations.parquet (long format) to nested JSON
          for epoch-aware population lookups in the frontend sidebar.
 
 Usage:
-  uv run python -m src.s09b_generate_city_populations_json           # Generate and upload
-  uv run python -m src.s09b_generate_city_populations_json --local   # Generate only (no upload)
+  uv run python -m src.web_export.generate_city_populations           # Generate and upload
+  uv run python -m src.web_export.generate_city_populations --local   # Generate only (no upload)
 
 Date: 2026-02-08
 """

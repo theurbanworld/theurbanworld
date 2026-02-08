@@ -5,8 +5,8 @@ Purpose: Create diagonal stripe patterns for Paradox-style hover effects on city
          boundaries. Generates sprite sheet PNG and JSON metadata for MapLibre GL.
 
 Usage:
-  uv run python -m src.s11_generate_hover_sprites           # Generate and upload
-  uv run python -m src.s11_generate_hover_sprites --local   # Generate only (no upload)
+  uv run python -m src.tiles.generate_hover_sprites           # Generate and upload
+  uv run python -m src.tiles.generate_hover_sprites --local   # Generate only (no upload)
 
 Requirements:
   - Pillow for image generation

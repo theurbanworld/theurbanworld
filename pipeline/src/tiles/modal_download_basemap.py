@@ -6,9 +6,9 @@ Purpose: Download the latest Protomaps daily build (~120GB) and upload to
          the large file size without filling container disk.
 
 Usage:
-  modal run src/s06_modal_download_pmtiles.py                    # Latest build
-  modal run src/s06_modal_download_pmtiles.py --date 20251215    # Specific date
-  modal run src/s06_modal_download_pmtiles.py --verify           # Verify with BLAKE3
+  modal run src/tiles/modal_download_basemap.py                    # Latest build
+  modal run src/tiles/modal_download_basemap.py --date 20251215    # Specific date
+  modal run src/tiles/modal_download_basemap.py --verify           # Verify with BLAKE3
 
 Setup (one-time):
   1. Ensure R2 bucket exists and has public access enabled:

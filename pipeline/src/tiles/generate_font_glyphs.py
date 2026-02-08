@@ -6,9 +6,9 @@ Purpose: Download font files from GitHub/Google Fonts, generate SDF (Signed Dist
          MapLibre GL city labels.
 
 Usage:
-  uv run python -m src.s10_generate_font_glyphs                           # Generate all and upload
-  uv run python -m src.s10_generate_font_glyphs --local                   # Generate all, no upload
-  uv run python -m src.s10_generate_font_glyphs --family "JetBrains Mono" # Generate one family only
+  uv run python -m src.tiles.generate_font_glyphs                           # Generate all and upload
+  uv run python -m src.tiles.generate_font_glyphs --local                   # Generate all, no upload
+  uv run python -m src.tiles.generate_font_glyphs --family "JetBrains Mono" # Generate one family only
 
 Requirements:
   - build_pbf_glyphs installed (cargo install build_pbf_glyphs)

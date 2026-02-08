@@ -7,10 +7,10 @@ Purpose: Process all epochs in parallel on Modal using exactextract for
          Each H3 cell is associated with its primary city (largest overlap).
 
 Usage:
-  modal run src/s03_raster_1km_to_h3_r8.py              # Full pipeline
-  modal run src/s03_raster_1km_to_h3_r8.py --skip-existing  # Resume processing
-  modal run src/s03_raster_1km_to_h3_r8.py --build-only     # Build pop time series
-  modal run src/s03_raster_1km_to_h3_r8.py --download-local # Download locally
+  modal run src/h3/modal_raster_to_h3.py              # Full pipeline
+  modal run src/h3/modal_raster_to_h3.py --skip-existing  # Resume processing
+  modal run src/h3/modal_raster_to_h3.py --build-only     # Build pop time series
+  modal run src/h3/modal_raster_to_h3.py --download-local # Download locally
 
 Setup (one-time):
   1. Create R2 bucket in Cloudflare dashboard

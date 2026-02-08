@@ -5,8 +5,8 @@ Purpose: Combine all yearly H3 population files into a single wide-format
          parquet file for efficient frontend loading with time scrubbing.
 
 Usage:
-  uv run python -m src.s08_merge_h3_timeseries           # Generate and upload
-  uv run python -m src.s08_merge_h3_timeseries --local   # Generate only (no upload)
+  uv run python -m src.h3.merge_timeseries           # Generate and upload
+  uv run python -m src.h3.merge_timeseries --local   # Generate only (no upload)
 
 Date: 2025-12-28
 """

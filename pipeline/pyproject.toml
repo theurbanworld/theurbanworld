@@ -48,16 +48,35 @@ dependencies = [
 ]
 
 [project.scripts]
-download = "src.s01_download_ghsl:main"
-extract-schema = "src.s01b_extract_ucdb_schema:main"
-extract = "src.s02_extract_urban_centers:main"
-boundaries = "src.s05_extract_city_boundaries:main"
-radial = "src.s06_compute_radial_profiles:main"
-export = "src.s07_export_web_formats:main"
-context = "src.s08_compute_context_metrics:main"
-basemap = "src.s10_download_basemap:main"
-upload = "src.s20_upload_to_r2:main"
-r2-cors = "src.s21_configure_r2_cors:main"
+# Download domain
+download-ghsl = "src.download.download_ghsl:main"
+download-h3 = "src.download.download_h3_r8:main"
+
+# Cities domain
+extract-attributes = "src.cities.extract_attributes:cli"
+extract-geometries = "src.cities.extract_geometries:main"
+generate-cities = "src.cities.generate_cities:main"
+compute-populations = "src.cities.compute_populations:main"
+compute-rankings = "src.cities.compute_rankings:main"
+
+# H3 domain
+load-h3-psql = "src.h3.load_to_psql:main"
+merge-h3-timeseries = "src.h3.merge_timeseries:main"
+
+# Radial domain
+compute-radial = "src.radial.compute_profiles:main"
+
+# Tiles domain
+generate-boundaries = "src.tiles.generate_boundaries:main"
+generate-fonts = "src.tiles.generate_font_glyphs:main"
+generate-sprites = "src.tiles.generate_hover_sprites:main"
+
+# Web export domain
+generate-city-index = "src.web_export.generate_city_index:main"
+generate-city-populations = "src.web_export.generate_city_populations:main"
+
+# Validate
+validate = "src.validate.validate_cities:main"
 
 [build-system]
 requires = ["hatchling"]

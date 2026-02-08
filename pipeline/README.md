@@ -6,10 +6,10 @@ A data processing pipeline that transforms GHSL (Global Human Settlement Layer) 
 
 This pipeline processes ~13,000 cities globally from the European Commission's GHSL dataset, generating:
 - **H3 hexagonal grids** for map visualization
-- **City boundary polygons** as H3 cell sets
+- **City boundary polygons** as PMTiles
 - **Radial density profiles** (Bertaud-style analysis)
 - **Population time series** (1975-2030)
-- **Web-ready JSON/GeoParquet** for frontend consumption
+- **Web-ready JSON** for frontend consumption
 
 ## Quick Start
 
@@ -17,62 +17,74 @@ This pipeline processes ~13,000 cities globally from the European Commission's G
 # Install dependencies with uv
 uv sync
 
-# Run pipeline for test cities (fast iteration)
-make test-cities
+# Run a script
+uv run python -m src.download.download_ghsl
 
-# Run full pipeline
-make all
-
-# Check status
-make status
+# Validate outputs
+uv run python -m src.validate.validate_cities -v
 ```
 
-## Pipeline Stages
+## Pipeline Scripts
 
-| Stage | Script | Description |
-|-------|--------|-------------|
-| 1. Download | `s01_download_ghsl.py` | Download GHSL-POP tiles and UCDB |
-| 2. Extract | `s02_extract_urban_centers.py` | Parse urban center metadata |
-| 3. H3 100m | `s03_raster_100m_to_h3_r9.py` | Convert 100m raster to H3 res-9 (Modal cloud) |
-| 4. H3 1km | `s04_raster_1km_to_h3_r8.py` | Convert 1km rasters to H3 (Modal cloud) |
-| 5. Boundaries | `s05_extract_city_boundaries.py` | Extract city extents as H3 cells |
-| 6. Profiles | `s06_compute_radial_profiles.py` | Compute Bertaud radial profiles |
-| 7. Export | `s07_export_web_formats.py` | Generate web-ready JSON/Parquet |
-| 10. Basemap | `s10_download_basemap.py` | Download Protomaps planet PMTiles |
-| 20. Upload | `s20_upload_to_r2.py` | Upload processed data to R2 |
-| 21. CORS | `s21_configure_r2_cors.py` | Configure R2 bucket CORS |
+Scripts are organized by domain under `src/`:
+
+### download/ — Data retrieval
+| Script | Description |
+|--------|-------------|
+| `download_ghsl.py` | Download GHSL-POP tiles, UCDB, and MTUC from JRC |
+| `download_h3_r8.py` | Download pre-computed H3 res-8 population data from R2 |
+
+### cities/ — City extraction and computation
+| Script | Description |
+|--------|-------------|
+| `extract_attributes.py` | Extract city attributes from UCDB GeoPackage |
+| `extract_geometries.py` | Extract multi-temporal city boundaries from MTUC |
+| `generate_cities.py` | Merge attributes + geometries into cities.parquet |
+| `compute_populations.py` | Sum H3 cell populations within city boundaries |
+| `compute_rankings.py` | Compute rankings, growth metrics, density peers |
+
+### h3/ — H3 hexagonal grid processing
+| Script | Description |
+|--------|-------------|
+| `modal_raster_to_h3.py` | Convert 1km rasters to H3 res-8 (Modal cloud) |
+| `load_to_psql.py` | Load H3 data to PostGIS for QGIS visualization |
+| `merge_timeseries.py` | Merge per-epoch H3 files into single timeseries |
+
+### radial/ — Radial density analysis
+| Script | Description |
+|--------|-------------|
+| `compute_profiles.py` | Compute Bertaud-style radial density profiles |
+
+### tiles/ — Map tile generation
+| Script | Description |
+|--------|-------------|
+| `modal_download_basemap.py` | Download Protomaps planet PMTiles (Modal cloud) |
+| `generate_boundaries.py` | Generate city boundary PMTiles with tippecanoe |
+| `generate_font_glyphs.py` | Generate MapLibre font glyph PBF files |
+| `generate_hover_sprites.py` | Generate hover pattern sprite sheets |
+
+### web_export/ — Frontend JSON generation
+| Script | Description |
+|--------|-------------|
+| `generate_city_index.py` | City metadata JSON for search/navigation |
+| `generate_city_populations.py` | Per-epoch population JSON for sidebar |
+
+### validate/ — Data quality checks
+| Script | Description |
+|--------|-------------|
+| `validate_cities.py` | Pandera schema validation across all outputs |
+
+### explore/ — Data exploration
+| Script | Description |
+|--------|-------------|
+| `app_explore.py` | Streamlit app for browsing city data |
 
 ## Data Sources
 
-- **GHSL-POP R2023A**: Population grids at 100m and 1km resolution
-- **GHSL-UCDB R2024A**: Urban Centre Database with 11,422 cities
+- **GHSL-POP R2023A**: Population grids at 1km resolution, 12 epochs (1975-2030)
+- **GHSL-UCDB R2024A**: Urban Centre Database with city attributes
+- **GHSL-MTUC R2024A**: Multi-temporal urban center boundaries
 - Source: [European Commission Joint Research Centre](https://human-settlement.emergency.copernicus.eu/)
-
-## Output Formats
-
-### City JSON (`data/processed/cities/{city_id}.json`)
-```json
-{
-  "id": "nyc_usa",
-  "name": "New York",
-  "country": "United States",
-  "location": {"lat": 40.7128, "lon": -74.006},
-  "population_2025": 18823000,
-  "boundary_h3": {
-    "resolution": 9,
-    "cells": ["891e204d21fffff", ...],
-    "cell_count": 3421
-  },
-  "time_series": [{"year": 1975, "population": 15880000}, ...],
-  "radial_profile": [{"distance_km": 0.5, "density_per_km2": 27000}, ...]
-}
-```
-
-### City Index (`data/processed/city_index.json`)
-Lightweight index for search/autocomplete with basic city metadata.
-
-### H3 Population Grid (`data/processed/h3_tiles/h3_r9_pop_2025.parquet`)
-GeoParquet with H3 cell IDs and population values.
 
 ## Configuration
 
@@ -83,7 +95,7 @@ Key settings in `src/utils/config.py`:
 
 Override via environment variables with `URBAN_` prefix:
 ```bash
-URBAN_H3_RESOLUTION_MAP=8 make all
+URBAN_H3_RESOLUTION_MAP=8 uv run python -m src.radial.compute_profiles
 ```
 
 ## R2 Upload Configuration
@@ -95,98 +107,42 @@ Data is served from Cloudflare R2. To configure uploads:
 cp .env.example .env
 
 # Edit with your R2 credentials (from Cloudflare dashboard)
-# R2_ACCOUNT_ID=your_account_id
-# R2_ACCESS_KEY_ID=your_access_key
-# R2_SECRET_ACCESS_KEY=your_secret_key
-
-# One-time CORS setup
-make r2-cors
-
-# Upload all data
-make upload
+# R2_ENDPOINT_URL=...
+# R2_ACCESS_KEY_ID=...
+# R2_SECRET_ACCESS_KEY=...
+# R2_BUCKET_NAME=...
 ```
-
-## Test Cities
-
-Development uses 6 test cities covering diverse urban forms:
-- **NYC** - Large, dense, polycentric
-- **Paris** - European, monocentric
-- **Singapore** - Compact city-state
-- **Lagos** - Rapidly growing African megacity
-- **Rio de Janeiro** - Coastal, complex topography
-- **Geneva** - Cross-border metro area (Switzerland/France)
-
-## Hardware Requirements
-
-- **Memory**: 16GB RAM minimum (32GB recommended)
-- **Storage**: ~150GB for full dataset
-- **Time**: ~1.5 hours for test cities, ~24 hours for full pipeline
-
-Optimized for Apple Silicon (M1/M2/M3) with thread-based parallelization.
 
 ## Project Structure
 
 ```
 pipeline/
-├── pyproject.toml          # Dependencies
-├── Makefile               # Build orchestration
-├── .env.example           # R2 credentials template
+├── pyproject.toml          # Dependencies and entry points
+├── CLAUDE.md               # Development instructions
+├── .env.example            # R2 credentials template
 ├── src/
-│   ├── s01_download_ghsl.py
-│   ├── s02_extract_urban_centers.py
-│   ├── s03_raster_100m_to_h3_r9.py
-│   ├── s04_raster_1km_to_h3_r8.py
-│   ├── s05_extract_city_boundaries.py
-│   ├── s06_compute_radial_profiles.py
-│   ├── s07_export_web_formats.py
-│   ├── s10_download_basemap.py
-│   ├── s20_upload_to_r2.py
-│   ├── s21_configure_r2_cors.py
-│   └── utils/
-│       ├── config.py       # Configuration
-│       ├── r2_config.py    # R2/S3 settings
-│       ├── h3_utils.py     # H3 operations
-│       ├── raster_utils.py # Raster processing
-│       └── progress.py     # Checkpointing
+│   ├── download/           # Data retrieval from JRC and R2
+│   ├── cities/             # City extraction, population, rankings
+│   ├── h3/                 # H3 hexagonal grid processing
+│   ├── radial/             # Radial density profiles
+│   ├── tiles/              # Map tiles, fonts, sprites
+│   ├── web_export/         # Frontend JSON generation
+│   ├── validate/           # Data quality validation
+│   ├── explore/            # Streamlit data explorer
+│   └── utils/              # Shared config, geometry, H3, R2 upload
 └── data/
     ├── raw/                # Downloaded GHSL files
     ├── interim/            # Intermediate outputs
     └── processed/          # Final web-ready files
-        ├── basemap/        # Protomaps PMTiles (~70GB)
-        ├── h3_tiles/       # H3 population grids
-        └── cities/         # City JSON files
+        ├── tiles/          # PMTiles, JSON, sprites
+        └── cities/         # Parquet tables
 ```
 
-## Make Targets
+## Hardware Requirements
 
-```bash
-# Pipeline
-make setup        # Create Python environment
-make download     # Download GHSL data
-make extract      # Extract urban centers
-make convert      # Run H3 conversions
-make boundaries   # Extract city boundaries
-make radial       # Compute radial profiles
-make export       # Export web formats
-make test-cities  # Run for test cities only
-make all          # Run full pipeline
-
-# Basemap
-make basemap      # Download Protomaps planet PMTiles (~70GB)
-make basemap-force # Force re-download
-make basemap-info # Show basemap metadata
-
-# R2 Upload
-make upload       # Upload all processed data to R2
-make upload-dry   # Preview what would be uploaded
-make upload-force # Force full re-upload
-make r2-cors      # One-time CORS setup for R2 bucket
-
-# Utilities
-make status       # Show pipeline progress
-make clean        # Remove generated data
-make help         # Show all targets
-```
+- **Memory**: 16GB RAM minimum (32GB recommended)
+- **Storage**: ~150GB for full dataset
+- Optimized for Apple Silicon (M1/M2/M3) with thread-based parallelization.
 
 ## License
 

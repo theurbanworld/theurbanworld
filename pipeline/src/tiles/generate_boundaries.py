@@ -6,8 +6,8 @@ Purpose: Convert city geometries to PMTiles format for efficient vector tile
          simplification.
 
 Usage:
-  uv run python -m src.s07_generate_boundary_pmtiles           # Generate and upload
-  uv run python -m src.s07_generate_boundary_pmtiles --local   # Generate only (no upload)
+  uv run python -m src.tiles.generate_boundaries           # Generate and upload
+  uv run python -m src.tiles.generate_boundaries --local   # Generate only (no upload)
 
 Requirements:
   - tippecanoe installed (brew install tippecanoe)

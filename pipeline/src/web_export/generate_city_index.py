@@ -5,8 +5,8 @@ Purpose: Create a lightweight JSON file with city metadata for search,
          labels, and viewport navigation in the frontend.
 
 Usage:
-  uv run python -m src.s09_generate_city_json           # Generate and upload
-  uv run python -m src.s09_generate_city_json --local   # Generate only (no upload)
+  uv run python -m src.web_export.generate_city_index           # Generate and upload
+  uv run python -m src.web_export.generate_city_index --local   # Generate only (no upload)
 
 Date: 2025-12-28
 """

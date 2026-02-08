@@ -3,8 +3,8 @@ Download 1km H3 population data from R2.
 
 Purpose: Download the processed H3 resolution 8 population data from R2
 Usage:
-  uv run python -m src.s03a_download_h3_r8
-  uv run python -m src.s03a_download_h3_r8 --timeseries-only  # Just the combined file
+  uv run python -m src.download.download_h3_r8
+  uv run python -m src.download.download_h3_r8 --timeseries-only  # Just the combined file
 
 Prerequisites:
   - R2 credentials in .env file:
