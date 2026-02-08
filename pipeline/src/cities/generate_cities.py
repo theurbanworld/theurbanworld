@@ -117,7 +117,7 @@ def extract_cities(force: bool = False) -> gpd.GeoDataFrame:
         if not path.exists():
             raise FileNotFoundError(
                 f"Required file not found: {path}\n"
-                "Run 'python -m src.s02_extract_ucdb extract' first."
+                "Run 'python -m src.cities.extract_attributes extract' first."
             )
 
     ucdb = pl.read_parquet(ucdb_path)

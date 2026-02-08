@@ -16,7 +16,7 @@ Prerequisites:
     DB_USER=postgres
     DB_PASSWORD=postgres
   - Parquet files exist: data/processed/ghsl_pop_1km/h3_r8_pop_*.parquet
-    (run s03a_download_h3_r8 first if needed)
+    (run download/download_h3_r8 first if needed)
 
 Output: h3_pop_1km table in PostGIS database (Greater Paris only)
 Date: 2025-12-13
@@ -113,7 +113,7 @@ def main(dry_run: bool = False):
 
         if not epoch_files:
             print(f"Error: No parquet files found in {INPUT_DIR}")
-            print("Run s04a_download_h3_r8.py first to download the data.")
+            print("Run download/download_h3_r8.py first to download the data.")
             return
 
         available_epochs = [int(f.stem.split("_")[-1]) for f in epoch_files]

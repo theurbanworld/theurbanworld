@@ -441,7 +441,7 @@ def extract(themes: str | None):
     print("=" * 60)
     print(f"Output directory: {output_dir}")
     print(f"Themes extracted: {len(list((output_dir / 'themes').glob('*.parquet')))}")
-    print("Note: Run s02b_extract_cities for city metadata")
+    print("Note: Run cities/extract_geometries for city geometries")
 
 
 @cli.command(name="all")
