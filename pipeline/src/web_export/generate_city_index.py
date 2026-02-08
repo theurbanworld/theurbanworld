@@ -12,15 +12,9 @@ Date: 2025-12-28
 """
 
 import json
-import os
 from pathlib import Path
 
-import boto3
 import geopandas as gpd
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
 
 # Constants
 CITIES_PARQUET = Path("data/processed/cities/cities.parquet")
@@ -94,36 +88,6 @@ def save_json(cities: list[dict], output_path: Path) -> None:
     print(f"  Saved {output_path} ({file_size:.1f} KB)")
 
 
-def upload_to_r2(local_path: Path, r2_key: str) -> str:
-    """Upload JSON to R2."""
-    print(f"\nUploading to R2...")
-
-    endpoint_url = os.environ["R2_ENDPOINT_URL"]
-    access_key = os.environ["R2_ACCESS_KEY_ID"]
-    secret_key = os.environ["R2_SECRET_ACCESS_KEY"]
-    bucket_name = os.environ["R2_BUCKET_NAME"]
-
-    s3 = boto3.client(
-        "s3",
-        endpoint_url=endpoint_url,
-        aws_access_key_id=access_key,
-        aws_secret_access_key=secret_key,
-    )
-
-    file_size = local_path.stat().st_size / 1e3
-    print(f"  Uploading {local_path.name} ({file_size:.1f} KB) -> {r2_key}")
-
-    s3.upload_file(
-        str(local_path),
-        bucket_name,
-        r2_key,
-        ExtraArgs={"ContentType": "application/json"},
-    )
-
-    print(f"  Uploaded to s3://{bucket_name}/{r2_key}")
-    return f"s3://{bucket_name}/{r2_key}"
-
-
 def main(local_only: bool = False) -> None:
     """Generate city index JSON and upload to R2."""
     print("=" * 60)
@@ -141,7 +105,10 @@ def main(local_only: bool = False) -> None:
 
     # Upload to R2
     if not local_only:
-        upload_to_r2(OUTPUT_JSON, R2_KEY)
+        from ..utils.r2_upload import upload_to_r2
+
+        print()
+        upload_to_r2(OUTPUT_JSON, R2_KEY, content_type="application/json")
     else:
         print(f"\nLocal only mode - skipping R2 upload")
         print(f"Output: {OUTPUT_JSON}")
