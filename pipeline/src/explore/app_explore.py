@@ -2,7 +2,7 @@
 City Data Explorer - Streamlit app for browsing city data and validation results.
 
 Usage:
-    uv run streamlit run src/app_explore.py
+    uv run streamlit run src/explore/app_explore.py
 
 Features:
     - Summary tab: Row counts, validation status, quick stats
@@ -17,7 +17,7 @@ import duckdb
 import streamlit as st
 
 # Data directory
-DATA_DIR = Path(__file__).parent.parent / "data" / "processed" / "cities"
+DATA_DIR = Path(__file__).parent.parent.parent / "data" / "processed" / "cities"
 VALIDATION_REPORT = DATA_DIR / "validation_report.json"
 
 
@@ -87,7 +87,7 @@ def render_summary():
         cols[3].metric("Passed", "Yes" if report["summary"]["passed"] else "No")
         st.caption(f"Report timestamp: {report['timestamp']}")
     else:
-        st.info("No validation report found. Run: `uv run python -m src.s99_validate_cities -o data/processed/cities/validation_report.json`")
+        st.info("No validation report found. Run: `uv run python -m src.validate.validate_cities -o data/processed/cities/validation_report.json`")
 
 
 def render_cities():
@@ -143,7 +143,7 @@ def render_outliers():
 
     report = load_validation_report()
     if not report:
-        st.info("No validation report found. Run: `uv run python -m src.s99_validate_cities -o data/processed/cities/validation_report.json`")
+        st.info("No validation report found. Run: `uv run python -m src.validate.validate_cities -o data/processed/cities/validation_report.json`")
         return
 
     statistical_checks = report.get("statistical_checks", {})
