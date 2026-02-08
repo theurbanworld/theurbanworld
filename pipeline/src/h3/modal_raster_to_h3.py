@@ -463,7 +463,7 @@ def main(
     if not geom_path.exists():
         raise FileNotFoundError(
             f"Epoch geometries not found: {geom_path}\n"
-            "Run 'uv run python -m src.s02b_extract_city_geometries' first."
+            "Run 'uv run python -m src.cities.extract_geometries' first."
         )
     geom_bytes = geom_path.read_bytes()
     print(f"Using per-epoch geometries from {geom_path} ({len(geom_bytes) / 1e6:.1f} MB)")

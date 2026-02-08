@@ -30,7 +30,7 @@ import h3
 import polars as pl
 from pathlib import Path
 
-from .utils.config import config, get_processed_path
+from ..utils.config import config, get_processed_path
 
 
 def compute_city_population_for_epoch(

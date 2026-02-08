@@ -40,8 +40,8 @@ import polars as pl
 import pycountry
 from tqdm import tqdm
 
-from .utils.config import get_interim_path, get_processed_path, get_raw_path
-from .utils.tile_utils import estimate_tiles_for_bbox_wgs84
+from ..utils.config import get_interim_path, get_processed_path, get_raw_path
+from ..utils.tile_utils import estimate_tiles_for_bbox_wgs84
 
 
 # Column mappings from UCDB to cities.parquet

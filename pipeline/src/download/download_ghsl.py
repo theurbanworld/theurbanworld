@@ -28,14 +28,14 @@ import click
 import httpx
 from tqdm import tqdm
 
-from .utils.config import (
+from ..utils.config import (
     config,
     get_ghsl_mtuc_url,
     get_ghsl_pop_global_url,
     get_ghsl_ucdb_url,
     get_raw_path,
 )
-from .utils.progress import ProgressTracker
+from ..utils.progress import ProgressTracker
 
 # GHSL tile grid shapefile URL (contains metadata about all available tiles)
 GHSL_TILE_GRID_URL = "https://ghsl.jrc.ec.europa.eu/download/GHSL_data_54009_shapefile.zip"

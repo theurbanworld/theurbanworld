@@ -40,8 +40,8 @@ import geopandas as gpd
 import pandas as pd
 from tqdm import tqdm
 
-from .utils.config import config, get_interim_path, get_raw_path
-from .utils.geometry_utils import fix_invalid_geometry
+from ..utils.config import config, get_interim_path, get_raw_path
+from ..utils.geometry_utils import fix_invalid_geometry
 
 # MTUC epoch layer template
 MTUC_LAYER_TEMPLATE = "GHSL_UCDB_MTUC_{epoch}_GLOBE_R2024"
@@ -73,7 +73,7 @@ def extract_epoch_geometries(
         gpkg_files = list(mtuc_dir.glob("*.gpkg"))
         if not gpkg_files:
             raise FileNotFoundError(
-                f"No GeoPackage found in {mtuc_dir}. Run s01_download_ghsl first."
+                f"No GeoPackage found in {mtuc_dir}. Run download/download_ghsl first."
             )
         mtuc_path = gpkg_files[0]
 
@@ -149,7 +149,7 @@ def extract_centroids(mtuc_path: str | None = None) -> gpd.GeoDataFrame:
         gpkg_files = list(mtuc_dir.glob("*.gpkg"))
         if not gpkg_files:
             raise FileNotFoundError(
-                f"No GeoPackage found in {mtuc_dir}. Run s01_download_ghsl first."
+                f"No GeoPackage found in {mtuc_dir}. Run download/download_ghsl first."
             )
         mtuc_path = gpkg_files[0]
 

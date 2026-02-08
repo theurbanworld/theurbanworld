@@ -34,7 +34,7 @@ import ibis
 import pandera.ibis as pa
 from pandera.ibis import DataFrameModel, Field
 
-from .utils.config import get_processed_path
+from ..utils.config import get_processed_path
 
 
 # =============================================================================

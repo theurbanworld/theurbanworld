@@ -34,8 +34,8 @@ import h3
 import polars as pl
 from pathlib import Path
 
-from .utils.config import config, get_processed_path
-from .utils.h3_utils import (
+from ..utils.config import config, get_processed_path
+from ..utils.h3_utils import (
     assign_cells_to_rings,
     compute_population_weighted_centroid,
     h3_cell_area_km2,

@@ -28,7 +28,7 @@ import polars as pl
 import pycountry
 from pycountry_convert import country_alpha2_to_continent_code
 
-from .utils.config import get_processed_path
+from ..utils.config import get_processed_path
 
 # =============================================================================
 # Constants
