@@ -76,12 +76,11 @@ const {
         </p>
       </header>
 
-      <!-- DataPoint 2x2 Grid -->
+      <!-- DataPoints -->
       <div
         data-testid="datapoint-grid"
-        class="grid grid-cols-2 gap-4"
+        class="flex flex-col gap-4"
       >
-        <!-- Top-left: Population -->
         <div data-testid="population-datapoint">
           <DataPoint
             id="city-population"
@@ -94,7 +93,6 @@ const {
           />
         </div>
 
-        <!-- Top-right: Density -->
         <div data-testid="density-datapoint">
           <DataPoint
             id="city-density"
@@ -107,12 +105,6 @@ const {
           />
         </div>
 
-        <!-- Bottom-left: Reserved empty space -->
-        <div class="min-h-16">
-          <!-- Reserved for future features -->
-        </div>
-
-        <!-- Bottom-right: Area -->
         <div data-testid="area-datapoint">
           <DataPoint
             id="city-area"
