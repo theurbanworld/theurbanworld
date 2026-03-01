@@ -52,6 +52,23 @@ export default defineNuxtConfig({
     cloudflare: {
       deployConfig: true,
       nodeCompat: true
+    },
+    rollupConfig: {
+      plugins: [
+        {
+          name: 'mock-ws-optional-deps',
+          resolveId(id: string) {
+            if (id === 'utf-8-validate' || id === 'bufferutil') {
+              return id
+            }
+          },
+          load(id: string) {
+            if (id === 'utf-8-validate' || id === 'bufferutil') {
+              return 'export default {}'
+            }
+          }
+        }
+      ]
     }
   },
 
