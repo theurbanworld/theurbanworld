@@ -6,10 +6,11 @@ Purpose: Run data quality checks on all city parquet files, identifying schema
 
 Input:
   - data/processed/cities/cities.parquet
-  - data/processed/cities/city_populations.parquet
-  - data/processed/cities/city_rankings.parquet
-  - data/processed/cities/city_growth.parquet
-  - data/processed/cities/city_density_peers.parquet
+  - data/processed/cities/city_populations_{source}.parquet
+  - data/processed/cities/city_rankings_{source}.parquet
+  - data/processed/cities/city_growth_{source}.parquet
+  - data/processed/cities/city_density_peers_{source}.parquet
+  - data/processed/radial_profiles/radial_profiles_h3_r8.parquet (optional)
 
 Output:
   - Console validation report with PASS/FAIL/WARN status
@@ -20,6 +21,7 @@ Decision log:
   - Referential integrity checked separately (not built into Pandera)
   - Warn-only mode: does not block pipeline on failures
   - Known issues documented in schema definitions
+  - --source parameter controls which population variant to validate
 Date: 2025-12-27
 """
 
@@ -116,6 +118,32 @@ class CityDensityPeersSchema(DataFrameModel):
     class Config:
         strict = False
         coerce = True
+
+
+class RadialProfileSchema(DataFrameModel):
+    """Schema for radial_profiles_h3_r8.parquet - radial density profiles."""
+
+    city_id: str = Field(nullable=False)
+    epoch: int = Field(ge=1975, le=2030, nullable=False)
+    ring_index: int = Field(ge=0, le=49, nullable=False)
+    distance_min_km: float = Field(ge=0, nullable=False)
+    distance_max_km: float = Field(gt=0, nullable=False)
+    population: float = Field(ge=0, nullable=False)
+    area_km2: float = Field(ge=0, nullable=False)
+    density_per_km2: float = Field(nullable=True)  # NULL for empty rings
+    cell_count: int = Field(ge=0, nullable=False)
+
+    class Config:
+        strict = False
+        coerce = True
+
+
+VALID_SOURCES = ("h3-r8", "grid-1km")
+
+
+def _source_slug(source: str) -> str:
+    """Convert CLI source name to filename slug: 'h3-r8' → 'h3_r8'."""
+    return source.replace("-", "_")
 
 
 # =============================================================================
@@ -621,12 +649,15 @@ def check_growth_regime_consistency(tables: dict) -> list[dict]:
 
 
 @click.command()
+@click.option("--source", default="h3-r8", type=click.Choice(VALID_SOURCES), help="Data source to validate")
 @click.option("--verbose", "-v", is_flag=True, help="Show detailed output")
 @click.option("--json", "output_json", is_flag=True, help="Output results as JSON")
 @click.option("--output", "-o", type=click.Path(), help="Write JSON to file (implies --json)")
 @click.option("--check-outliers/--no-check-outliers", default=True, help="Run statistical outlier detection")
-def main(verbose: bool = False, output_json: bool = False, output: str | None = None, check_outliers: bool = True):
+def main(source: str = "h3-r8", verbose: bool = False, output_json: bool = False, output: str | None = None, check_outliers: bool = True):
     """Validate city data quality."""
+    slug = _source_slug(source)
+
     # If --output is specified, enable JSON mode
     if output:
         output_json = True
@@ -637,11 +668,15 @@ def main(verbose: bool = False, output_json: bool = False, output: str | None = 
 
     files = {
         "cities": "cities.parquet",
-        "populations": "city_populations.parquet",
-        "rankings": "city_rankings.parquet",
-        "growth": "city_growth.parquet",
-        "peers": "city_density_peers.parquet",
+        "populations": f"city_populations_{slug}.parquet",
+        "rankings": f"city_rankings_{slug}.parquet",
+        "growth": f"city_growth_{slug}.parquet",
+        "peers": f"city_density_peers_{slug}.parquet",
     }
+
+    # Also validate radial profiles if they exist (H3 only)
+    radial_dir = get_processed_path("radial_profiles")
+    radial_path = radial_dir / "radial_profiles_h3_r8.parquet"
 
     tables = {}
     missing_files = []
@@ -654,12 +689,19 @@ def main(verbose: bool = False, output_json: bool = False, output: str | None = 
             if not output_json:
                 print(f"  SKIP: {filename} (not found)")
 
+    # Load radial profiles if available
+    if radial_path.exists():
+        tables["radial_profiles"] = con.read_parquet(str(radial_path))
+    elif not output_json:
+        print(f"  SKIP: radial_profiles_h3_r8.parquet (not found)")
+
     schemas = {
         "cities": CitySchema,
         "populations": CityPopulationSchema,
         "rankings": CityRankingSchema,
         "growth": CityGrowthSchema,
         "peers": CityDensityPeersSchema,
+        "radial_profiles": RadialProfileSchema,
     }
 
     # Validate each table against its schema

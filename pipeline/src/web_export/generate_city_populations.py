@@ -1,12 +1,12 @@
 """
 Generate city populations JSON for frontend.
 
-Purpose: Convert city_populations.parquet (long format) to nested JSON
+Purpose: Convert city_populations_{source}.parquet (long format) to nested JSON
          for epoch-aware population lookups in the frontend sidebar.
 
 Usage:
-  uv run python -m src.web_export.generate_city_populations           # Generate and upload
-  uv run python -m src.web_export.generate_city_populations --local   # Generate only (no upload)
+  uv run python -m src.web_export.generate_city_populations --source h3-r8           # Generate and upload
+  uv run python -m src.web_export.generate_city_populations --source h3-r8 --local   # Generate only
 
 Date: 2026-02-08
 """
@@ -17,16 +17,18 @@ from pathlib import Path
 
 import pandas as pd
 
-# Constants
-POPULATIONS_PARQUET = Path("data/processed/cities/city_populations.parquet")
-OUTPUT_JSON = Path("data/processed/tiles/city_populations.json")
-R2_KEY = "data/city_populations.json"
+VALID_SOURCES = ("h3-r8", "grid-1km")
 
 
-def load_populations() -> pd.DataFrame:
+def _source_slug(source: str) -> str:
+    """Convert CLI source name to filename slug: 'h3-r8' → 'h3_r8'."""
+    return source.replace("-", "_")
+
+
+def load_populations(parquet_path: Path) -> pd.DataFrame:
     """Load city populations from parquet."""
-    print(f"Loading populations from {POPULATIONS_PARQUET}...")
-    df = pd.read_parquet(POPULATIONS_PARQUET)
+    print(f"Loading populations from {parquet_path}...")
+    df = pd.read_parquet(parquet_path)
     print(f"  Loaded {len(df):,} records ({df['city_id'].nunique():,} cities)")
     return df
 
@@ -70,30 +72,30 @@ def save_json(data: list[dict], output_path: Path) -> None:
     print(f"  Saved {output_path} ({file_size:.1f} MB)")
 
 
-def main(local_only: bool = False) -> None:
+def main(source: str, local_only: bool = False) -> None:
     """Generate city populations JSON and upload to R2."""
+    slug = _source_slug(source)
+
     print("=" * 60)
-    print("City Populations JSON Generator")
+    print(f"City Populations JSON Generator (source: {source})")
     print("=" * 60)
 
-    # Load populations
-    df = load_populations()
+    parquet_path = Path(f"data/processed/cities/city_populations_{slug}.parquet")
+    output_json = Path(f"data/processed/tiles/city_populations_{slug}.json")
+    r2_key = f"data/city_populations_{slug}.json"
 
-    # Generate nested JSON
+    df = load_populations(parquet_path)
     data = generate_json(df)
+    save_json(data, output_json)
 
-    # Save locally
-    save_json(data, OUTPUT_JSON)
-
-    # Upload to R2
     if not local_only:
         from ..utils.r2_upload import upload_to_r2
 
         print()
-        upload_to_r2(OUTPUT_JSON, R2_KEY, content_type="application/json")
+        upload_to_r2(output_json, r2_key, content_type="application/json")
     else:
         print(f"\nLocal only mode - skipping R2 upload")
-        print(f"Output: {OUTPUT_JSON}")
+        print(f"Output: {output_json}")
 
     print("\nDone!")
 
@@ -102,7 +104,8 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Generate city populations JSON")
+    parser.add_argument("--source", required=True, choices=VALID_SOURCES, help="Data source")
     parser.add_argument("--local", action="store_true", help="Skip R2 upload")
     args = parser.parse_args()
 
-    main(local_only=args.local)
+    main(source=args.source, local_only=args.local)

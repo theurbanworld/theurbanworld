@@ -15,38 +15,63 @@ uv run python -m src.download.download_h3_r8
 uv run python -m src.cities.extract_attributes extract
 uv run python -m src.cities.extract_geometries
 uv run python -m src.cities.generate_cities
-uv run python -m src.cities.compute_populations
-uv run python -m src.cities.compute_rankings
+uv run python -m src.cities.compute_populations --source h3-r8
+uv run python -m src.cities.compute_populations --source grid-1km
+uv run python -m src.cities.compute_rankings --source h3-r8
+uv run python -m src.cities.compute_rankings --source grid-1km
+
+# Grid
+uv run python -m src.grid.extract_grid_1km
+uv run python -m src.grid.extract_grid_1km --epoch 2025  # single epoch
 
 # H3
-uv run python -m src.h3.merge_timeseries --local
-uv run python -m src.h3.load_to_psql
+uv run python -m src.h3.merge_h3_r8_timeseries --local
+uv run python -m src.h3.load_h3_r8_to_psql
 
-# Radial
-uv run python -m src.radial.compute_profiles
+# Radial (H3 only)
+uv run python -m src.radial.generate_radial_profiles
 
 # Tiles
 uv run python -m src.tiles.generate_boundaries --local
+uv run python -m src.tiles.generate_grid_1km_outlines --local
+uv run python -m src.tiles.generate_h3_r8_outlines --local
 uv run python -m src.tiles.generate_font_glyphs --local
 uv run python -m src.tiles.generate_hover_sprites --local
 
 # Web export (JSON for frontend)
 uv run python -m src.web_export.generate_city_index --local
-uv run python -m src.web_export.generate_city_populations --local
+uv run python -m src.web_export.generate_city_populations --source h3-r8 --local
+uv run python -m src.web_export.generate_city_populations --source grid-1km --local
 
 # Validate
-uv run python -m src.validate.validate_cities -v
+uv run python -m src.validate.validate_cities --source h3-r8 -v
+uv run python -m src.validate.validate_cities --source grid-1km -v
 
 # Explore (Streamlit)
 uv run streamlit run src/explore/app_explore.py
 ```
 
+## Two Canonical Datasets
+
+The pipeline produces **two canonical population datasets**:
+
+1. **`ghsl-grid-1km`** — Pure GHSL raster pixels within city boundaries (1 km² each)
+2. **`ghsl-h3-r8`** — H3 hexagonal grid derived from GHSL (0.55-0.74 km² per cell)
+
+Scripts that accept `--source` (`h3-r8` or `grid-1km`):
+- `compute_populations` — city-level population aggregation
+- `compute_rankings` — rankings, growth, density peers
+- `generate_city_populations` — JSON export for frontend
+- `validate_cities` — data validation
+
+Output files include the source in their name: `city_populations_h3_r8.parquet`, `city_populations_grid_1km.parquet`, etc.
+
 ## Data Validation
 
 Run validation after any pipeline changes:
 ```bash
-uv run python -m src.validate.validate_cities
-uv run python -m src.validate.validate_cities -v  # verbose mode
+uv run python -m src.validate.validate_cities --source h3-r8
+uv run python -m src.validate.validate_cities --source h3-r8 -v  # verbose mode
 ```
 
 ### Adding or Changing Output Data
@@ -78,9 +103,10 @@ When modifying pipeline scripts that produce parquet files in `data/processed/ci
 ### Validation Schema Reference
 
 ```
-cities.parquet           -> CitySchema          (in src/validate/validate_cities.py)
-city_populations.parquet -> CityPopulationSchema
-city_rankings.parquet    -> CityRankingSchema
-city_growth.parquet      -> CityGrowthSchema
-city_density_peers.parquet -> CityDensityPeersSchema
+cities.parquet                       -> CitySchema
+city_populations_{source}.parquet    -> CityPopulationSchema
+city_rankings_{source}.parquet       -> CityRankingSchema
+city_growth_{source}.parquet         -> CityGrowthSchema
+city_density_peers_{source}.parquet  -> CityDensityPeersSchema
+radial_profiles_h3_r8.parquet       -> RadialProfileSchema
 ```

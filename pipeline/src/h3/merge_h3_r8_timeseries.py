@@ -5,8 +5,8 @@ Purpose: Combine all yearly H3 population files into a single wide-format
          parquet file for efficient frontend loading with time scrubbing.
 
 Usage:
-  uv run python -m src.h3.merge_timeseries           # Generate and upload
-  uv run python -m src.h3.merge_timeseries --local   # Generate only (no upload)
+  uv run python -m src.h3.merge_h3_r8_timeseries           # Generate and upload
+  uv run python -m src.h3.merge_h3_r8_timeseries --local   # Generate only (no upload)
 
 Date: 2025-12-28
 """
@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Constants
-H3_POP_DIR = Path("data/processed/ghsl_pop_1km")
+H3_POP_DIR = Path("data/processed/ghsl_h3_r8")
 OUTPUT_PARQUET = Path("data/processed/tiles/h3_r8_pop_timeseries.parquet")
 R2_KEY = "data/h3_r8_pop_timeseries.parquet"
 EPOCHS = [1975, 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020, 2025, 2030]

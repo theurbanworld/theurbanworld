@@ -4,8 +4,8 @@ Load 1km H3 population time series data into PostGIS (Greater Paris only).
 Purpose: Load H3 resolution 8 population time series from parquet into PostGIS,
          filtered to Greater Paris bounding box for efficient QGIS visualization.
 Usage:
-  uv run python -m src.h3.load_to_psql
-  uv run python -m src.h3.load_to_psql --dry-run  # Show what would be done
+  uv run python -m src.h3.load_h3_r8_to_psql
+  uv run python -m src.h3.load_h3_r8_to_psql --dry-run  # Show what would be done
 
 Prerequisites:
   - PostGIS with H3 extension running (docker-compose up -d)
@@ -15,7 +15,7 @@ Prerequisites:
     DB_NAME=urbanworld
     DB_USER=postgres
     DB_PASSWORD=postgres
-  - Parquet files exist: data/processed/ghsl_pop_1km/h3_r8_pop_*.parquet
+  - Parquet files exist: data/processed/ghsl_h3_r8/h3_r8_pop_*.parquet
     (run download/download_h3_r8 first if needed)
 
 Output: h3_pop_1km table in PostGIS database (Greater Paris only)
@@ -35,7 +35,7 @@ from dotenv import load_dotenv
 load_dotenv(".env")
 
 # Data paths
-INPUT_DIR = Path("data/processed/ghsl_pop_1km")
+INPUT_DIR = Path("data/processed/ghsl_h3_r8")
 INPUT_FILE = INPUT_DIR / "h3_r8_pop_timeseries.parquet"
 TABLE_NAME = "h3_pop_1km"
 

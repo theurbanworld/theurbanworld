@@ -6,12 +6,12 @@ Purpose: Compute global/continental/national rankings for each city at each epoc
 
 Input:
   - data/processed/cities/cities.parquet (city_id, country_code)
-  - data/processed/cities/city_populations.parquet (city_id, epoch, population, area_km2, density_per_km2)
+  - data/processed/cities/city_populations_{source}.parquet
 
 Output:
-  - data/processed/cities/city_rankings.parquet - per-epoch rankings
-  - data/processed/cities/city_growth.parquet - full-period growth metrics
-  - data/processed/cities/city_density_peers.parquet - density peer relationships
+  - data/processed/cities/city_rankings_{source}.parquet - per-epoch rankings
+  - data/processed/cities/city_growth_{source}.parquet - full-period growth metrics
+  - data/processed/cities/city_density_peers_{source}.parquet - density peer relationships
 
 Decision log:
   - Rankings computed per epoch using DuckDB window functions with PARTITION BY epoch
@@ -152,16 +152,27 @@ def classify_growth_regime(annual_rate: float | None) -> str | None:
 # =============================================================================
 
 
-def load_data() -> pl.DataFrame:
+VALID_SOURCES = ("h3-r8", "grid-1km")
+
+
+def _source_slug(source: str) -> str:
+    """Convert CLI source name to filename slug: 'h3-r8' → 'h3_r8'."""
+    return source.replace("-", "_")
+
+
+def load_data(source_slug: str) -> pl.DataFrame:
     """
     Load cities and populations, join and add continent.
+
+    Args:
+        source_slug: Source identifier for filename (e.g. 'h3_r8', 'grid_1km')
 
     Returns:
         DataFrame with city_id, epoch, population, area_km2, density_per_km2,
         cell_count, country_code, continent
     """
     cities_path = get_processed_path("cities") / "cities.parquet"
-    populations_path = get_processed_path("cities") / "city_populations.parquet"
+    populations_path = get_processed_path("cities") / f"city_populations_{source_slug}.parquet"
 
     # Load both files - deduplicate cities by city_id (take first occurrence)
     cities = (
@@ -487,18 +498,21 @@ def compute_density_peers(df: pl.DataFrame, max_peers: int = 5, population_toler
 
 
 @click.command()
+@click.option("--source", required=True, type=click.Choice(VALID_SOURCES), help="Data source")
 @click.option("--force", is_flag=True, help="Overwrite existing outputs")
-def main(force: bool = False):
+def main(source: str, force: bool = False):
     """Compute city rankings per epoch and growth metrics."""
+    slug = _source_slug(source)
+
     print("=" * 60)
-    print("City Rankings Computation (Per-Epoch)")
+    print(f"City Rankings Computation (source: {source})")
     print("=" * 60)
 
     # Paths
     output_dir = get_processed_path("cities")
-    rankings_path = output_dir / "city_rankings.parquet"
-    growth_path = output_dir / "city_growth.parquet"
-    peers_path = output_dir / "city_density_peers.parquet"
+    rankings_path = output_dir / f"city_rankings_{slug}.parquet"
+    growth_path = output_dir / f"city_growth_{slug}.parquet"
+    peers_path = output_dir / f"city_density_peers_{slug}.parquet"
 
     # Check existing outputs
     if not force and rankings_path.exists():
@@ -508,7 +522,7 @@ def main(force: bool = False):
 
     # Load and prepare data
     print("\nLoading data...")
-    df = load_data()
+    df = load_data(slug)
     n_cities = df["city_id"].n_unique()
     n_epochs = df["epoch"].n_unique()
     print(f"  Loaded {len(df):,} rows ({n_cities:,} cities × {n_epochs} epochs)")

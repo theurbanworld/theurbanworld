@@ -4,9 +4,9 @@ Compute Bertaud-style radial density profiles.
 Purpose: Calculate population density at 1km intervals from city center,
          using population-weighted centroids and exact H3 cell areas.
 Input:
-  - data/processed/ghsl_pop_1km/h3_r8_pop_{epoch}.parquet
+  - data/processed/ghsl_h3_r8/h3_r8_pop_{epoch}.parquet
 Output:
-  - data/processed/radial_profiles/radial_profiles.parquet
+  - data/processed/radial_profiles/radial_profiles_h3_r8.parquet
 
 Output Schema (radial_profiles.parquet):
   | Column          | Type    | Description                               |
@@ -42,13 +42,16 @@ from ..utils.h3_utils import (
 )
 
 
-def compute_radial_profiles_for_epoch(epoch: int, input_dir: Path) -> pl.DataFrame:
+def compute_radial_profiles_for_epoch(
+    epoch: int, input_dir: Path, canonical_city_ids: set[str] | None = None
+) -> pl.DataFrame:
     """
     Compute radial profiles for all cities in a single epoch.
 
     Args:
         epoch: Year to process (1975, 1980, ..., 2030)
         input_dir: Directory containing h3_r8_pop_{epoch}.parquet files
+        canonical_city_ids: If provided, filter to only these city_ids
 
     Returns:
         DataFrame with radial profile data for all cities
@@ -60,6 +63,10 @@ def compute_radial_profiles_for_epoch(epoch: int, input_dir: Path) -> pl.DataFra
 
     # Load H3 population data
     h3_pop = pl.read_parquet(file_path)
+
+    # Filter to canonical city_ids if provided
+    if canonical_city_ids is not None:
+        h3_pop = h3_pop.filter(pl.col("city_id").is_in(canonical_city_ids))
 
     # Get unique cities
     city_ids = h3_pop["city_id"].unique().to_list()
@@ -149,19 +156,28 @@ def compute_all_radial_profiles(epochs: list[int] | None = None) -> pl.DataFrame
     """
     Compute radial profiles for all epochs.
 
+    Filters H3 data to canonical UCDB city_ids before processing.
+
     Args:
         epochs: List of epochs to process (default: all from config)
 
     Returns:
         Concatenated DataFrame with profiles for all city-epoch combinations
     """
-    input_dir = get_processed_path("ghsl_pop_1km")
+    input_dir = get_processed_path("ghsl_h3_r8")
     epochs = epochs or config.GHSL_POP_EPOCHS
+
+    # Load canonical city_ids from UCDB-based cities.parquet
+    cities_path = get_processed_path("cities") / "cities.parquet"
+    canonical_city_ids = set(
+        pl.read_parquet(cities_path).select("city_id").to_series().to_list()
+    )
+    print(f"  Filtering to {len(canonical_city_ids):,} canonical UCDB city_ids")
 
     all_profiles = []
     for epoch in epochs:
         print(f"  Processing epoch {epoch}...")
-        profiles = compute_radial_profiles_for_epoch(epoch, input_dir)
+        profiles = compute_radial_profiles_for_epoch(epoch, input_dir, canonical_city_ids)
         n_cities = profiles["city_id"].n_unique()
         print(f"    {n_cities:,} cities processed")
         all_profiles.append(profiles)
@@ -179,7 +195,7 @@ def main(force: bool = False):
 
     # Output path
     output_dir = get_processed_path("radial_profiles")
-    output_path = output_dir / "radial_profiles.parquet"
+    output_path = output_dir / "radial_profiles_h3_r8.parquet"
 
     # Check if output exists
     if output_path.exists() and not force:

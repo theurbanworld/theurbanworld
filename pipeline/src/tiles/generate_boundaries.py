@@ -114,14 +114,14 @@ def load_geometries() -> gpd.GeoDataFrame:
 
     # Load per-epoch population and density
     print("Loading per-epoch populations and density...")
-    populations = pd.read_parquet("data/processed/cities/city_populations.parquet")[
+    populations = pd.read_parquet("data/processed/cities/city_populations_h3_r8.parquet")[
         ["city_id", "epoch", "population", "density_per_km2"]
     ]
     print(f"  Loaded {len(populations):,} population records")
 
     # Load population growth rates from rankings
     print("Loading population growth rates...")
-    rankings = pd.read_parquet("data/processed/cities/city_rankings.parquet")[
+    rankings = pd.read_parquet("data/processed/cities/city_rankings_h3_r8.parquet")[
         ["city_id", "epoch", "growth_from_prev", "growth_to_next"]
     ]
     print(f"  Loaded {len(rankings):,} ranking records")

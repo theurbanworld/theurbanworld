@@ -13,7 +13,7 @@ Prerequisites:
     R2_SECRET_ACCESS_KEY=<your_secret_key>
     R2_BUCKET_NAME=<your_bucket_name>
 
-Output: data/processed/ghsl_pop_1k/*.parquet
+Output: data/processed/ghsl_h3_r8/*.parquet
 Date: 2025-12-13
 """
 
@@ -29,7 +29,7 @@ load_dotenv(".env")
 
 # R2 settings
 R2_PREFIX = "ghsl-pop-1km"
-OUTPUT_DIR = Path("data/processed/ghsl_pop_1km")
+OUTPUT_DIR = Path("data/processed/ghsl_h3_r8")
 
 
 def get_r2_client():

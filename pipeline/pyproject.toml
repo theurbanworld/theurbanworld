@@ -59,15 +59,20 @@ generate-cities = "src.cities.generate_cities:main"
 compute-populations = "src.cities.compute_populations:main"
 compute-rankings = "src.cities.compute_rankings:main"
 
+# Grid domain
+extract-grid = "src.grid.extract_grid_1km:main"
+
 # H3 domain
-load-h3-psql = "src.h3.load_to_psql:main"
-merge-h3-timeseries = "src.h3.merge_timeseries:main"
+load-h3-psql = "src.h3.load_h3_r8_to_psql:main"
+merge-h3-timeseries = "src.h3.merge_h3_r8_timeseries:main"
 
 # Radial domain
-compute-radial = "src.radial.compute_profiles:main"
+compute-radial = "src.radial.generate_radial_profiles:main"
 
 # Tiles domain
 generate-boundaries = "src.tiles.generate_boundaries:main"
+generate-grid-outlines = "src.tiles.generate_grid_1km_outlines:main"
+generate-h3-outlines = "src.tiles.generate_h3_r8_outlines:main"
 generate-fonts = "src.tiles.generate_font_glyphs:main"
 generate-sprites = "src.tiles.generate_hover_sprites:main"
 
