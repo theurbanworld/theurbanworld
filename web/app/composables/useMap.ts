@@ -180,6 +180,17 @@ function createSepiaTheme(): Theme {
     zoo: '#E5DDD0',
     military: '#E0D8C8',
 
+    // Landcover - muted sage/olive tones that complement sepia aesthetic
+    landcover: {
+      grassland: 'rgba(200, 220, 190, 1)',
+      barren: 'rgba(230, 220, 200, 1)',
+      urban_area: 'rgba(228, 222, 210, 1)',
+      farmland: 'rgba(205, 218, 192, 1)',
+      glacier: 'rgba(213, 224, 229, 1)',
+      scrub: 'rgba(215, 218, 195, 1)',
+      forest: 'rgba(190, 212, 185, 1)',
+    },
+
     // Fonts - use Inter for all basemap labels
     regular: 'Inter Regular',
     italic: 'InterVariable-Italic',
@@ -292,6 +303,17 @@ function createDarkSepiaTheme(): Theme {
     zoo: '#302B22',
     military: '#383028',
 
+    // Landcover - dark muted greens for natural geography
+    landcover: {
+      grassland: 'rgba(45, 55, 40, 1)',
+      barren: 'rgba(50, 45, 38, 1)',
+      urban_area: 'rgba(48, 44, 40, 1)',
+      farmland: 'rgba(42, 52, 38, 1)',
+      glacier: 'rgba(55, 65, 70, 1)',
+      scrub: 'rgba(48, 52, 42, 1)',
+      forest: 'rgba(38, 50, 38, 1)',
+    },
+
     // Fonts - use Inter for all basemap labels
     regular: 'Inter Regular',
     italic: 'InterVariable-Italic',
@@ -374,6 +396,16 @@ export function useMap(options: UseMapOptions) {
     const themeLayers = allLayers.filter(
       layer => !BASEMAP_LAYERS_TO_HIDE.includes(layer.id)
     )
+
+    // Override landcover fill-opacity to keep green tones visible at higher zoom levels.
+    // Default protomaps theme fades landcover to transparent between zoom 5-7.
+    const landcoverLayer = themeLayers.find(l => l.id === 'landcover')
+    if (landcoverLayer && landcoverLayer.type === 'fill') {
+      (landcoverLayer as maplibregl.FillLayerSpecification).paint = {
+        ...((landcoverLayer as maplibregl.FillLayerSpecification).paint || {}),
+        'fill-opacity': ['interpolate', ['linear'], ['zoom'], 0, 0.8, 8, 0.5, 12, 0.3]
+      }
+    }
 
     const style: maplibregl.StyleSpecification = {
       version: 8,
