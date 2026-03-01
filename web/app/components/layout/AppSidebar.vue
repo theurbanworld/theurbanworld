@@ -1,10 +1,11 @@
 <script setup lang="ts">
 /**
- * AppSidebar - Generic reusable sidebar component
+ * AppSidebar - True sidebar that pushes map content
  *
- * A full-height left sidebar that slides in from the left edge.
- * Can be used for city info panels, search results, or other content.
- * Fixed position that overlays the map without pushing content.
+ * A full-height left sidebar flush with the header and viewport edges.
+ * Always rendered in the DOM; toggles between w-80 and w-0 with a
+ * CSS width transition for smooth open/close animation.
+ * On mobile (max-sm), overlays as a full-screen panel instead.
  */
 
 interface Props {
@@ -25,56 +26,27 @@ function handleClose() {
 </script>
 
 <template>
-  <Transition name="sidebar-slide">
-    <aside
-      v-if="open"
-      data-testid="app-sidebar"
-      class="absolute left-4 top-24 bottom-4 z-200 w-80
-             max-sm:left-2 max-sm:top-16 max-sm:bottom-2 max-sm:w-[calc(100%-1rem)]
-             bg-parchment/95 dark:bg-espresso/95 backdrop-blur-sm
-             shadow-lg rounded-xl
-             flex flex-col overflow-hidden"
-    >
-      <!-- Close button -->
-      <button
-        data-testid="sidebar-close-button"
-        class="absolute top-4 right-4 z-10
-               p-2 rounded-lg
-               text-body/70 dark:text-cream/70
-               hover:bg-forest-100/50 dark:hover:bg-forest-900/30
-               hover:text-forest-700 dark:hover:text-forest-300
-               transition-colors"
-        aria-label="Close sidebar"
-        @click="handleClose"
-      >
-        <UIcon name="i-lucide-x" class="w-5 h-5" />
-      </button>
-
+  <aside
+    data-testid="app-sidebar"
+    class="flex-shrink-0 overflow-hidden
+           transition-[width] duration-300 ease-in-out
+           bg-parchment
+           border-r border-forest-200/40 dark:border-forest-800/40
+           max-sm:fixed max-sm:inset-0 max-sm:z-200 max-sm:border-r-0
+           max-sm:transition-transform max-sm:duration-300 max-sm:ease-in-out"
+    :class="[
+      open ? 'w-80 max-sm:translate-x-0' : 'w-0 max-sm:-translate-x-full'
+    ]"
+  >
+    <!-- Inner wrapper with fixed width to prevent content reflow -->
+    <div class="w-80 min-w-80 h-full flex flex-col">
       <!-- Content slot -->
       <div
         data-testid="sidebar-content"
-        class="flex-1 overflow-y-auto p-6 pt-14"
+        class="flex-1 overflow-y-auto p-5"
       >
         <slot />
       </div>
-    </aside>
-  </Transition>
+    </div>
+  </aside>
 </template>
-
-<style scoped>
-/* Slide-in animation for sidebar */
-.sidebar-slide-enter-active,
-.sidebar-slide-leave-active {
-  transition: transform 0.3s ease;
-}
-
-.sidebar-slide-enter-from,
-.sidebar-slide-leave-to {
-  transform: translateX(-100%);
-}
-
-.sidebar-slide-enter-to,
-.sidebar-slide-leave-from {
-  transform: translateX(0);
-}
-</style>

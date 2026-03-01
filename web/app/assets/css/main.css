@@ -5,6 +5,7 @@
   /* Typography */
   --font-sans: 'Inter', sans-serif;
   --font-serif: 'Goudy Bookletter 1911', serif;
+  --font-display: 'Cormorant SC', serif;
   --font-mono: 'JetBrains Mono', monospace;
 
   /* Forest green color scale (primary accent) */
@@ -26,7 +27,7 @@
   --color-data: #5C4A3D;
 
   /* Basemap sepia colors (light mode) */
-  --color-parchment: #F5F1E6;
+  --color-parchment: #FAFAF4;
   --color-water: #B8C5CE;
   --color-border: #9A9385;
 

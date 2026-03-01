@@ -1,7 +1,7 @@
 <template>
   <div
     data-testid="zoom-slider-panel"
-    class="absolute z-100 p-3 rounded-xl shadow-lg bg-parchment/95 dark:bg-espresso/95 backdrop-blur-sm
+    class="absolute z-100 p-3 rounded-xl shadow-lg bg-parchment/95 backdrop-blur-sm
            right-4 bottom-4 w-56
            max-sm:right-2 max-sm:bottom-2 max-sm:w-auto"
   >

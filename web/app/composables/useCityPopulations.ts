@@ -10,9 +10,7 @@
  */
 
 import type { YearEpoch } from '../../types/h3'
-
-// Data URL for city populations JSON
-const CITY_POPULATIONS_URL = 'https://data.theurban.world/data/city_populations.json'
+import { useDataSource } from './useDataSource'
 
 /**
  * City population data for a single epoch
@@ -33,16 +31,18 @@ export interface CityPopulationRecord {
 
 export function useCityPopulations() {
   const runtimeConfig = useRuntimeConfig()
+  const { sourceSlug } = useDataSource()
 
   /**
-   * Get the data URL, preferring R2 if configured
+   * Get the data URL for the current data source
    */
   function getDataUrl(): string {
+    const slug = sourceSlug.value
     const r2BaseUrl = runtimeConfig.public.r2BaseUrl
     if (r2BaseUrl) {
-      return `${r2BaseUrl}/data/city_populations.json`
+      return `${r2BaseUrl}/data/city_populations_${slug}.json`
     }
-    return CITY_POPULATIONS_URL
+    return `https://data.theurban.world/data/city_populations_${slug}.json`
   }
 
   // useAsyncData with unique key for deduplication and SSR
@@ -63,7 +63,8 @@ export function useCityPopulations() {
     {
       immediate: false, // Don't auto-fetch, trigger on-demand
       server: true, // Enable SSR
-      default: () => []
+      default: () => [],
+      watch: [sourceSlug] // Re-fetch when data source changes
     }
   )
 

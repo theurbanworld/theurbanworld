@@ -67,6 +67,7 @@ export default defineNuxtConfig({
   fonts: {
     provider: 'bunny',
     families: [
+      { name: 'Cormorant SC', weights: [400, 500, 600, 700] },
       { name: 'Crimson Pro', weights: [400, 600, 700] },
       { name: 'Goudy Bookletter 1911', weights: [400] },
       { name: 'Inter', weights: [300, 400, 500, 600, 700] },

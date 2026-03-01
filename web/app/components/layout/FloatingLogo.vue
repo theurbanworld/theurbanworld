@@ -11,7 +11,7 @@
 <template>
   <div
     class="absolute left-4 top-4 z-300 p-3 rounded-xl shadow-lg
-           bg-parchment/95 dark:bg-espresso/95 backdrop-blur-sm
+           bg-parchment/95 backdrop-blur-sm
            max-sm:left-2 max-sm:top-2"
   >
     <AppLogo />

@@ -17,7 +17,7 @@
     <!-- Loading indicator for map -->
     <div
       v-if="isMapLoading"
-      class="absolute inset-0 flex items-center justify-center bg-parchment/90 dark:bg-espresso/90 z-10"
+      class="absolute inset-0 flex items-center justify-center bg-parchment/90 z-10"
     >
       <div class="flex flex-col items-center text-center">
         <UIcon
@@ -33,7 +33,7 @@
     <!-- Loading indicator for H3 data (disabled)
     <div
       v-else-if="isH3Loading"
-      class="absolute inset-0 flex items-center justify-center bg-parchment/85 dark:bg-espresso/85 z-10"
+      class="absolute inset-0 flex items-center justify-center bg-parchment/85 z-10"
     >
       <div class="flex flex-col items-center text-center min-w-[250px]">
         <UIcon
@@ -59,7 +59,7 @@
     <!-- Error display -->
     <div
       v-if="displayError"
-      class="absolute inset-0 flex items-center justify-center bg-parchment/90 dark:bg-espresso/90 z-10"
+      class="absolute inset-0 flex items-center justify-center bg-parchment/90 z-10"
     >
       <div class="flex flex-col items-center text-center">
         <UIcon

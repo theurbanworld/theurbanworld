@@ -30,41 +30,32 @@ function handleSidebarClose() {
 <template>
   <UApp>
     <div class="flex flex-col h-screen overflow-hidden">
-      <UMain class="flex-1 !min-h-0 relative overflow-hidden">
-        <!-- Persistent map and overlays -->
-        <ClientOnly>
-          <GlobalMap :is-dark-mode="isDarkMode" />
+      <AppHeader />
 
-          <!-- Floating Logo (top-left) -->
-          <FloatingLogo />
+      <div class="flex flex-1 min-h-0 overflow-hidden">
+        <!-- City Info Panel Sidebar (pushes map when open) -->
+        <AppSidebar :open="!!selectedCityId" @close="handleSidebarClose">
+          <CityInfoPanel v-if="selectedCityId" :city-id="selectedCityId" @close="handleSidebarClose" />
+        </AppSidebar>
 
-          <!-- City Info Panel Sidebar -->
-          <AppSidebar :open="!!selectedCityId" @close="handleSidebarClose">
-            <CityInfoPanel v-if="selectedCityId" :city-id="selectedCityId" />
-          </AppSidebar>
+        <UMain class="flex-1 !min-h-0 relative overflow-hidden">
+          <!-- Persistent map and overlays -->
+          <ClientOnly>
+            <GlobalMap :is-dark-mode="isDarkMode" />
 
-          <!-- Global Context Panel (epoch controls and population data) -->
-          <GlobalContextPanel />
+            <!-- Global Context Panel (epoch controls and population data) -->
+            <GlobalContextPanel />
 
-          <!-- Zoom Slider (scale level control) -->
-          <ZoomSlider />
-        </ClientOnly>
+            <!-- Zoom Slider (scale level control) -->
+            <ZoomSlider />
+          </ClientOnly>
 
-        <!-- Route-specific content -->
-        <NuxtPage />
-      </UMain>
+          <!-- Route-specific content -->
+          <NuxtPage />
+        </UMain>
+      </div>
 
-      <UFooter>
-        <template #left>
-          <p class="text-muted text-sm">
-            Urban World
-          </p>
-        </template>
-
-        <template #right>
-          <DarkModeToggle />
-        </template>
-      </UFooter>
+      <AppFooter />
     </div>
   </UApp>
 </template>

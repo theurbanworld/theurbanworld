@@ -15,6 +15,10 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const emit = defineEmits<{
+  close: []
+}>()
+
 // Create a computed ref for the city ID to ensure reactivity
 const cityIdRef = computed(() => props.cityId)
 
@@ -62,12 +66,26 @@ const {
     <template v-else>
       <!-- City Header -->
       <header class="mb-6">
-        <h1
-          data-testid="city-name"
-          class="text-2xl font-bold text-forest-700 dark:text-forest-300"
-        >
-          {{ cityName }}
-        </h1>
+        <div class="flex items-start justify-between gap-2">
+          <h1
+            data-testid="city-name"
+            class="text-2xl font-bold text-forest-700 dark:text-forest-300"
+          >
+            {{ cityName }}
+          </h1>
+          <button
+            data-testid="sidebar-close-button"
+            class="shrink-0 p-1 rounded-md cursor-pointer
+                   text-body/50 dark:text-cream/50
+                   hover:bg-forest-100/50 dark:hover:bg-forest-900/30
+                   hover:text-forest-700 dark:hover:text-forest-300
+                   transition-colors"
+            aria-label="Close sidebar"
+            @click="emit('close')"
+          >
+            <UIcon name="i-lucide-x" class="w-4 h-4" />
+          </button>
+        </div>
         <p
           data-testid="country-name"
           class="text-sm text-body/70 dark:text-cream/70 mt-1"

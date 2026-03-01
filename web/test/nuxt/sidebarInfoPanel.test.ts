@@ -77,18 +77,20 @@ const AppSidebarTest = defineComponent({
   emits: ['close'],
   setup(props, { emit, slots }) {
     return () => {
-      if (!props.open) {
-        return null
-      }
       return h('aside', {
         'data-testid': 'app-sidebar',
-        'class': 'fixed left-0 top-0 h-full z-200 w-80 bg-parchment/95'
+        'class': [
+          'flex-shrink-0 overflow-hidden bg-parchment dark:bg-espresso border-r border-forest-200/40',
+          props.open ? 'w-80' : 'w-0'
+        ]
       }, [
-        h('button', {
-          'data-testid': 'sidebar-close-button',
-          'onClick': () => emit('close')
-        }, [h(UIconStub, { name: 'i-lucide-x' })]),
-        h('div', { 'data-testid': 'sidebar-content' }, slots.default?.())
+        h('div', { class: 'w-80 min-w-80 h-full flex flex-col' }, [
+          h('button', {
+            'data-testid': 'sidebar-close-button',
+            'onClick': () => emit('close')
+          }, [h(UIconStub, { name: 'i-lucide-x' })]),
+          h('div', { 'data-testid': 'sidebar-content' }, slots.default?.())
+        ])
       ])
     }
   }
@@ -143,12 +145,15 @@ describe('AppSidebar', () => {
     expect(wrapper.text()).toContain('Test content')
   })
 
-  it('hides when open is false', () => {
+  it('collapses to zero width when open is false', () => {
     const wrapper = mount(AppSidebarTest, {
       props: { open: false }
     })
 
-    expect(wrapper.find('[data-testid="app-sidebar"]').exists()).toBe(false)
+    const sidebar = wrapper.find('[data-testid="app-sidebar"]')
+    expect(sidebar.exists()).toBe(true)
+    expect(sidebar.classes()).toContain('w-0')
+    expect(sidebar.classes()).not.toContain('w-80')
   })
 
   it('emits close event when close button is clicked', async () => {
@@ -161,15 +166,16 @@ describe('AppSidebar', () => {
     expect(wrapper.emitted('close')?.length).toBe(1)
   })
 
-  it('has correct positioning classes', () => {
+  it('has correct sidebar classes', () => {
     const wrapper = mount(AppSidebarTest, {
       props: { open: true }
     })
 
     const sidebar = wrapper.find('[data-testid="app-sidebar"]')
-    expect(sidebar.classes()).toContain('fixed')
-    expect(sidebar.classes()).toContain('left-0')
-    expect(sidebar.classes()).toContain('top-0')
+    expect(sidebar.classes()).toContain('border-r')
+    expect(sidebar.classes()).toContain('w-80')
+    expect(sidebar.classes()).not.toContain('fixed')
+    expect(sidebar.classes()).not.toContain('absolute')
   })
 })
 

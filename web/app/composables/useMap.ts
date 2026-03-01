@@ -25,12 +25,24 @@ const CITY_BOUNDARIES_SOURCE = 'city-boundaries'
 const CITY_BOUNDARIES_HOVER_LAYER = 'city-boundaries-hover-pattern'
 const CITY_BOUNDARIES_LAYER = 'city-boundaries-line'
 const CITY_LABELS_LAYER = 'city-labels'
-const CITY_BOUNDARIES_URL = 'https://data.theurban.world/tiles/city_boundaries.pmtiles'
+
+// Boundary PMTiles URL and source-layer by data source
+const BOUNDARIES_CONFIG = {
+  'h3-r8': {
+    url: 'https://data.theurban.world/tiles/h3_r8_outlines.pmtiles',
+    sourceLayer: 'h3_r8_outlines'
+  },
+  'grid-1km': {
+    url: 'https://data.theurban.world/tiles/grid_1km_outlines.pmtiles',
+    sourceLayer: 'grid_1km_outlines'
+  }
+} as const
 
 // Zoom constraints for fitBounds when selecting a city
 const FIT_BOUNDS_MIN_ZOOM = 8
-const FIT_BOUNDS_MAX_ZOOM = 14
+const FIT_BOUNDS_MAX_ZOOM = 12
 const FIT_BOUNDS_PADDING = 80
+const RIGHT_PANEL_WIDTH = 256 // w-56 + right-4 = 224px + 16px gap ≈ 256px
 
 // Basemap layers to hide (we show only land/water + our city data)
 const BASEMAP_LAYERS_TO_HIDE = [
@@ -69,8 +81,9 @@ const BASEMAP_LAYERS_TO_HIDE = [
   // POIs
   'pois',
 
-  // Landuse features (parks, airports, etc.)
-  'landuse_park', 'landuse_urban_green', 'landuse_beach', 'landuse_zoo',
+  // Landuse features (keep landuse_park and landuse_urban_green for natural
+  // feature coverage at higher zoom levels — they replace landcover at zoom 7+)
+  'landuse_beach', 'landuse_zoo',
   'landuse_aerodrome', 'landuse_runway', 'landuse_industrial',
   'landuse_school', 'landuse_hospital', 'landuse_pedestrian'
 ]
@@ -84,19 +97,21 @@ function createSepiaTheme(): Theme {
 
   return {
     ...lightTheme,
-    // Core basemap colors - parchment land, slate water, warm gray borders
-    background: '#F5F1E6', // Parchment land
-    earth: '#F5F1E6',
+    // Core basemap colors — slightly darker/cooler than UI parchment (#F5F1E6)
+    // so the map reads as distinct from header and floating panels
+    background: '#EDE8DA',
+    earth: '#EDE8DA',
     water: '#B8C5CE', // Slate blue-gray water
     glacier: '#D5E0E5',
 
-    // Natural features with sepia tints
-    wood_a: '#E8E0D0',
-    wood_b: '#E5DDD0',
-    scrub_a: '#E5DDD0',
-    scrub_b: '#E2DAC8',
-    park_a: '#E8E0D0',
-    park_b: '#E5DDD0',
+    // Natural features — muted sage greens for parks/woods/scrub to maintain
+    // green tones at higher zoom (landuse_park replaces landcover at zoom 7+)
+    wood_a: '#D4DFCF',
+    wood_b: '#CDDAC8',
+    scrub_a: '#DBE0D0',
+    scrub_b: '#D6DAC8',
+    park_a: '#D4DFCF',
+    park_b: '#CDDAC8',
     sand: '#F0E8D8',
     beach: '#F0E8D8',
 
@@ -207,19 +222,21 @@ function createDarkSepiaTheme(): Theme {
 
   return {
     ...darkTheme,
-    // Core basemap colors - deep brown land, muted slate water
-    background: '#2A2420', // Deep brown background
-    earth: '#2A2420',
+    // Core basemap colors — slightly lighter than UI espresso (#2A2420)
+    // so the map reads as distinct from header and floating panels
+    background: '#322C26',
+    earth: '#322C26',
     water: '#3A4550', // Darker slate blue-gray water
     glacier: '#4A5560',
 
-    // Natural features with dark sepia tints
-    wood_a: '#353025',
-    wood_b: '#302B22',
-    scrub_a: '#302B22',
-    scrub_b: '#2D2820',
-    park_a: '#353025',
-    park_b: '#302B22',
+    // Natural features — dark muted greens for parks/woods/scrub to maintain
+    // green tones at higher zoom (landuse_park replaces landcover at zoom 7+)
+    wood_a: '#2E3828',
+    wood_b: '#2A3425',
+    scrub_a: '#303428',
+    scrub_b: '#2D3025',
+    park_a: '#2E3828',
+    park_b: '#2A3425',
     sand: '#3A3428',
     beach: '#3A3428',
 
@@ -348,6 +365,9 @@ export function useMap(options: UseMapOptions) {
   // Get dark mode state
   const { isDarkMode } = useDarkMode()
 
+  // Get data source for boundary layer switching
+  const { dataSource } = useDataSource()
+
   // Get selected year for filtering city boundaries
   const { selectedYear } = useSelectedYear()
 
@@ -377,10 +397,17 @@ export function useMap(options: UseMapOptions) {
   }
 
   /**
-   * Get city boundaries PMTiles URL
+   * Get city boundaries PMTiles URL for current data source
    */
   function getCityBoundariesUrl(): string {
-    return `pmtiles://${CITY_BOUNDARIES_URL}`
+    return `pmtiles://${BOUNDARIES_CONFIG[dataSource.value].url}`
+  }
+
+  /**
+   * Get the source layer name for current data source
+   */
+  function getCityBoundariesSourceLayer(): string {
+    return BOUNDARIES_CONFIG[dataSource.value].sourceLayer
   }
 
   /**
@@ -467,28 +494,24 @@ export function useMap(options: UseMapOptions) {
   function addCityBoundariesLayer(mapInstance: maplibregl.Map, darkMode: boolean = false) {
     if (cityBoundariesLoaded.value) return
 
+    const sourceLayer = getCityBoundariesSourceLayer()
+
     try {
-      // Check if source already exists
-      if (!mapInstance.getSource(CITY_BOUNDARIES_SOURCE)) {
-        // Add city boundaries source
-        // promoteId tells MapLibre to use city_id as the feature ID for feature-state
-        mapInstance.addSource(CITY_BOUNDARIES_SOURCE, {
-          type: 'vector',
-          url: getCityBoundariesUrl(),
-          promoteId: { city_boundaries: 'city_id' }
-        })
+      // Remove old source if it exists (data source may have changed)
+      if (mapInstance.getSource(CITY_BOUNDARIES_SOURCE)) {
+        if (mapInstance.getLayer(CITY_LABELS_LAYER)) mapInstance.removeLayer(CITY_LABELS_LAYER)
+        if (mapInstance.getLayer(CITY_BOUNDARIES_LAYER)) mapInstance.removeLayer(CITY_BOUNDARIES_LAYER)
+        if (mapInstance.getLayer(CITY_BOUNDARIES_HOVER_LAYER)) mapInstance.removeLayer(CITY_BOUNDARIES_HOVER_LAYER)
+        mapInstance.removeSource(CITY_BOUNDARIES_SOURCE)
       }
 
-      // Check if layers already exist and remove them
-      if (mapInstance.getLayer(CITY_LABELS_LAYER)) {
-        mapInstance.removeLayer(CITY_LABELS_LAYER)
-      }
-      if (mapInstance.getLayer(CITY_BOUNDARIES_LAYER)) {
-        mapInstance.removeLayer(CITY_BOUNDARIES_LAYER)
-      }
-      if (mapInstance.getLayer(CITY_BOUNDARIES_HOVER_LAYER)) {
-        mapInstance.removeLayer(CITY_BOUNDARIES_HOVER_LAYER)
-      }
+      // Add city boundaries source
+      // promoteId tells MapLibre to use city_id as the feature ID for feature-state
+      mapInstance.addSource(CITY_BOUNDARIES_SOURCE, {
+        type: 'vector',
+        url: getCityBoundariesUrl(),
+        promoteId: { [sourceLayer]: 'city_id' }
+      })
 
       // Colors based on dark mode
       const labelColor = darkMode ? '#E8E0D5' : '#4A4238'
@@ -507,7 +530,7 @@ export function useMap(options: UseMapOptions) {
         'id': CITY_BOUNDARIES_HOVER_LAYER,
         'type': 'fill',
         'source': CITY_BOUNDARIES_SOURCE,
-        'source-layer': 'city_boundaries',
+        'source-layer': sourceLayer,
         'paint': {
           // Select pattern based on city_id hash (same logic as border color)
           'fill-pattern': [
@@ -530,7 +553,7 @@ export function useMap(options: UseMapOptions) {
         'id': CITY_BOUNDARIES_LAYER,
         'type': 'line',
         'source': CITY_BOUNDARIES_SOURCE,
-        'source-layer': 'city_boundaries',
+        'source-layer': sourceLayer,
         'paint': {
           // Color varies by city_id hash (hue) and population (brightness)
           'line-color': [
@@ -567,7 +590,7 @@ export function useMap(options: UseMapOptions) {
         'id': CITY_LABELS_LAYER,
         'type': 'symbol',
         'source': CITY_BOUNDARIES_SOURCE,
-        'source-layer': 'city_boundaries',
+        'source-layer': sourceLayer,
         'layout': {
           // Sort by population descending so larger cities' labels take precedence
           'symbol-sort-key': ['*', -1, ['get', 'population']],
@@ -723,7 +746,7 @@ export function useMap(options: UseMapOptions) {
     // Clear previous selection
     if (selectedFeatureId !== null) {
       mapInstance.setFeatureState(
-        { source: CITY_BOUNDARIES_SOURCE, sourceLayer: 'city_boundaries', id: selectedFeatureId },
+        { source: CITY_BOUNDARIES_SOURCE, sourceLayer: getCityBoundariesSourceLayer(), id: selectedFeatureId },
         { selected: false }
       )
       selectedFeatureId = null
@@ -734,7 +757,7 @@ export function useMap(options: UseMapOptions) {
       // Use city_id as the feature ID (matches promoteId configuration)
       selectedFeatureId = cityId
       mapInstance.setFeatureState(
-        { source: CITY_BOUNDARIES_SOURCE, sourceLayer: 'city_boundaries', id: cityId },
+        { source: CITY_BOUNDARIES_SOURCE, sourceLayer: getCityBoundariesSourceLayer(), id: cityId },
         { selected: true }
       )
     }
@@ -757,17 +780,31 @@ export function useMap(options: UseMapOptions) {
     const mapInstance = map.value
     const [minx, miny, maxx, maxy] = city.bbox
 
-    // Convert bbox to LngLatBounds format: [[sw], [ne]]
     const bounds: [[number, number], [number, number]] = [
-      [minx, miny], // SW corner
-      [maxx, maxy]  // NE corner
+      [minx, miny],
+      [maxx, maxy]
     ]
 
-    mapInstance.fitBounds(bounds, {
-      padding: FIT_BOUNDS_PADDING,
-      minZoom: FIT_BOUNDS_MIN_ZOOM,
-      maxZoom: FIT_BOUNDS_MAX_ZOOM,
-      duration: 1000 // Smooth 1 second animation
+    // Use cameraForBounds to compute target center+zoom without animating.
+    // Extra right padding compensates for the floating panels (context panel +
+    // zoom slider) that overlay the right side of the map.
+    const camera = mapInstance.cameraForBounds(bounds, {
+      padding: {
+        top: FIT_BOUNDS_PADDING,
+        right: RIGHT_PANEL_WIDTH + FIT_BOUNDS_PADDING,
+        bottom: FIT_BOUNDS_PADDING,
+        left: FIT_BOUNDS_PADDING
+      },
+      maxZoom: FIT_BOUNDS_MAX_ZOOM
+    })
+    if (!camera) return
+
+    mapInstance.flyTo({
+      center: camera.center,
+      zoom: Math.max(camera.zoom ?? FIT_BOUNDS_MIN_ZOOM, FIT_BOUNDS_MIN_ZOOM),
+      curve: 1.0,  // Gentler arc than default 1.42
+      speed: 1.4,
+      essential: true
     })
   }
 
@@ -791,7 +828,7 @@ export function useMap(options: UseMapOptions) {
         // Clear previous hover state if different feature
         if (hoveredFeatureId !== null && hoveredFeatureId !== feature.id) {
           mapInstance.setFeatureState(
-            { source: CITY_BOUNDARIES_SOURCE, sourceLayer: 'city_boundaries', id: hoveredFeatureId },
+            { source: CITY_BOUNDARIES_SOURCE, sourceLayer: getCityBoundariesSourceLayer(), id: hoveredFeatureId },
             { hover: false }
           )
         }
@@ -800,7 +837,7 @@ export function useMap(options: UseMapOptions) {
         if (feature.id !== undefined) {
           hoveredFeatureId = feature.id
           mapInstance.setFeatureState(
-            { source: CITY_BOUNDARIES_SOURCE, sourceLayer: 'city_boundaries', id: feature.id },
+            { source: CITY_BOUNDARIES_SOURCE, sourceLayer: getCityBoundariesSourceLayer(), id: feature.id },
             { hover: true }
           )
 
@@ -815,7 +852,7 @@ export function useMap(options: UseMapOptions) {
         mapInstance.getCanvas().style.cursor = ''
         if (hoveredFeatureId !== null) {
           mapInstance.setFeatureState(
-            { source: CITY_BOUNDARIES_SOURCE, sourceLayer: 'city_boundaries', id: hoveredFeatureId },
+            { source: CITY_BOUNDARIES_SOURCE, sourceLayer: getCityBoundariesSourceLayer(), id: hoveredFeatureId },
             { hover: false }
           )
           hoveredFeatureId = null
@@ -945,6 +982,20 @@ export function useMap(options: UseMapOptions) {
   // Watch for selected year changes and update city boundaries filter
   watch(selectedYear, (year) => {
     updateCityBoundariesFilter(year)
+  })
+
+  // Watch for data source changes and swap boundary layers
+  watch(dataSource, () => {
+    if (map.value && !isLoading.value) {
+      cityBoundariesLoaded.value = false
+      hoveredFeatureId = null
+      selectedFeatureId = null
+      addCityBoundariesLayer(map.value, isDarkMode.value)
+      setupCityInteractionEvents(map.value)
+      if (selectedCityId.value) {
+        updateSelectedFeatureState(selectedCityId.value)
+      }
+    }
   })
 
   // Watch for selected city changes and update feature state + fly to city
