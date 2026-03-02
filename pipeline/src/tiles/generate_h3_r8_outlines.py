@@ -17,6 +17,8 @@ Requirements:
 Date: 2026-03-01
 """
 
+import json
+import os
 import subprocess
 import tempfile
 from pathlib import Path
@@ -26,6 +28,7 @@ import h3
 import numpy as np
 import pandas as pd
 import polars as pl
+from dotenv import load_dotenv
 from shapely import Polygon
 from shapely.ops import unary_union
 
@@ -35,6 +38,7 @@ from ..tiles.generate_boundaries import compute_trend, compute_density_trends
 
 # Constants
 OUTPUT_PMTILES = Path("data/processed/tiles/h3_r8_outlines.pmtiles")
+OUTPUT_OUTLINES_DIR = Path("data/processed/outlines")
 R2_KEY = "tiles/h3_r8_outlines.pmtiles"
 
 
@@ -173,6 +177,86 @@ def run_tippecanoe(geojson_path: Path, pmtiles_path: Path) -> None:
     print(f"  Generated {pmtiles_path} ({file_size:.1f} MB)")
 
 
+def export_city_outlines(gdf: gpd.GeoDataFrame, local_only: bool = False) -> None:
+    """Export simplified city outlines as per-city JSON files for OG images.
+
+    Filters to epoch 2025, simplifies geometries (~100m tolerance),
+    and writes minimal JSON files with polygon coordinates.
+    """
+    print("\nExporting city outline JSON files...")
+
+    # Filter to 2025 epoch only
+    gdf_2025 = gdf[gdf["epoch"] == 2025].copy()
+    print(f"  Cities in epoch 2025: {len(gdf_2025):,}")
+
+    # Simplify geometries (0.001° ≈ 100m)
+    gdf_2025["geometry"] = gdf_2025["geometry"].simplify(tolerance=0.001)
+
+    OUTPUT_OUTLINES_DIR.mkdir(parents=True, exist_ok=True)
+    exported = 0
+
+    for _, row in gdf_2025.iterrows():
+        city_id = str(row["city_id"])
+        geom = row["geometry"]
+
+        if geom is None or geom.is_empty:
+            continue
+
+        # Extract coordinates as nested lists
+        # Handle both Polygon and MultiPolygon
+        if geom.geom_type == "Polygon":
+            coords = [list(geom.exterior.coords)]
+        elif geom.geom_type == "MultiPolygon":
+            coords = [list(poly.exterior.coords) for poly in geom.geoms]
+        else:
+            continue
+
+        # Round coordinates to 4 decimal places (~11m precision, reduces file size)
+        coords = [
+            [[round(lon, 4), round(lat, 4)] for lon, lat in ring]
+            for ring in coords
+        ]
+
+        outline = {"coordinates": coords}
+
+        local_path = OUTPUT_OUTLINES_DIR / f"{city_id}.json"
+        with open(local_path, "w") as f:
+            json.dump(outline, f, separators=(",", ":"))
+
+        exported += 1
+
+    print(f"  Exported {exported:,} city outlines to {OUTPUT_OUTLINES_DIR}")
+
+    if not local_only:
+        print("  Uploading outlines to R2 via rclone...")
+        load_dotenv()
+
+        env = os.environ.copy()
+        env["RCLONE_CONFIG_R2_TYPE"] = "s3"
+        env["RCLONE_CONFIG_R2_PROVIDER"] = "Cloudflare"
+        env["RCLONE_CONFIG_R2_ACCESS_KEY_ID"] = os.environ["R2_ACCESS_KEY_ID"]
+        env["RCLONE_CONFIG_R2_SECRET_ACCESS_KEY"] = os.environ["R2_SECRET_ACCESS_KEY"]
+        env["RCLONE_CONFIG_R2_ENDPOINT"] = os.environ["R2_ENDPOINT_URL"]
+        env["RCLONE_CONFIG_R2_ACL"] = "private"
+
+        bucket = os.environ["R2_BUCKET_NAME"]
+        cmd = [
+            "rclone", "sync",
+            str(OUTPUT_OUTLINES_DIR),
+            f"r2:{bucket}/data/outlines",
+            "--transfers=16",
+            "--header-upload", "Content-Type: application/json",
+            "--header-upload", "Cache-Control: public, max-age=86400",
+            "--progress",
+        ]
+
+        print(f"  Running: rclone sync {OUTPUT_OUTLINES_DIR} r2:{bucket}/data/outlines")
+        result = subprocess.run(cmd, env=env)
+        if result.returncode != 0:
+            raise RuntimeError(f"rclone sync failed with exit code {result.returncode}")
+        print(f"  Uploaded {exported:,} outline files to R2")
+
+
 def main(local_only: bool = False) -> None:
     """Generate H3 R8 outline PMTiles and upload to R2."""
     print("=" * 60)
@@ -180,6 +264,9 @@ def main(local_only: bool = False) -> None:
     print("=" * 60)
 
     gdf = load_outlines()
+
+    # Export per-city outline JSON files for OG images
+    export_city_outlines(gdf, local_only=local_only)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         geojson_path = Path(tmpdir) / "h3_r8_outlines.geojson"

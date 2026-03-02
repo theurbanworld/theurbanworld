@@ -33,15 +33,28 @@ const { selectedCityId, clearSelection } = useCitySelection()
 // Route detection for sidebar content
 const route = useRoute()
 const isRankingsRoute = computed(() => route.path === '/rankings')
-const sidebarOpen = computed(() => !!selectedCityId.value || isRankingsRoute.value)
+
+// Mobile sidebar visibility
+const mobileSidebarOpen = computed(() => !!selectedCityId.value || isRankingsRoute.value)
 
 // Initialize dark mode on mount
 onMounted(() => {
   initializeDarkMode()
 })
 
-// Handle sidebar close - navigate back to global view
-function handleSidebarClose() {
+// Toggle rankings view
+function toggleRankings() {
+  if (isRankingsRoute.value) {
+    clearSelection()
+    navigateTo('/')
+  } else {
+    clearSelection()
+    navigateTo('/rankings')
+  }
+}
+
+// Handle city info close - back to global view
+function handleCityClose() {
   clearSelection()
   navigateTo('/')
 }
@@ -52,26 +65,32 @@ function handleSidebarClose() {
     <div class="flex flex-col h-screen overflow-hidden">
       <AppHeader />
 
-      <div class="flex flex-1 min-h-0 overflow-hidden relative">
-        <!-- Search notch — same width as sidebar, always visible -->
-        <div class="absolute top-0 left-0 z-20 w-80 p-3 bg-parchment border-r border-b border-forest-200/40 dark:border-forest-800/40 rounded-br-lg">
-          <CitySearch class="w-full" />
-          <NuxtLink
-            to="/rankings"
-            class="mt-2 inline-flex items-center gap-1.5 text-xs transition-colors"
+      <!-- Search strip: sidebar-width toggle on left, centered search on right -->
+      <div class="flex items-center bg-parchment border-b border-forest-200/40 dark:border-forest-800/40">
+        <!-- Cities toggle — sidebar width -->
+        <div class="w-80 shrink-0 px-4 py-2.5 border-r border-forest-200/40 dark:border-forest-800/40">
+          <button
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer"
             :class="isRankingsRoute
-              ? 'text-forest-700 dark:text-forest-300 font-medium'
-              : 'text-body/60 dark:text-cream/60 hover:text-forest-700 dark:hover:text-forest-300'"
+              ? 'bg-forest-700 text-white dark:bg-forest-400 dark:text-forest-950'
+              : 'text-body/60 dark:text-cream/60 hover:bg-forest-100/50 dark:hover:bg-forest-900/30'"
+            @click="toggleRankings"
           >
-            <UIcon name="i-lucide-bar-chart-horizontal" class="w-3.5 h-3.5" />
-            Rankings
-          </NuxtLink>
+            <UIcon name="i-lucide-bar-chart-horizontal" class="w-4 h-4" />
+            Cities
+          </button>
         </div>
+        <!-- Search — centered in remaining space -->
+        <div class="flex-1 flex justify-center px-5 py-2.5">
+          <CitySearch class="w-full max-w-sm" />
+        </div>
+      </div>
 
-        <!-- Sidebar (pushes map when open) -->
-        <AppSidebar :open="sidebarOpen" @close="handleSidebarClose">
-          <CityRankings v-if="isRankingsRoute" @close="handleSidebarClose" />
-          <CityInfoPanel v-else-if="selectedCityId" :city-id="selectedCityId" @close="handleSidebarClose" />
+      <div class="flex flex-1 min-h-0 overflow-hidden">
+        <!-- Sidebar — always visible on desktop, overlay on mobile -->
+        <AppSidebar :open="mobileSidebarOpen">
+          <CityRankings v-if="isRankingsRoute" />
+          <CityInfoPanel v-else-if="selectedCityId" :city-id="selectedCityId" @close="handleCityClose" />
         </AppSidebar>
 
         <UMain class="flex-1 !min-h-0 relative overflow-hidden">

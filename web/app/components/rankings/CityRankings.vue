@@ -10,10 +10,6 @@
 import type { YearEpoch } from '../../../types/h3'
 import { formatCompactNumber, formatDensity, formatArea } from '~/utils/formatNumber'
 
-const emit = defineEmits<{
-  close: []
-}>()
-
 const { selectedYear } = useSelectedYear()
 const { allCities } = useCitiesIndex()
 const { getCityPopulationData } = useCityPopulations()
@@ -109,26 +105,8 @@ watch([activeStat, countryFilter], () => {
 
 <template>
   <div class="flex flex-col">
-    <!-- Sticky controls below search notch -->
-    <div class="sticky top-16 z-10 bg-parchment -mx-5 px-5 pb-3 border-b border-forest-200/40 dark:border-forest-800/40">
-      <!-- Title row -->
-      <div class="flex items-center justify-between mb-3">
-        <h1 class="text-2xl font-bold font-crimson text-forest-700 dark:text-forest-300">
-          Rankings
-        </h1>
-        <button
-          class="shrink-0 p-1 rounded-md cursor-pointer
-                 text-body/50 dark:text-cream/50
-                 hover:bg-forest-100/50 dark:hover:bg-forest-900/30
-                 hover:text-forest-700 dark:hover:text-forest-300
-                 transition-colors"
-          aria-label="Close rankings"
-          @click="emit('close')"
-        >
-          <UIcon name="i-lucide-x" class="w-4 h-4" />
-        </button>
-      </div>
-
+    <!-- Sticky controls -->
+    <div class="sticky top-0 z-10 bg-parchment -mx-5 px-5 -mt-5 pt-5 pb-3 border-b border-forest-200/40 dark:border-forest-800/40">
       <!-- Stat toggle -->
       <div class="flex gap-1 mb-3">
         <button

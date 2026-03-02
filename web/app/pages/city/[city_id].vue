@@ -8,6 +8,7 @@
  * Syncs route params with city selection state.
  * The sidebar and map are rendered in app.vue.
  */
+import { humanizeNumber } from '~/composables/useGlobalStats'
 
 // Get route params
 const route = useRoute()
@@ -44,6 +45,24 @@ useSeoMeta({
   description: () => city.value
     ? `Urban density, population trends, and growth patterns for ${city.value.name}, ${city.value.country}.`
     : 'Explore urban density, population, and growth patterns.'
+})
+
+// OG image with city outline, name, and stats (epoch 2025)
+const { getCityPopulationData } = useCityPopulations()
+const ogPopData = computed(() => cityId.value ? getCityPopulationData(cityId.value, 2025) : undefined)
+
+defineOgImage({
+  component: 'City',
+  cityName: city.value?.name,
+  countryName: city.value?.country,
+  population: ogPopData.value ? humanizeNumber(ogPopData.value.population) : '',
+  density: ogPopData.value
+    ? (ogPopData.value.density_per_km2 >= 1000
+        ? `${Math.round(ogPopData.value.density_per_km2 / 100) / 10} K/km2`
+        : `${Math.round(ogPopData.value.density_per_km2)}/km2`)
+    : '',
+  area: ogPopData.value ? `${Math.round(ogPopData.value.area_km2).toLocaleString()} km2` : '',
+  outlineUrl: `https://data.theurban.world/data/outlines/${cityId.value}.json`
 })
 
 // Sync route param to city selection state

@@ -69,7 +69,7 @@ const {
         <div class="flex items-start justify-between gap-2">
           <h1
             data-testid="city-name"
-            class="text-4xl font-bold font-crimson text-forest-700 dark:text-forest-300"
+            class="text-4xl font-bold font-heading text-forest-700 dark:text-forest-300"
           >
             {{ cityName }}
           </h1>

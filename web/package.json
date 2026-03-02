@@ -30,6 +30,7 @@
     "h3-js": "^4.4.0",
     "maplibre-gl": "^5.14.0",
     "nuxt": "^4.2.2",
+    "nuxt-og-image": "^5.1.13",
     "pmtiles": "^4.3.0",
     "protomaps-themes-base": "^4.5.0",
     "vue-chartjs": "^5.3.3"

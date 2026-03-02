@@ -1,49 +1,38 @@
 <script setup lang="ts">
 /**
- * AppSidebar - True sidebar that pushes map content
+ * AppSidebar - Persistent left sidebar that pushes map content
  *
- * A full-height left sidebar flush with the header and viewport edges.
- * Always rendered in the DOM; toggles between w-80 and w-0 with a
- * CSS width transition for smooth open/close animation.
- * On mobile (max-sm), overlays as a full-screen panel instead.
+ * Always visible at w-80 on desktop with a header slot (non-scrollable)
+ * and a default content slot (scrollable).
+ * On mobile (max-sm), overlays as a full-screen panel controlled by `open` prop.
  */
 
 interface Props {
-  /** Controls sidebar visibility */
-  open: boolean
+  /** Controls sidebar visibility on mobile */
+  open?: boolean
 }
 
-defineProps<Props>()
-
-const emit = defineEmits<{
-  /** Emitted when close button is clicked */
-  close: []
-}>()
-
-function handleClose() {
-  emit('close')
-}
+withDefaults(defineProps<Props>(), { open: true })
 </script>
 
 <template>
   <aside
     data-testid="app-sidebar"
-    class="flex-shrink-0 overflow-hidden
-           transition-[width] duration-300 ease-in-out
-           bg-parchment
+    class="w-80 shrink-0 bg-parchment
            border-r border-forest-200/40 dark:border-forest-800/40
            max-sm:fixed max-sm:inset-0 max-sm:z-200 max-sm:border-r-0
            max-sm:transition-transform max-sm:duration-300 max-sm:ease-in-out"
     :class="[
-      open ? 'w-80 max-sm:translate-x-0' : 'w-0 max-sm:-translate-x-full'
+      open ? 'max-sm:translate-x-0' : 'max-sm:-translate-x-full'
     ]"
   >
-    <!-- Inner wrapper with fixed width to prevent content reflow -->
     <div class="w-80 min-w-80 h-full flex flex-col">
-      <!-- Content slot -->
+      <!-- Non-scrollable header -->
+      <slot name="header" />
+      <!-- Scrollable content -->
       <div
         data-testid="sidebar-content"
-        class="flex-1 overflow-y-auto p-5 pt-16"
+        class="flex-1 overflow-y-auto"
       >
         <slot />
       </div>
