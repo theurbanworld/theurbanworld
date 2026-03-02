@@ -30,18 +30,18 @@
       </div>
     </div>
 
-    <!-- Loading indicator for H3 data (disabled)
+    <!-- Loading indicator for H3 data -->
     <div
-      v-else-if="isH3Loading"
-      class="absolute inset-0 flex items-center justify-center bg-parchment/85 z-10"
+      v-if="isH3Loading && !isMapLoading"
+      class="absolute inset-0 flex items-center justify-center bg-parchment/85 dark:bg-espresso/85 z-10"
     >
       <div class="flex flex-col items-center text-center min-w-[250px]">
         <UIcon
           name="i-lucide-loader-2"
           class="animate-spin text-4xl text-forest-600"
         />
-        <p class="mt-2 text-body font-medium">
-          Loading population data...
+        <p class="mt-2 text-body dark:text-cream font-medium">
+          Loading H3 cell data...
         </p>
         <div class="w-full h-2 bg-border/30 dark:bg-border/20 rounded overflow-hidden mt-4">
           <div
@@ -49,12 +49,11 @@
             :style="{ width: `${h3LoadProgress}%` }"
           />
         </div>
-        <p class="mt-2 text-sm text-body opacity-70">
+        <p class="mt-2 text-sm text-body dark:text-cream opacity-70">
           {{ h3LoadProgress }}% complete
         </p>
       </div>
     </div>
-    -->
 
     <!-- Error display -->
     <div
@@ -121,11 +120,22 @@ const { viewState, onViewStateChange, shouldAnimate, animationDuration, clearAni
 
 // H3 data loading
 const {
-  isLoading: _isH3Loading,
-  loadProgress: _h3LoadProgress,
+  isLoading: isH3Loading,
+  loadProgress: h3LoadProgress,
   error: h3Error,
   loadData: loadH3Data
 } = useH3Data()
+
+// Radial layer (activated when sidebar section is expanded)
+const { layer: radialLayer } = useRadialLayer()
+const { isRadialLayerActive } = useRadialHighlight()
+
+// Boundary layer IDs to toggle when radial layer is active
+const BOUNDARY_LAYERS = [
+  'city-boundaries-hover-pattern',
+  'city-boundaries-line',
+  'city-labels'
+]
 
 // Local state for dark mode (can be controlled via prop or internal)
 const _isDarkMode = computed(() => props.isDarkMode ?? false)
@@ -216,6 +226,27 @@ function handleKeydown(event: KeyboardEvent) {
 watch(isDeckInitialized, (initialized) => {
   if (initialized && currentLayer.value) {
     setLayers([currentLayer.value] as Layer[])
+  }
+})
+
+// Watch radial layer and update deck.gl
+watch(radialLayer, (layer) => {
+  if (!isDeckInitialized.value) return
+  const layers: Layer[] = []
+  if (currentLayer.value) layers.push(currentLayer.value)
+  if (layer) layers.push(layer)
+  setLayers(layers)
+})
+
+// Toggle boundary layer visibility when radial layer is active
+watch(isRadialLayerActive, (active) => {
+  const mapInstance = map.value
+  if (!mapInstance) return
+  const visibility = active ? 'none' : 'visible'
+  for (const layerId of BOUNDARY_LAYERS) {
+    if (mapInstance.getLayer(layerId)) {
+      mapInstance.setLayoutProperty(layerId, 'visibility', visibility)
+    }
   }
 })
 

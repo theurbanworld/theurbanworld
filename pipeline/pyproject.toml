@@ -79,6 +79,7 @@ generate-sprites = "src.tiles.generate_hover_sprites:main"
 # Web export domain
 generate-city-index = "src.web_export.generate_city_index:main"
 generate-city-populations = "src.web_export.generate_city_populations:main"
+generate-radial-profiles-json = "src.web_export.generate_radial_profiles:main"
 
 # Validate
 validate = "src.validate.validate_cities:main"

@@ -133,6 +133,9 @@ const {
           />
         </div>
       </div>
+
+      <!-- Radial Profile Section -->
+      <RadialProfileSection :city-id="cityId" class="mt-4" />
     </template>
   </div>
 </template>

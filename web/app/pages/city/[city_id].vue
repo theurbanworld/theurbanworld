@@ -18,6 +18,7 @@ const { selectCity } = useCitySelection()
 // Get data loading functions
 const { execute: loadCitiesIndex } = useCitiesIndex()
 const { execute: loadPopulations } = useCityPopulations()
+const { execute: loadRadialProfiles } = useRadialProfiles()
 
 // Extract city_id from route params
 const cityId = computed(() => {
@@ -28,7 +29,8 @@ const cityId = computed(() => {
 // Load data (SSR-compatible, deduped via useAsyncData keys)
 await Promise.all([
   loadCitiesIndex(),
-  loadPopulations()
+  loadPopulations(),
+  loadRadialProfiles()
 ])
 
 // Sync route param to city selection state

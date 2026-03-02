@@ -16,6 +16,7 @@ const H3_DATA_URL = 'https://data.theurban.world/data/h3_r8_pop_timeseries.parqu
 // Store raw data with all years in memory (singleton)
 interface H3RawData {
   h3Indices: string[] // Pre-converted to hex strings
+  cityIds: string[] // City ID per cell
   populationByYear: Map<YearEpoch, Float64Array>
 }
 
@@ -87,6 +88,7 @@ export function useH3Data() {
 
         // Initialize storage
         const h3Indices: string[] = []
+        const cityIds: string[] = []
         const populationByYear = new Map<YearEpoch, Float64Array>()
 
         // Pre-allocate Float64Arrays for each year
@@ -114,6 +116,10 @@ export function useH3Data() {
 
           h3Indices.push(h3Index)
 
+          // Extract city_id
+          const rawCityId = row.city_id
+          cityIds.push(rawCityId != null ? String(rawCityId) : '')
+
           // Extract population for each year
           for (const year of years) {
             const columnKey = getPopulationColumnKey(year)
@@ -133,13 +139,17 @@ export function useH3Data() {
         // Store in cache
         rawDataCache = {
           h3Indices,
+          cityIds,
           populationByYear
         }
 
         loadProgress.value = 100
         isDataLoaded.value = true
 
-        console.log(`Loaded ${h3Indices.length} H3 hexagons with population data`)
+        // Debug: show sample city_ids to verify parsing
+        const sampleCityIds = new Set(cityIds.slice(0, 100))
+        console.log(`Loaded ${h3Indices.length} H3 hexagons, sample city_ids:`, [...sampleCityIds].slice(0, 10))
+        console.log(`Unique city_ids: ${new Set(cityIds).size}`)
       } catch (e) {
         console.error('Failed to load H3 data:', e)
         error.value = e instanceof Error ? e : new Error('Failed to load H3 data')
@@ -199,6 +209,29 @@ export function useH3Data() {
   }
 
   /**
+   * Get H3 hexagon data for a specific city and year
+   * Returns all cells belonging to that city with non-zero population
+   */
+  function getDataForCity(cityId: string, year: YearEpoch): H3Hexagon[] {
+    if (!rawDataCache) return []
+
+    const { h3Indices, cityIds, populationByYear } = rawDataCache
+    const populations = populationByYear.get(year)
+    if (!populations) return []
+
+    const result: H3Hexagon[] = []
+    for (let i = 0; i < h3Indices.length; i++) {
+      if (cityIds[i] !== cityId) continue
+      const population = populations[i]
+      const h3Index = h3Indices[i]
+      if (h3Index && population !== undefined && population > 0) {
+        result.push({ h3Index, population })
+      }
+    }
+    return result
+  }
+
+  /**
    * Check if data has been loaded
    */
   function hasData(): boolean {
@@ -218,6 +251,8 @@ export function useH3Data() {
     loadData,
     /** Get hexagon data filtered for a specific year */
     getDataForYear,
+    /** Get hexagon data for a specific city and year */
+    getDataForCity,
     /** Get total hexagon count */
     getHexagonCount,
     /** Check if data is available */

@@ -1,13 +1,45 @@
-// City search using Fuse.js
-//
-// TODO:
-// - Load city index JSON on app init
-// - Initialize Fuse.js with appropriate keys (name, country, aliases)
-// - Provide search function returning ranked results
-// - Limit results (top 10-20)
-// - Handle loading state
-// - Support keyboard navigation in results
-//
-// Dependencies: fuse.js
+import Fuse from 'fuse.js'
+import type { CityIndexEntry } from './useCitiesIndex'
 
-export {}
+interface CitySearchResult {
+  city: CityIndexEntry
+  score: number
+}
+
+export function useCitySearch() {
+  const { allCities } = useCitiesIndex()
+
+  const searchTerm = ref('')
+
+  const fuse = computed(() => {
+    if (!allCities.value.length) return null
+    return new Fuse(allCities.value, {
+      keys: [
+        { name: 'name', weight: 0.7 },
+        { name: 'country', weight: 0.3 }
+      ],
+      threshold: 0.4,
+      includeScore: true
+    })
+  })
+
+  const results = computed<CitySearchResult[]>(() => {
+    const query = searchTerm.value.trim()
+    if (!fuse.value || query.length < 2) return []
+
+    const matches = fuse.value.search(query, { limit: 50 })
+
+    return matches
+      .map(match => ({
+        city: match.item,
+        score: match.score ?? 1
+      }))
+      .sort((a, b) => b.city.population - a.city.population || a.score - b.score)
+      .slice(0, 10)
+  })
+
+  return {
+    searchTerm,
+    results
+  }
+}

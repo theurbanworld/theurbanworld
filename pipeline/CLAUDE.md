@@ -42,6 +42,7 @@ uv run python -m src.tiles.generate_hover_sprites --local
 uv run python -m src.web_export.generate_city_index --local
 uv run python -m src.web_export.generate_city_populations --source h3-r8 --local
 uv run python -m src.web_export.generate_city_populations --source grid-1km --local
+uv run python -m src.web_export.generate_radial_profiles --local
 
 # Validate
 uv run python -m src.validate.validate_cities --source h3-r8 -v
