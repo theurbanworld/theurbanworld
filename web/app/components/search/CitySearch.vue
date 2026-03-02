@@ -3,6 +3,8 @@ import { formatPopulation } from '~/utils/formatNumber'
 
 const { searchTerm, results } = useCitySearch()
 
+const open = ref(false)
+
 const items = computed(() =>
   results.value.map(({ city }) => ({
     label: city.name,
@@ -13,12 +15,15 @@ const items = computed(() =>
 
 function onSelect(item: { value: string } | undefined) {
   if (!item) return
+  open.value = false
+  searchTerm.value = ''
   navigateTo(`/city/${item.value}`)
 }
 </script>
 
 <template>
   <UInputMenu
+    v-model:open="open"
     v-model:search-term="searchTerm"
     :model-value="undefined"
     :items="items"

@@ -43,7 +43,7 @@ function handleClose() {
       <!-- Content slot -->
       <div
         data-testid="sidebar-content"
-        class="flex-1 overflow-y-auto p-5"
+        class="flex-1 overflow-y-auto p-5 pt-16"
       >
         <slot />
       </div>

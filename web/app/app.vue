@@ -9,6 +9,10 @@
  * - ZoomSlider (scale level control)
  */
 
+useHead({
+  link: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }]
+})
+
 // Get dark mode state
 const { isDarkMode, initializeDarkMode } = useDarkMode()
 
@@ -32,7 +36,12 @@ function handleSidebarClose() {
     <div class="flex flex-col h-screen overflow-hidden">
       <AppHeader />
 
-      <div class="flex flex-1 min-h-0 overflow-hidden">
+      <div class="flex flex-1 min-h-0 overflow-hidden relative">
+        <!-- Search notch — same width as sidebar, always visible -->
+        <div class="absolute top-0 left-0 z-20 w-80 p-3 bg-parchment dark:bg-espresso border-r border-b border-forest-200/40 dark:border-forest-800/40 rounded-br-lg">
+          <CitySearch class="w-full" />
+        </div>
+
         <!-- City Info Panel Sidebar (pushes map when open) -->
         <AppSidebar :open="!!selectedCityId" @close="handleSidebarClose">
           <CityInfoPanel v-if="selectedCityId" :city-id="selectedCityId" @close="handleSidebarClose" />

@@ -8,6 +8,11 @@
  * All map components are rendered in app.vue.
  */
 
+useSeoMeta({
+  title: 'The Urban World — Explore Global Urbanization',
+  description: 'Interactive map of urban density, population, and growth patterns for cities worldwide.'
+})
+
 // Get city selection state
 const { clearSelection } = useCitySelection()
 

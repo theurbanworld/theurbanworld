@@ -33,6 +33,19 @@ await Promise.all([
   loadRadialProfiles()
 ])
 
+// City lookup for SEO
+const { getCity } = useCitiesIndex()
+const city = computed(() => cityId.value ? getCity(cityId.value) : undefined)
+
+useSeoMeta({
+  title: () => city.value
+    ? `${city.value.name}, ${city.value.country} — The Urban World`
+    : 'City — The Urban World',
+  description: () => city.value
+    ? `Urban density, population trends, and growth patterns for ${city.value.name}, ${city.value.country}.`
+    : 'Explore urban density, population, and growth patterns.'
+})
+
 // Sync route param to city selection state
 watchEffect(() => {
   if (cityId.value) {
