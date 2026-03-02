@@ -75,7 +75,7 @@ const sliderValue = computed({
           :data-testid="`source-${option.value}`"
           class="px-3 py-1 text-xs font-mono rounded-md transition-colors"
           :class="dataSource === option.value
-            ? 'bg-parchment dark:bg-espresso text-forest-700 dark:text-forest-300 shadow-sm'
+            ? 'bg-parchment text-forest-700 dark:text-forest-300 shadow-sm'
             : 'text-body/50 dark:text-cream/40 hover:text-body/70 dark:hover:text-cream/60'"
           @click="setDataSource(option.value)"
         >

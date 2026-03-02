@@ -10,7 +10,7 @@
 <template>
   <header
     class="flex items-center px-5 py-3
-           bg-parchment dark:bg-espresso
+           bg-parchment
            border-b border-forest-200/40 dark:border-forest-800/40
            max-sm:px-3 max-sm:py-2"
   >
