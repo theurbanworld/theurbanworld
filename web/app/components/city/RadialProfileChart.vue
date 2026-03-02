@@ -172,6 +172,12 @@ const highlightPlugin = computed<Plugin<'line'>>(() => ({
 }))
 
 const plugins = computed(() => [highlightPlugin.value])
+
+// Force chart redraw when highlightedRing changes from map hover
+const chartRef = ref<{ chart?: ChartJS<'line'> } | null>(null)
+watch(highlightedRing, () => {
+  chartRef.value?.chart?.update('none')
+})
 </script>
 
 <template>
@@ -181,6 +187,7 @@ const plugins = computed(() => [highlightPlugin.value])
     </div>
     <Line
       v-else
+      ref="chartRef"
       :data="chartData"
       :options="chartOptions"
       :plugins="plugins"

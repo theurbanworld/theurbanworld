@@ -30,29 +30,20 @@
       </div>
     </div>
 
-    <!-- Loading indicator for H3 data -->
+    <!-- Loading indicator for radial cell data -->
     <div
-      v-if="isH3Loading && !isMapLoading"
-      class="absolute inset-0 flex items-center justify-center bg-parchment/85 dark:bg-espresso/85 z-10"
+      v-if="isLoadingRadialCells && !isMapLoading"
+      class="absolute bottom-20 left-1/2 -translate-x-1/2 z-10
+             bg-parchment/95 dark:bg-espresso/95 rounded-lg px-4 py-2.5 shadow-lg
+             flex items-center gap-2.5"
     >
-      <div class="flex flex-col items-center text-center min-w-[250px]">
-        <UIcon
-          name="i-lucide-loader-2"
-          class="animate-spin text-4xl text-forest-600"
-        />
-        <p class="mt-2 text-body dark:text-cream font-medium">
-          Loading H3 cell data...
-        </p>
-        <div class="w-full h-2 bg-border/30 dark:bg-border/20 rounded overflow-hidden mt-4">
-          <div
-            class="h-full bg-forest-600 dark:bg-forest-500 rounded transition-[width] duration-300 ease-out"
-            :style="{ width: `${h3LoadProgress}%` }"
-          />
-        </div>
-        <p class="mt-2 text-sm text-body dark:text-cream opacity-70">
-          {{ h3LoadProgress }}% complete
-        </p>
-      </div>
+      <UIcon
+        name="i-lucide-loader-2"
+        class="animate-spin text-lg text-forest-600 dark:text-forest-400"
+      />
+      <span class="text-sm text-body dark:text-cream font-medium">
+        Loading radial cells...
+      </span>
     </div>
 
     <!-- Error display -->
@@ -68,14 +59,6 @@
         <p class="mt-2 text-body">
           {{ displayError.message }}
         </p>
-        <UButton
-          v-if="h3Error"
-          class="mt-4"
-          color="primary"
-          @click="retryLoadH3Data"
-        >
-          Retry Loading Data
-        </UButton>
       </div>
     </div>
   </div>
@@ -118,16 +101,8 @@ const { isInitialized: isDeckInitialized, setLayers } = useDeckGL({
 // View state management
 const { viewState, onViewStateChange, shouldAnimate, animationDuration, clearAnimationFlag } = useViewState()
 
-// H3 data loading
-const {
-  isLoading: isH3Loading,
-  loadProgress: h3LoadProgress,
-  error: h3Error,
-  loadData: loadH3Data
-} = useH3Data()
-
-// Radial layer (activated when sidebar section is expanded)
-const { layer: radialLayer } = useRadialLayer()
+// Radial layer (activated when sidebar toggle is clicked)
+const { layer: radialLayer, isLoadingCells: isLoadingRadialCells } = useRadialLayer()
 const { isRadialLayerActive } = useRadialHighlight()
 
 // Boundary layer IDs to toggle when radial layer is active
@@ -140,8 +115,8 @@ const BOUNDARY_LAYERS = [
 // Local state for dark mode (can be controlled via prop or internal)
 const _isDarkMode = computed(() => props.isDarkMode ?? false)
 
-// Combined error display
-const displayError = computed(() => mapError.value || h3Error.value)
+// Error display
+const displayError = computed(() => mapError.value)
 
 // Current layers array for deck.gl
 const currentLayer = shallowRef<Layer | null>(null)
@@ -153,32 +128,6 @@ let isUpdatingFromViewState = false
 const ZOOM_STEP = 0.5
 const MIN_ZOOM = 0.5
 const MAX_ZOOM = 18
-
-/**
- * Handle H3 layer updates from the renderless component
- */
-function _onH3LayerUpdate(layer: Layer | null) {
-  console.log('[GlobalMap] onH3LayerUpdate called, layer:', layer ? 'exists' : 'null', 'isDeckInitialized:', isDeckInitialized.value)
-  currentLayer.value = layer
-
-  // Update deck.gl layers
-  if (isDeckInitialized.value) {
-    const layersArray = layer ? [layer] : []
-    console.log('[GlobalMap] Calling setLayers with', layersArray.length, 'layers')
-    setLayers(layersArray as Layer[])
-  }
-}
-
-/**
- * Retry loading H3 data after an error
- */
-async function retryLoadH3Data() {
-  try {
-    await loadH3Data()
-  } catch {
-    // Error is handled in the composable
-  }
-}
 
 /**
  * Zoom in the map
@@ -249,20 +198,6 @@ watch(isRadialLayerActive, (active) => {
     }
   }
 })
-
-// Start loading H3 data when map is ready (disabled for debugging hover)
-// watch(
-//   () => isMapLoading.value,
-//   (loading) => {
-//     if (!loading && !mapError.value) {
-//       // Map is loaded, start loading data
-//       loadH3Data().catch(() => {
-//         // Error is handled in the composable
-//       })
-//     }
-//   },
-//   { immediate: true }
-// )
 
 // Watch for view state changes and update map
 watch(

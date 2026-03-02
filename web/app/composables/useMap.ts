@@ -764,11 +764,13 @@ export function useMap(options: UseMapOptions) {
   }
 
   /**
-   * Fly to a city by animating the map to fit its bounding box
+   * Fly to a city by animating the map to fit its bounding box.
+   * When animate is false, uses jumpTo for instant positioning (e.g., SSR initial load).
    *
    * @param cityId - City ID to fly to
+   * @param animate - Whether to animate the transition (default: true)
    */
-  function flyToCity(cityId: string) {
+  function flyToCity(cityId: string, animate: boolean = true) {
     if (!map.value) return
 
     const city = getCity(cityId)
@@ -799,13 +801,22 @@ export function useMap(options: UseMapOptions) {
     })
     if (!camera) return
 
-    mapInstance.flyTo({
-      center: camera.center,
-      zoom: Math.max(camera.zoom ?? FIT_BOUNDS_MIN_ZOOM, FIT_BOUNDS_MIN_ZOOM),
-      curve: 1.0,  // Gentler arc than default 1.42
-      speed: 1.4,
-      essential: true
-    })
+    const targetZoom = Math.max(camera.zoom ?? FIT_BOUNDS_MIN_ZOOM, FIT_BOUNDS_MIN_ZOOM)
+
+    if (animate) {
+      mapInstance.flyTo({
+        center: camera.center,
+        zoom: targetZoom,
+        curve: 1.0,  // Gentler arc than default 1.42
+        speed: 1.4,
+        essential: true
+      })
+    } else {
+      mapInstance.jumpTo({
+        center: camera.center,
+        zoom: targetZoom
+      })
+    }
   }
 
   /**
@@ -896,11 +907,13 @@ export function useMap(options: UseMapOptions) {
     try {
       registerPMTilesProtocol()
 
-      const mapInstance = new maplibregl.Map({
+      // Check if a city is already selected (e.g., SSR direct load of /city/:id).
+      // If so, initialize the map at the city's bbox to avoid a flash of the world view.
+      const initialCity = selectedCityId.value ? getCity(selectedCityId.value) : null
+
+      const mapOptions: maplibregl.MapOptions = {
         container: container.value,
         style: createMapStyle(isDarkMode.value),
-        center: [viewState.value.longitude, viewState.value.latitude],
-        zoom: viewState.value.zoom,
         minZoom: MIN_ZOOM,
         maxZoom: MAX_ZOOM,
         pitch: 0, // Locked to 0 for 2D
@@ -911,7 +924,27 @@ export function useMap(options: UseMapOptions) {
         touchPitch: false, // Disable touch pitch
         keyboard: true,
         attributionControl: false // We'll add custom attribution
-      })
+      }
+
+      if (initialCity?.bbox) {
+        // Start at the city's bounding box — no world-view flash
+        const [minx, miny, maxx, maxy] = initialCity.bbox
+        mapOptions.bounds = [[minx, miny], [maxx, maxy]]
+        mapOptions.fitBoundsOptions = {
+          padding: {
+            top: FIT_BOUNDS_PADDING,
+            right: RIGHT_PANEL_WIDTH + FIT_BOUNDS_PADDING,
+            bottom: FIT_BOUNDS_PADDING,
+            left: FIT_BOUNDS_PADDING
+          },
+          maxZoom: FIT_BOUNDS_MAX_ZOOM
+        }
+      } else {
+        mapOptions.center = [viewState.value.longitude, viewState.value.latitude]
+        mapOptions.zoom = viewState.value.zoom
+      }
+
+      const mapInstance = new maplibregl.Map(mapOptions)
 
       // Handle map load
       mapInstance.on('load', () => {
@@ -924,8 +957,10 @@ export function useMap(options: UseMapOptions) {
           setupCityInteractionEvents(mapInstance)
 
           // If a city is already selected (e.g., from URL), update feature state
+          // and ensure exact positioning with jumpTo (no animation on initial load)
           if (selectedCityId.value) {
             updateSelectedFeatureState(selectedCityId.value)
+            flyToCity(selectedCityId.value, false)
           }
         }, 100)
       })

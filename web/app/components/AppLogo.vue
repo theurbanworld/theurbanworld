@@ -1,8 +1,8 @@
 <template>
   <span
-    class="font-display text-5xl font-bold tracking-[0.06em]
+    class="font-crimson text-4xl font-semibold tracking-[0.04em] [font-variant-caps:small-caps]
            text-espresso dark:text-dark-espresso
-           max-sm:text-3xl max-sm:tracking-[0.03em]"
+           max-sm:text-2xl"
   >
     The Urban World
   </span>

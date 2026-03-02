@@ -146,10 +146,7 @@ export function useH3Data() {
         loadProgress.value = 100
         isDataLoaded.value = true
 
-        // Debug: show sample city_ids to verify parsing
-        const sampleCityIds = new Set(cityIds.slice(0, 100))
-        console.log(`Loaded ${h3Indices.length} H3 hexagons, sample city_ids:`, [...sampleCityIds].slice(0, 10))
-        console.log(`Unique city_ids: ${new Set(cityIds).size}`)
+        console.log(`Loaded ${h3Indices.length} H3 hexagons with population data`)
       } catch (e) {
         console.error('Failed to load H3 data:', e)
         error.value = e instanceof Error ? e : new Error('Failed to load H3 data')

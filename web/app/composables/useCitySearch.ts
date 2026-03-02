@@ -34,7 +34,11 @@ export function useCitySearch() {
         city: match.item,
         score: match.score ?? 1
       }))
-      .sort((a, b) => b.city.population - a.city.population || a.score - b.score)
+      .sort((a, b) => {
+        const scoreDiff = a.score - b.score
+        if (Math.abs(scoreDiff) > 0.01) return scoreDiff
+        return b.city.population - a.city.population
+      })
       .slice(0, 10)
   })
 
