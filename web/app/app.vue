@@ -10,7 +10,14 @@
  */
 
 useHead({
+  title: 'The Urban World — an observatory of urban complexity',
   link: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }]
+})
+
+useSeoMeta({
+  description: 'The Urban World tells the story of global urbanization through data, making visible the shape, density, and growth of cities over time.',
+  ogTitle: 'The Urban World — an observatory of urban complexity',
+  ogDescription: 'The Urban World tells the story of global urbanization through data, making visible the shape, density, and growth of cities over time.'
 })
 
 // Get dark mode state
