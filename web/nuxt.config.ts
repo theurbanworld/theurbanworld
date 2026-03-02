@@ -56,32 +56,14 @@ export default defineNuxtConfig({
     rollupConfig: {
       plugins: [
         {
-          name: 'mock-browser-only-deps',
+          name: 'mock-ws-optional-deps',
           resolveId(id: string) {
-            // Stub browser-only packages so they're not bundled into the Cloudflare Worker.
-            // These are only used client-side (via <ClientOnly> or client components).
-            const browserOnly = [
-              'utf-8-validate', 'bufferutil',
-              'maplibre-gl',
-              'deck.gl', '@deck.gl/core', '@deck.gl/layers', '@deck.gl/geo-layers', '@deck.gl/mapbox',
-              '@loaders.gl/core', '@loaders.gl/parquet',
-              'chart.js', 'vue-chartjs',
-              'h3-js', 'pmtiles'
-            ]
-            if (browserOnly.includes(id) || browserOnly.some(pkg => id.startsWith(pkg + '/'))) {
-              return { id, syntheticNamedExports: true }
+            if (id === 'utf-8-validate' || id === 'bufferutil') {
+              return id
             }
           },
           load(id: string) {
-            const browserOnly = [
-              'utf-8-validate', 'bufferutil',
-              'maplibre-gl',
-              'deck.gl', '@deck.gl/core', '@deck.gl/layers', '@deck.gl/geo-layers', '@deck.gl/mapbox',
-              '@loaders.gl/core', '@loaders.gl/parquet',
-              'chart.js', 'vue-chartjs',
-              'h3-js', 'pmtiles'
-            ]
-            if (browserOnly.includes(id) || browserOnly.some(pkg => id.startsWith(pkg + '/'))) {
+            if (id === 'utf-8-validate' || id === 'bufferutil') {
               return 'export default {}'
             }
           }

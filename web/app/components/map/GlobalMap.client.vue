@@ -34,7 +34,7 @@
     <div
       v-if="isLoadingRadialCells && !isMapLoading"
       class="absolute bottom-20 left-1/2 -translate-x-1/2 z-10
-             bg-parchment/95 dark:bg-espresso/95 rounded-lg px-4 py-2.5 shadow-lg
+             bg-parchment/95 rounded-lg px-4 py-2.5 shadow-lg
              flex items-center gap-2.5"
     >
       <UIcon
