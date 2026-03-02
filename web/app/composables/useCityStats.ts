@@ -13,6 +13,7 @@ import { useCitiesIndex } from './useCitiesIndex'
 import { useCityPopulations } from './useCityPopulations'
 import { useSelectedYear } from './useSelectedYear'
 import { humanizeNumber, toAnnualRate, YEAR_EPOCHS } from './useGlobalStats'
+import { formatDensity, formatArea } from '../utils/formatNumber'
 
 /**
  * City statistics for the selected epoch
@@ -50,28 +51,6 @@ export interface CityStats {
   isAvailable: ComputedRef<boolean>
   /** City bounding box [minx, miny, maxx, maxy] */
   bbox: ComputedRef<[number, number, number, number] | null>
-}
-
-/**
- * Format density for display
- * Uses "X.X K/km2" for values >= 1000, "X/km2" for smaller values
- */
-function formatDensity(density: number): string {
-  if (density >= 1000) {
-    const k = density / 1000
-    const rounded = Math.round(k * 10) / 10
-    return `${rounded} K/km2`
-  }
-  const rounded = Math.round(density)
-  return `${rounded}/km2`
-}
-
-/**
- * Format area for display with locale formatting and km2 suffix
- */
-function formatArea(areaKm2: number): string {
-  const rounded = Math.round(areaKm2)
-  return `${rounded.toLocaleString()} km2`
 }
 
 /**

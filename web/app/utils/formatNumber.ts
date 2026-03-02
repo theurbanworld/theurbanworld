@@ -49,3 +49,25 @@ export function formatNumber(num: number): string {
 export function formatPopulation(population: number): string {
   return formatCompactNumber(population)
 }
+
+/**
+ * Format density for display
+ * Uses "X.X K/km2" for values >= 1000, "X/km2" for smaller values
+ */
+export function formatDensity(density: number): string {
+  if (density >= 1000) {
+    const k = density / 1000
+    const rounded = Math.round(k * 10) / 10
+    return `${rounded} K/km2`
+  }
+  const rounded = Math.round(density)
+  return `${rounded}/km2`
+}
+
+/**
+ * Format area for display with locale formatting and km2 suffix
+ */
+export function formatArea(areaKm2: number): string {
+  const rounded = Math.round(areaKm2)
+  return `${rounded.toLocaleString()} km2`
+}
