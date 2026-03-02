@@ -69,7 +69,7 @@ const {
         <div class="flex items-start justify-between gap-2">
           <h1
             data-testid="city-name"
-            class="text-2xl font-bold text-forest-700 dark:text-forest-300"
+            class="text-4xl font-bold font-crimson text-forest-700 dark:text-forest-300"
           >
             {{ cityName }}
           </h1>
@@ -108,7 +108,9 @@ const {
             :trend-previous="populationTrendPrevious"
             :trend-next="populationTrendNext"
             source-label="Source: GHSL"
-          />
+          >
+            <EpochSparkline :city-id="cityId" metric="population" class="mt-1" />
+          </DataPoint>
         </div>
 
         <div data-testid="density-datapoint">
@@ -120,7 +122,9 @@ const {
             :trend-previous="densityTrendPrevious"
             :trend-next="densityTrendNext"
             source-label="Source: GHSL"
-          />
+          >
+            <EpochSparkline :city-id="cityId" metric="density_per_km2" class="mt-1" />
+          </DataPoint>
         </div>
 
         <div data-testid="area-datapoint">
@@ -130,7 +134,9 @@ const {
             :value="areaFormatted"
             :raw-value="area"
             source-label="Source: GHSL"
-          />
+          >
+            <EpochSparkline :city-id="cityId" metric="area_km2" class="mt-1" />
+          </DataPoint>
         </div>
       </div>
 

@@ -69,6 +69,9 @@
       </span>
     </div>
 
+    <!-- Slot for content before source (e.g., sparklines) -->
+    <slot />
+
     <!-- Source link -->
     <span
       data-testid="datapoint-source"
