@@ -1,5 +1,7 @@
 # Data Lineage
 
+Developer quick-reference for every pipeline script and its data dependencies. For the public-facing provenance visualization, see [theurban.world/data](https://theurban.world/data).
+
 Full data flow from raw GHSL sources through the pipeline to R2 and frontend composables.
 
 > All pipeline scripts must be run from the `pipeline/` directory (CWD dependency for standalone scripts using relative `Path("data/...")` paths).
@@ -54,6 +56,8 @@ graph TD
     subgraph "web_export/"
         GEN_IDX["generate_city_index.py"]
         GEN_POP["generate_city_populations.py<br/>--source h3-r8 | grid-1km"]
+        GEN_CELLS["generate_city_cells.py"]
+        GEN_RAD_EXP["generate_radial_profiles.py"]
     end
 
     subgraph "validate/"
@@ -130,6 +134,11 @@ graph TD
     GEN_POP -->|--source h3-r8| R2_POP_H3
     GEN_FONT --> R2_FONT
     GEN_SPR --> R2_SPR
+
+    %% City cells and radial profile exports
+    DL_H3 -->|h3_r8_pop_*.parquet| GEN_CELLS
+    EXT_GRID -->|grid_1km_pop_*.parquet| GEN_CELLS
+    GEN_RAD -->|radial_profiles_h3_r8.parquet| GEN_RAD_EXP
 
     subgraph "Frontend Composables"
         USE_MAP["useMap"]
