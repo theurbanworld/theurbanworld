@@ -108,6 +108,7 @@ const {
             :trend-previous="populationTrendPrevious"
             :trend-next="populationTrendNext"
             source-label="Source: GHSL"
+            content-path="/data/source-ghsl"
           >
             <EpochSparkline :city-id="cityId" metric="population" class="mt-1" />
           </DataPoint>
@@ -122,6 +123,7 @@ const {
             :trend-previous="densityTrendPrevious"
             :trend-next="densityTrendNext"
             source-label="Source: GHSL"
+            content-path="/data/source-ghsl"
           >
             <EpochSparkline :city-id="cityId" metric="density_per_km2" class="mt-1" />
           </DataPoint>
@@ -134,6 +136,7 @@ const {
             :value="areaFormatted"
             :raw-value="area"
             source-label="Source: GHSL"
+            content-path="/data/source-ghsl"
           >
             <EpochSparkline :city-id="cityId" metric="area_km2" class="mt-1" />
           </DataPoint>
@@ -142,6 +145,9 @@ const {
 
       <!-- Radial Profile Section -->
       <RadialProfileSection :city-id="cityId" class="mt-4" />
+
+      <!-- Media Resources -->
+      <CityMediaSection :city-id="cityId" class="mt-4" />
     </template>
   </div>
 </template>

@@ -16,7 +16,7 @@
     <!-- Slider + Icons row -->
     <div class="flex flex-row gap-3">
       <!-- Vertical Zoom Slider (left side) -->
-      <div class="h-52 flex items-center">
+      <div class="h-52 flex items-center py-3">
         <USlider
           v-model="sliderValue"
           :min="MIN_ZOOM"
