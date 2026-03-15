@@ -14,20 +14,15 @@ const { isDarkMode } = useDarkMode()
 
 // Route detection for sidebar content
 const route = useRoute()
-const isRankingsRoute = computed(() => route.path === '/rankings')
+const isRankingsRoute = computed(() => route.path === '/')
 
 // Mobile sidebar visibility
 const mobileSidebarOpen = computed(() => !!selectedCityId.value || isRankingsRoute.value)
 
-// Toggle rankings view
-function toggleRankings() {
-  if (isRankingsRoute.value) {
-    clearSelection()
-    navigateTo('/')
-  } else {
-    clearSelection()
-    navigateTo('/rankings')
-  }
+// Navigate to rankings (home)
+function goToRankings() {
+  clearSelection()
+  navigateTo('/')
 }
 
 // Handle city info close - back to global view
@@ -49,7 +44,7 @@ function handleCityClose() {
         class="cursor-pointer"
         :active="isRankingsRoute"
         active-variant="subtle"
-        @click="toggleRankings"
+        @click="goToRankings"
       >
         Cities
       </UButton>
@@ -79,8 +74,8 @@ function handleCityClose() {
       <!-- Global Context Panel (epoch controls and population data) -->
       <GlobalContextPanel />
 
-      <!-- Zoom Slider (scale level control) -->
-      <ZoomSlider />
+      <!-- Zoom Slider (scale level control) — hidden, replaced by MapLibre NavigationControl -->
+      <!-- <ZoomSlider /> -->
 
       <!-- Route-specific content -->
       <slot />

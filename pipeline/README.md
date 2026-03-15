@@ -42,6 +42,7 @@ Scripts are organized by domain under `src/`:
 | `generate_cities.py` | Merge attributes + geometries into cities.parquet |
 | `compute_populations.py` | Sum H3 cell populations within city boundaries |
 | `compute_rankings.py` | Compute rankings, growth metrics, density peers |
+| `density_outliers.py` | Identify/filter cities with unreliable density estimates |
 
 ### h3/ — H3 hexagonal grid processing
 | Script | Description |
@@ -78,6 +79,25 @@ Scripts are organized by domain under `src/`:
 | Script | Description |
 |--------|-------------|
 | `app_explore.py` | Streamlit app for browsing city data |
+
+## Density Outlier Filtering
+
+GHSL population estimates can produce unrealistically high densities for cities with very small UCDB boundaries. When only a handful of ~1km cells fall within a city boundary, the density estimate is unreliable and can exceed any real-world city.
+
+The pipeline uses a two-tier filter to remove these outliers from rankings and web exports:
+- **Tier 1 — Tiny cities** (`< 5 cells`): always excluded, too few data points for any reliable estimate
+- **Tier 2 — Small + dense** (`< 50 cells AND > 25,000/km²`): small cities claiming to be denser than Mumbai/Dhaka are data artifacts
+
+Raw population data (`city_populations_{source}.parquet`) is preserved unfiltered. See `src/cities/density_outliers.py` for details and thresholds.
+
+```bash
+# Analyze which cities would be filtered
+uv run python -m src.cities.density_outliers --source h3-r8
+
+# Write a JSON report of all excluded cities (auditable record)
+uv run python -m src.cities.density_outliers --source h3-r8 --report
+# -> data/processed/cities/density_outliers_report.json
+```
 
 ## Data Sources
 

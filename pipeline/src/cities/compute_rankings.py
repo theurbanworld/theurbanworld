@@ -29,6 +29,7 @@ import pycountry
 from pycountry_convert import country_alpha2_to_continent_code
 
 from ..utils.config import get_processed_path
+from .density_outliers import filter_density_outliers
 
 # =============================================================================
 # Constants
@@ -526,6 +527,10 @@ def main(source: str, force: bool = False):
     n_cities = df["city_id"].n_unique()
     n_epochs = df["epoch"].n_unique()
     print(f"  Loaded {len(df):,} rows ({n_cities:,} cities × {n_epochs} epochs)")
+
+    # Filter density outliers (small cities with unreliable density estimates)
+    print("\nFiltering density outliers...")
+    df = filter_density_outliers(df)
 
     # Compute rankings per epoch
     print("\nComputing per-epoch rankings...")

@@ -45,6 +45,9 @@ uv run python -m src.web_export.generate_city_populations --source grid-1km --lo
 uv run python -m src.web_export.generate_radial_profiles --local
 uv run python -m src.web_export.generate_city_cells --local
 
+# Analyze density outliers
+uv run python -m src.cities.density_outliers --source h3-r8
+
 # Validate
 uv run python -m src.validate.validate_cities --source h3-r8 -v
 uv run python -m src.validate.validate_cities --source grid-1km -v
@@ -67,6 +70,34 @@ Scripts that accept `--source` (`h3-r8` or `grid-1km`):
 - `validate_cities` — data validation
 
 Output files include the source in their name: `city_populations_h3_r8.parquet`, `city_populations_grid_1km.parquet`, etc.
+
+## Density Outlier Filtering
+
+Some GHSL/UCDB cities have unrealistically high densities — small boundary areas with
+concentrated population estimates that exceed any real-world city. These are filtered
+from rankings and web exports (but preserved in raw `city_populations` parquet files).
+
+**Module**: `src/cities/density_outliers.py`
+
+**Criteria** (two-tier filter, a city is excluded if ANY epoch triggers either):
+- Tier 1: `cell_count < 5` — tiny cities always excluded (~3.7 km² for H3-R8)
+- Tier 2: `cell_count < 50 AND density_per_km2 > 25,000` — small cities with implausibly high density
+
+**Where applied**:
+- `compute_rankings` — outliers excluded before computing all rankings
+- `generate_city_populations` — outliers excluded from frontend JSON
+- `generate_city_index` — outliers excluded from city search index
+
+**Analysis tool**:
+```bash
+uv run python -m src.cities.density_outliers --source h3-r8
+uv run python -m src.cities.density_outliers --source h3-r8 --tiny-cells 10 --small-cells 100
+uv run python -m src.cities.density_outliers --source h3-r8 --report  # writes JSON report
+```
+
+**Report**: `--report` writes `data/processed/cities/density_outliers_report.json` listing
+every excluded city with its name, country, density, population, area, cell count, and
+exclusion reason. Run this after `compute_populations` to produce an auditable record.
 
 ## Data Validation
 
@@ -101,6 +132,7 @@ When modifying pipeline scripts that produce parquet files in `data/processed/ci
 | 2,648 orphaned city_ids | MTUC vs UCDB city list mismatch | Use UCDB as canonical source |
 | 61% NULL growth metrics | Cities didn't exist in 1975 | Expected, document only |
 | 19% NULL peer_names | Name lookup failures | Join from cities.parquet |
+| Density outliers | Small UCDB boundaries with few cells get inflated densities | Filtered in rankings/export (see density_outliers.py) |
 
 ### Validation Schema Reference
 

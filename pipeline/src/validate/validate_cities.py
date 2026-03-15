@@ -428,11 +428,12 @@ def check_population_decline(tables: dict, threshold: float = 0.5) -> list[dict]
     ]
 
 
-def check_extreme_densities(tables: dict, threshold: float = 50000) -> list[dict]:
+def check_extreme_densities(tables: dict, threshold: float = 25000) -> list[dict]:
     """
-    Flag cities with density >50,000/km² (potential data artifacts).
+    Flag cities with density >25,000/km² (potential data artifacts).
 
-    Known real-world maximums: Dhaka ~45,000, Manila ~43,000/km².
+    Known real-world maximums at UCDB boundary level: Dhaka ~25,000, Manila ~25,000/km².
+    See src/cities/density_outliers.py for filtering rationale.
 
     Args:
         tables: Dict of Ibis tables
@@ -803,7 +804,7 @@ def main(source: str = "h3-r8", verbose: bool = False, output_json: bool = False
         if extreme_densities:
             statistical_checks["extreme_densities"] = extreme_densities
             if not output_json:
-                print(f"  INFO: {len(extreme_densities)} city-epochs with density >50,000/km²")
+                print(f"  INFO: {len(extreme_densities)} city-epochs with density >25,000/km²")
                 if verbose:
                     for item in extreme_densities[:5]:
                         print(f"    - {item['name']} ({item['city_id']}): {item['density']:,.0f}/km² at {item['epoch']}")

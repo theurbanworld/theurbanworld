@@ -1,28 +1,33 @@
 <script setup lang="ts">
 /**
- * Home page (global view)
+ * Home page — City Rankings
  *
  * Route: /
  *
- * Clears city selection when navigating to this route.
- * All map components are rendered in app.vue.
+ * Triggers data loading for city index and populations.
+ * Rankings UI is rendered in the sidebar via app.vue.
  */
 
 useSeoMeta({
-  title: 'The Urban World — Explore Global Urbanization',
-  description: 'Interactive map of urban density, population, and growth patterns for cities worldwide.'
+  title: 'City Rankings — The Urban World',
+  description: 'Explore the world\'s cities ranked by population, density, and area.'
 })
 
-// Get city selection state
 const { clearSelection } = useCitySelection()
 
-// Clear city selection on mount (navigating to global view)
 onMounted(() => {
   clearSelection()
 })
+
+const { execute: loadCitiesIndex } = useCitiesIndex()
+const { execute: loadPopulations } = useCityPopulations()
+
+await Promise.all([
+  loadCitiesIndex(),
+  loadPopulations()
+])
 </script>
 
 <template>
-  <!-- Route-specific content rendered here if needed -->
   <div />
 </template>
