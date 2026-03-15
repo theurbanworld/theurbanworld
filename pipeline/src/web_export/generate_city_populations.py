@@ -16,6 +16,9 @@ from collections import defaultdict
 from pathlib import Path
 
 import pandas as pd
+import polars as pl
+
+from ..cities.density_outliers import identify_outlier_city_ids
 
 VALID_SOURCES = ("h3-r8", "grid-1km")
 
@@ -26,9 +29,19 @@ def _source_slug(source: str) -> str:
 
 
 def load_populations(parquet_path: Path) -> pd.DataFrame:
-    """Load city populations from parquet."""
+    """Load city populations from parquet, filtering density outliers."""
     print(f"Loading populations from {parquet_path}...")
-    df = pd.read_parquet(parquet_path)
+    df_pl = pl.read_parquet(parquet_path)
+    n_before = df_pl["city_id"].n_unique()
+
+    # Remove density outliers (same filter as compute_rankings)
+    outlier_ids = identify_outlier_city_ids(df_pl)
+    if outlier_ids:
+        df_pl = df_pl.filter(~pl.col("city_id").is_in(outlier_ids))
+        n_after = df_pl["city_id"].n_unique()
+        print(f"  Filtered {len(outlier_ids)} density outlier cities ({n_before:,} → {n_after:,})")
+
+    df = df_pl.to_pandas()
     print(f"  Loaded {len(df):,} records ({df['city_id'].nunique():,} cities)")
     return df
 

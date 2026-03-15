@@ -10,6 +10,7 @@ const props = defineProps<{
   cityId: string
 }>()
 
+const { open: openInfoModal } = useInfoModal()
 const { isRadialLayerActive, setRadialLayerActive } = useRadialHighlight()
 
 function toggleMapLayer() {
@@ -30,9 +31,18 @@ watch(() => props.cityId, () => {
 <template>
   <div class="border-t border-border/30 dark:border-border/20 pt-4">
     <div class="flex items-center justify-between mb-3">
-      <h2 class="text-sm font-medium text-forest-700 dark:text-forest-300">
-        Radial Profile
-      </h2>
+      <div class="flex items-center gap-1.5">
+        <h2 class="text-sm font-medium text-forest-700 dark:text-forest-300">
+          Radial Profile
+        </h2>
+        <button
+          class="text-body/40 dark:text-cream/40 hover:text-forest-600 dark:hover:text-forest-400 transition-colors cursor-pointer"
+          aria-label="About radial profiles"
+          @click="openInfoModal('/methodology/bertaud-radial')"
+        >
+          <UIcon name="i-lucide-info" class="w-3.5 h-3.5" />
+        </button>
+      </div>
       <button
         class="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs cursor-pointer
                transition-colors"

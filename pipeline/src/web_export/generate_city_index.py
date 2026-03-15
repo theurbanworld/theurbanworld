@@ -15,6 +15,9 @@ import json
 from pathlib import Path
 
 import geopandas as gpd
+import polars as pl
+
+from ..cities.density_outliers import identify_outlier_city_ids
 
 # Constants
 CITIES_PARQUET = Path("data/processed/cities/cities.parquet")
@@ -88,6 +91,20 @@ def save_json(cities: list[dict], output_path: Path) -> None:
     print(f"  Saved {output_path} ({file_size:.1f} KB)")
 
 
+def get_outlier_city_ids() -> set[str]:
+    """Load population data and identify density outlier city_ids to exclude."""
+    # Try H3-R8 first (primary source), fall back to grid-1km
+    for slug in ("h3_r8", "grid_1km"):
+        pop_path = Path(f"data/processed/cities/city_populations_{slug}.parquet")
+        if pop_path.exists():
+            df = pl.read_parquet(pop_path)
+            outlier_ids = identify_outlier_city_ids(df)
+            if outlier_ids:
+                print(f"  Excluding {len(outlier_ids)} density outlier cities (from {slug})")
+            return outlier_ids
+    return set()
+
+
 def main(local_only: bool = False) -> None:
     """Generate city index JSON and upload to R2."""
     print("=" * 60)
@@ -96,6 +113,12 @@ def main(local_only: bool = False) -> None:
 
     # Load cities
     gdf = load_cities()
+
+    # Filter density outliers
+    outlier_ids = get_outlier_city_ids()
+    if outlier_ids:
+        gdf = gdf[~gdf["city_id"].isin(outlier_ids)]
+        print(f"  After outlier filter: {len(gdf):,} cities")
 
     # Generate index
     cities = generate_city_index(gdf)

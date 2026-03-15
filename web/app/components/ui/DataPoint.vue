@@ -76,6 +76,7 @@
     <span
       data-testid="datapoint-source"
       class="text-xs text-body/50 dark:text-cream/50 hover:text-forest-600 dark:hover:text-forest-400 cursor-pointer transition-colors"
+      @click="onSourceClick"
     >
       {{ sourceLabel || 'Source' }}
     </span>
@@ -118,9 +119,20 @@ interface Props {
   id?: string
   /** ID of another DataPoint that this percentage references */
   percentageRefId?: string
+  /** Content path for info modal (e.g., '/data/source-ghsl') */
+  contentPath?: string
 }
 
 const props = defineProps<Props>()
+
+// Info modal
+const { open: openInfoModal } = useInfoModal()
+
+function onSourceClick() {
+  if (props.contentPath) {
+    openInfoModal(props.contentPath)
+  }
+}
 
 // Cross-reference highlight state
 const { setHighlight, isHighlighted } = useDataPointHighlight()

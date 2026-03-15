@@ -4,6 +4,7 @@
 
 export default defineNuxtConfig({
   modules: [
+    '@nuxt/content',
     '@nuxt/eslint',
     '@nuxt/ui',
     '@nuxt/fonts',
@@ -48,6 +49,13 @@ export default defineNuxtConfig({
 
   routeRules: {
     '/': { prerender: true }
+  },
+
+  content: {
+    database: {
+      type: 'd1',
+      bindingName: 'DB'
+    }
   },
 
   compatibilityDate: '2025-01-15',

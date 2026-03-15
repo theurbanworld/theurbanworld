@@ -27,6 +27,7 @@ graph TD
         EXT_GEOM["extract_geometries.py"]
         GEN_CITY["generate_cities.py"]
         COMP_POP["compute_populations.py<br/>--source h3-r8 | grid-1km"]
+        DENSITY_FILTER["density_outliers.py<br/>cell_count ≥ 15 &amp; density ≤ 25K"]
         COMP_RANK["compute_rankings.py<br/>--source h3-r8 | grid-1km"]
     end
 
@@ -92,9 +93,11 @@ graph TD
     DL_H3 -->|h3_r8_pop_*.parquet| GEN_RAD
     DL_H3 -->|h3_r8_pop_*.parquet| GEN_H3_OUT
 
-    %% City computation
-    COMP_POP -->|city_populations_{source}.parquet| COMP_RANK
-    COMP_POP -->|city_populations_{source}.parquet| GEN_POP
+    %% City computation (density outlier filter applied in rankings and web exports)
+    COMP_POP -->|city_populations_{source}.parquet| DENSITY_FILTER
+    DENSITY_FILTER -->|filtered| COMP_RANK
+    DENSITY_FILTER -->|filtered| GEN_POP
+    DENSITY_FILTER -->|filtered| GEN_IDX
     COMP_POP -->|city_populations_{source}.parquet| GEN_BNDY
     COMP_RANK -->|city_rankings_{source}.parquet<br/>city_growth_{source}.parquet<br/>city_density_peers_{source}.parquet| GEN_BNDY
 
@@ -185,3 +188,4 @@ graph TD
 | City boundaries | GHSL-MTUC R2024A | Multi-temporal urban center boundaries, one polygon per city per epoch. | `useMap` -> boundary layer |
 | Radial density profiles | GHSL-POP + computed centroids | Bertaud-style: population-weighted centroid, 1km concentric rings out to 50km, density per ring. H3 source only. | TBD |
 | City metadata (name, country) | GHSL-UCDB R2024A | Thematic attributes extracted from GeoPackage. ISO country codes via pycountry. | `useCitiesIndex` -> `CitySearch` |
+| Density outlier filter | Derived from city populations | Cities with `cell_count < 15` or `density > 25,000/km²` at any epoch are excluded from rankings and web exports. Raw population data is preserved. See `src/cities/density_outliers.py`. | Applied before `compute_rankings`, `generate_city_index`, `generate_city_populations` |
