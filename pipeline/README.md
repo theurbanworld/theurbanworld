@@ -84,9 +84,9 @@ Scripts are organized by domain under `src/`:
 
 GHSL population estimates can produce unrealistically high densities for cities with very small UCDB boundaries. When only a handful of ~1km cells fall within a city boundary, the density estimate is unreliable and can exceed any real-world city.
 
-The pipeline uses a two-tier filter to remove these outliers from rankings and web exports:
-- **Tier 1 — Tiny cities** (`< 5 cells`): always excluded, too few data points for any reliable estimate
-- **Tier 2 — Small + dense** (`< 50 cells AND > 25,000/km²`): small cities claiming to be denser than Mumbai/Dhaka are data artifacts
+The pipeline uses a **median-based two-tier filter** to remove these outliers from rankings and web exports. Median density and cell count are computed across all 12 epochs (1975–2030), which smooths out early-epoch noise and avoids excluding cities that were small historically but grew into legitimate urban areas:
+- **Tier 1 — Tiny cities** (median `< 5 cells`): always excluded, persistently too few data points
+- **Tier 2 — Small + dense** (median `< 50 cells AND > 20,000/km²`): persistently small cities with implausibly high density are data artifacts
 
 Raw population data (`city_populations_{source}.parquet`) is preserved unfiltered. See `src/cities/density_outliers.py` for details and thresholds.
 
