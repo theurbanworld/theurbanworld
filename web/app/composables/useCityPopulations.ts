@@ -62,7 +62,7 @@ export function useCityPopulations() {
     },
     {
       immediate: false, // Don't auto-fetch, trigger on-demand
-      server: true, // Enable SSR
+      server: false, // Client-only — avoids serializing large dataset into SSR payload
       default: () => [],
       watch: [sourceSlug] // Re-fetch when data source changes
     }

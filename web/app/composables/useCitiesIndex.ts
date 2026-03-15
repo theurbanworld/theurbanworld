@@ -42,7 +42,7 @@ export function useCitiesIndex() {
     () => $fetch<CityIndexEntry[]>(getDataUrl()),
     {
       immediate: false, // Don't auto-fetch, trigger on-demand
-      server: true, // Enable SSR
+      server: false, // Client-only — avoids serializing large dataset into SSR payload
       default: () => []
     }
   )

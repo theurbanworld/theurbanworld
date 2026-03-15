@@ -47,9 +47,7 @@ export default defineNuxtConfig({
     }
   },
 
-  routeRules: {
-    '/': { prerender: true }
-  },
+  routeRules: {},
 
   content: {
     database: {
