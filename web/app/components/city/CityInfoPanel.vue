@@ -83,7 +83,7 @@ const {
           </h1>
           <button
             data-testid="sidebar-close-button"
-            class="shrink-0 p-1 rounded-md cursor-pointer
+            class="shrink-0 flex items-center justify-center p-1 rounded-md cursor-pointer
                    text-body/50 dark:text-cream/50
                    hover:bg-ink-100/50 dark:hover:bg-ink-900/30
                    hover:text-ink-700 dark:hover:text-ink-300
@@ -91,7 +91,7 @@ const {
             aria-label="Close sidebar"
             @click="emit('close')"
           >
-            <UIcon name="i-lucide-x" class="w-4 h-4" />
+            <UIcon name="i-lucide-x" class="w-4 h-4 block" />
           </button>
         </div>
         <p
