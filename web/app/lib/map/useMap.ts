@@ -350,10 +350,12 @@ export interface UseMapOptions {
   disableHoverSync?: boolean
   /** Override right panel padding for fitBounds (default: RIGHT_PANEL_WIDTH) */
   rightPanelWidth?: number
+  /** Override boundary line color for the selected city (used in comparison mode) */
+  boundaryColor?: string
 }
 
 export function useMap(options: UseMapOptions) {
-  const { container, cityId: overrideCityId, disableClickNavigation, disableSelectionWatch, disableHoverSync, rightPanelWidth } = options
+  const { container, cityId: overrideCityId, disableClickNavigation, disableSelectionWatch, disableHoverSync, rightPanelWidth, boundaryColor } = options
   const effectiveRightPanelWidth = rightPanelWidth ?? RIGHT_PANEL_WIDTH
 
   const map = shallowRef<maplibregl.Map | null>(null)
@@ -566,18 +568,31 @@ export function useMap(options: UseMapOptions) {
         'source': CITY_BOUNDARIES_SOURCE,
         'source-layer': sourceLayer,
         'paint': {
-          // Color varies by city_id hash (hue) and population (brightness)
-          'line-color': [
-            'interpolate', ['linear'], ['get', 'population'],
-            // Small cities: lighter colors
-            0, ['match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
-              0, lightPalette[0], 1, lightPalette[1], 2, lightPalette[2],
-              3, lightPalette[3], 4, lightPalette[4], 5, lightPalette[5], defaultLight],
-            // Large cities: darker colors
-            5000000, ['match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
-              0, darkPalette[0], 1, darkPalette[1], 2, darkPalette[2],
-              3, darkPalette[3], 4, darkPalette[4], 5, darkPalette[5], defaultDark]
-          ],
+          // Color: use identity color override for selected city in comparison mode,
+          // otherwise hash-based hue with population brightness
+          'line-color': boundaryColor
+            ? [
+              'case',
+              ['boolean', ['feature-state', 'selected'], false],
+              boundaryColor,
+              // Non-selected cities: hash-based colors
+              ['interpolate', ['linear'], ['get', 'population'],
+                0, ['match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
+                  0, lightPalette[0], 1, lightPalette[1], 2, lightPalette[2],
+                  3, lightPalette[3], 4, lightPalette[4], 5, lightPalette[5], defaultLight],
+                5000000, ['match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
+                  0, darkPalette[0], 1, darkPalette[1], 2, darkPalette[2],
+                  3, darkPalette[3], 4, darkPalette[4], 5, darkPalette[5], defaultDark]]
+            ]
+            : [
+              'interpolate', ['linear'], ['get', 'population'],
+              0, ['match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
+                0, lightPalette[0], 1, lightPalette[1], 2, lightPalette[2],
+                3, lightPalette[3], 4, lightPalette[4], 5, lightPalette[5], defaultLight],
+              5000000, ['match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
+                0, darkPalette[0], 1, darkPalette[1], 2, darkPalette[2],
+                3, darkPalette[3], 4, darkPalette[4], 5, darkPalette[5], defaultDark]
+            ],
           // Line width: selected = 6, hover = 4, default = 3
           'line-width': [
             'case',

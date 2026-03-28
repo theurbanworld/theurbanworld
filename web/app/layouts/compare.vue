@@ -70,17 +70,17 @@ function goToRankings() {
 
     <UMain class="flex-1 !min-h-0 relative overflow-hidden">
       <!-- Dual map area -->
-      <div v-if="isValid && cityA && cityB" class="flex h-full">
-        <!-- Desktop: two maps side by side -->
-        <div class="hidden sm:flex w-full h-full">
-          <div class="flex-1 h-full relative border-r border-forest-200/40 dark:border-forest-800/40">
+      <div v-if="isValid && cityA && cityB" class="flex flex-col h-full">
+        <!-- Desktop: two maps stacked horizontally (top/bottom) -->
+        <div class="hidden sm:flex sm:flex-col w-full h-full">
+          <div class="flex-1 w-full relative border-b border-forest-200/40 dark:border-forest-800/40">
             <ComparisonMap
               :city-id="cityA"
               map-id="A"
               :is-dark-mode="isDarkMode"
             />
           </div>
-          <div class="flex-1 h-full relative">
+          <div class="flex-1 w-full relative">
             <ComparisonMap
               :city-id="cityB"
               map-id="B"

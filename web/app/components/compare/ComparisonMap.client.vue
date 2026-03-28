@@ -21,6 +21,9 @@ const props = defineProps<{
 
 const mapContainer = shallowRef<HTMLElement | null>(null)
 
+// Identity color for this map panel
+const identityColor = computed(() => props.mapId === 'A' ? CITY_A_COLOR : CITY_B_COLOR)
+
 // Initialize map with comparison-mode overrides
 const { map, isLoading: isMapLoading, error: mapError } = useMap({
   container: mapContainer,
@@ -28,7 +31,8 @@ const { map, isLoading: isMapLoading, error: mapError } = useMap({
   disableClickNavigation: true,
   disableSelectionWatch: true,
   disableHoverSync: true,
-  rightPanelWidth: 0 // No right panel overlap in comparison maps
+  rightPanelWidth: 0, // No right panel overlap in comparison maps
+  boundaryColor: identityColor.value.primary // Color boundaries with city identity
 })
 
 // Comparison view state for zoom sync
@@ -44,7 +48,6 @@ const {
 // City info for the label
 const { getCity } = useCitiesIndex()
 const city = computed(() => getCity(props.cityId))
-const identityColor = computed(() => props.mapId === 'A' ? CITY_A_COLOR : CITY_B_COLOR)
 
 // Track whether we're currently applying a zoom change from the other map
 let isSyncingZoom = false
@@ -110,20 +113,19 @@ watch(map, (mapInstance) => {
       class="w-full h-full"
     />
 
-    <!-- City name label overlay -->
+    <!-- City name label overlay — bottom-left, colored with identity -->
     <div
       v-if="city"
-      class="absolute top-3 left-3 z-10 px-3 py-1.5 rounded-lg
+      class="absolute bottom-3 left-3 z-10 px-3 py-1.5 rounded-lg
              bg-parchment/90 dark:bg-forest-950/90 backdrop-blur-sm shadow-sm
              flex items-center gap-2"
     >
       <span
         class="w-2.5 h-2.5 rounded-full shrink-0"
-        :class="identityColor.dotClass"
+        :style="{ backgroundColor: identityColor.primary }"
       />
-      <span class="text-sm font-medium text-body dark:text-cream leading-tight">
-        {{ city.name }}
-        <span class="text-body/50 dark:text-cream/50 font-normal">, {{ city.country }}</span>
+      <span class="text-sm font-medium leading-tight" :style="{ color: identityColor.primary }">
+        {{ city.name }}<span class="opacity-50 font-normal">, {{ city.country }}</span>
       </span>
     </div>
 
