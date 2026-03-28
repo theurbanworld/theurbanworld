@@ -17,6 +17,8 @@ export interface Dataset {
   name: string
   /** Version label for display (e.g. "v1", "R2024") */
   version: string
+  /** Short description for the dataset picker */
+  description: string
   /** Underlying data source for boundary and population data */
   dataSource: DataSource
   /** Filename slug (underscored) for data file URLs */
