@@ -194,7 +194,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
       bodyFont: { family: 'monospace', size: 11 },
     },
     legend: {
-      display: isComparisonMode.value,
+      display: false,
       labels: {
         boxWidth: 10,
         boxHeight: 10,

@@ -53,7 +53,7 @@ function goToRankings() {
     <AppSidebar :open="true">
       <template #header>
         <div class="flex items-center justify-between px-5 py-3">
-          <h2 class="text-lg font-bold font-heading text-forest-700 dark:text-forest-300">
+          <h2 class="text-4xl font-bold font-heading text-forest-700 dark:text-forest-300">
             Comparison
           </h2>
           <button

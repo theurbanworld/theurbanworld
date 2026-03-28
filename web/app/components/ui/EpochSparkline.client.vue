@@ -129,7 +129,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
   },
   plugins: {
     legend: {
-      display: isComparisonMode.value,
+      display: false,
       labels: {
         boxWidth: 8,
         boxHeight: 8,

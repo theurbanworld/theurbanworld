@@ -28,7 +28,7 @@ const cityB = computed(() => getCity(props.cityIdB))
           class="w-2 h-2 rounded-full shrink-0"
           :class="CITY_A_COLOR.dotClass"
         />
-        <span class="text-xs font-medium" :class="CITY_A_COLOR.textClass">
+        <span class="text-sm font-medium" :class="CITY_A_COLOR.textClass">
           {{ cityA?.name ?? 'A' }}
         </span>
       </div>
@@ -37,7 +37,7 @@ const cityB = computed(() => getCity(props.cityIdB))
           class="w-2 h-2 rounded-full shrink-0"
           :class="CITY_B_COLOR.dotClass"
         />
-        <span class="text-xs font-medium" :class="CITY_B_COLOR.textClass">
+        <span class="text-sm font-medium" :class="CITY_B_COLOR.textClass">
           {{ cityB?.name ?? 'B' }}
         </span>
       </div>
