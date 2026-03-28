@@ -6,17 +6,23 @@
  * - Shared zoom via useComparisonViewState (R4)
  * - Independent center per map (R5)
  * - City boundary highlighting for its assigned city
- * - No deck.gl (no H3 heatmap or radial ring overlay)
+ * - deck.gl radial density layer (shared color scale across both maps)
  * - No click navigation (stays in comparison mode)
- * - City name label overlay in top-left corner
+ * - City name label overlay in bottom-left corner
  */
 
+import type { ShallowRef } from 'vue'
+import type maplibregl from 'maplibre-gl'
 import { CITY_A_COLOR, CITY_B_COLOR } from '~/utils/comparisonColors'
+import { useMap } from '~/lib/map/useMap'
+import { useDeckGL } from '~/lib/map/useDeckGL'
+import { useRadialLayer } from '~/lib/map/useRadialLayer'
 
 const props = defineProps<{
   cityId: string
   mapId: 'A' | 'B'
   isDarkMode: boolean
+  sharedMaxDensity?: number
 }>()
 
 const mapContainer = shallowRef<HTMLElement | null>(null)
@@ -33,6 +39,34 @@ const { map, isLoading: isMapLoading, error: mapError } = useMap({
   disableHoverSync: true,
   rightPanelWidth: 0, // No right panel overlap in comparison maps
   boundaryColor: identityColor.value.primary // Color boundaries with city identity
+})
+
+// deck.gl overlay for radial density layer
+const { isInitialized: isDeckInitialized, setLayers } = useDeckGL({
+  map: map as unknown as ShallowRef<maplibregl.Map | null>
+})
+
+// Radial density layer (toggled from ComparisonPanel)
+const { isComparisonRadialActive } = useComparisonRadial()
+const { selectedYear } = useSelectedYear()
+const { getProfile } = useRadialProfiles()
+const cityIdRef = computed(() => props.cityId)
+const densityProfile = computed(() => getProfile(props.cityId, selectedYear.value))
+const maxDensityRef = computed(() => props.sharedMaxDensity ?? 0)
+
+const { layer: radialLayer } = useRadialLayer({
+  cityId: cityIdRef,
+  densityProfile,
+  maxDensity: maxDensityRef,
+  layerIdSuffix: props.mapId,
+  alwaysActive: isComparisonRadialActive,
+  disableHover: true,
+})
+
+// Push radial layer to deck.gl when ready
+watch([radialLayer, isDeckInitialized], ([layer, initialized]) => {
+  if (!initialized) return
+  setLayers(layer ? [layer] : [])
 })
 
 // Comparison view state for zoom sync

@@ -105,7 +105,15 @@ const { isInitialized: isDeckInitialized, setLayers } = useDeckGL({
 const { viewState, onViewStateChange, shouldAnimate, animationDuration, clearAnimationFlag } = useViewState()
 
 // Radial layer (activated when sidebar toggle is clicked)
-const { layer: radialLayer, isLoadingCells: isLoadingRadialCells } = useRadialLayer()
+const { selectedCityId } = useCitySelection()
+const { selectedYear } = useSelectedYear()
+const { getProfile, getMaxDensity } = useRadialProfiles()
+const densityProfile = computed(() => selectedCityId.value ? getProfile(selectedCityId.value, selectedYear.value) : null)
+const radialMaxDensity = computed(() => selectedCityId.value ? getMaxDensity(selectedCityId.value, selectedYear.value) : 0)
+const { layer: radialLayer, isLoadingCells: isLoadingRadialCells } = useRadialLayer({
+  densityProfile,
+  maxDensity: radialMaxDensity,
+})
 const { isRadialLayerActive } = useRadialHighlight()
 
 // Boundary layer IDs to toggle when radial layer is active

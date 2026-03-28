@@ -21,6 +21,17 @@ const { getCity } = useCitiesIndex()
 const cityAName = computed(() => cityA.value ? getCity(cityA.value)?.name ?? 'City A' : 'City A')
 const cityBName = computed(() => cityB.value ? getCity(cityB.value)?.name ?? 'City B' : 'City B')
 
+// Shared max density for comparison maps (same color = same density on both)
+const { selectedYear } = useSelectedYear()
+const { getMaxDensity } = useRadialProfiles()
+const sharedMaxDensity = computed(() => {
+  if (!cityA.value || !cityB.value) return 0
+  return Math.max(
+    getMaxDensity(cityA.value, selectedYear.value),
+    getMaxDensity(cityB.value, selectedYear.value),
+  )
+})
+
 // Navigate to rankings (home)
 function goToRankings() {
   navigateTo('/')
@@ -82,6 +93,7 @@ function goToRankings() {
               :city-id="cityA"
               map-id="A"
               :is-dark-mode="isDarkMode"
+              :shared-max-density="sharedMaxDensity"
             />
           </div>
           <div class="flex-1 w-full relative">
@@ -89,6 +101,7 @@ function goToRankings() {
               :city-id="cityB"
               map-id="B"
               :is-dark-mode="isDarkMode"
+              :shared-max-density="sharedMaxDensity"
             />
           </div>
         </div>

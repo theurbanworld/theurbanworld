@@ -20,7 +20,7 @@ import {
   type Plugin,
 } from 'chart.js'
 import { Legend } from 'chart.js'
-import { getRingColor } from '~/utils/radialColors'
+import { getDensityColorHex } from '~/utils/densityColors'
 import { CITY_A_COLOR, CITY_B_COLOR } from '~/utils/comparisonColors'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip, Legend)
@@ -64,14 +64,15 @@ const chartData = computed<ChartData<'line'>>(() => {
   const data = densities.map(d => d ?? 0)
 
   if (!isComparisonMode.value) {
-    // Single city mode — ring-color gradient
-    const pointColors = data.map((_, i) => getRingColor(i))
+    // Single city mode — density-intensity sepia gradient
+    const maxDen = maxDensity.value || 1
+    const pointColors = data.map(d => getDensityColorHex(d, maxDen))
     return {
       labels,
       datasets: [{
         data,
         fill: true,
-        backgroundColor: 'rgba(139, 37, 0, 0.08)',
+        backgroundColor: 'rgba(139, 115, 85, 0.08)',
         borderColor: pointColors,
         borderWidth: 2,
         pointBackgroundColor: pointColors,
@@ -80,7 +81,7 @@ const chartData = computed<ChartData<'line'>>(() => {
         pointHoverRadius: 5,
         tension: 0.3,
         segment: {
-          borderColor: (ctx: { p0DataIndex: number }) => getRingColor(ctx.p0DataIndex),
+          borderColor: (ctx: { p0DataIndex: number }) => getDensityColorHex(data[ctx.p0DataIndex] ?? 0, maxDen),
         },
       }],
     }
@@ -222,7 +223,9 @@ const highlightPlugin = computed<Plugin<'line'>>(() => ({
     const x = point.x
 
     ctx.save()
-    ctx.fillStyle = `${getRingColor(ring)}33`
+    const density = profile.value?.[ring] ?? 0
+    const maxDen = maxDensity.value || 1
+    ctx.fillStyle = `${getDensityColorHex(density, maxDen)}33`
     const barWidth = chartArea.width / (profile.value?.length ?? 1)
     ctx.fillRect(x - barWidth / 2, chartArea.top, barWidth, chartArea.height)
     ctx.restore()
