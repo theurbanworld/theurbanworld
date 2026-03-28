@@ -9,7 +9,7 @@
 import type { YearEpoch } from '../../../types/h3'
 import type { RankingStat } from '~/composables/useRankingFilters'
 
-const { activeStat, countryFilter } = useRankingFilters()
+const { activeStat, countryFilter, sortDirection } = useRankingFilters()
 const { selectedYear } = useSelectedYear()
 const { allCities } = useCitiesIndex()
 const { getCityPopulationData } = useCityPopulations()
@@ -17,7 +17,8 @@ const { getCityPopulationData } = useCityPopulations()
 const stats: { key: RankingStat; label: string }[] = [
   { key: 'population', label: 'Population' },
   { key: 'density', label: 'Density' },
-  { key: 'area', label: 'Area' }
+  { key: 'area', label: 'Area' },
+  { key: 'growth', label: 'Growth' }
 ]
 
 // Unique countries sorted
@@ -73,9 +74,22 @@ const cityCount = computed(() => {
       </option>
     </select>
 
-    <!-- Count -->
-    <p class="text-xs text-body/50 dark:text-cream/50 mt-2">
-      {{ cityCount.toLocaleString() }} cities<span v-if="countryFilter"> in {{ countryFilter }}</span>
-    </p>
+    <!-- Count + sort toggle -->
+    <div class="flex items-center justify-between mt-2">
+      <p class="text-xs text-body/50 dark:text-cream/50">
+        {{ cityCount.toLocaleString() }} cities<span v-if="countryFilter"> in {{ countryFilter }}</span>
+      </p>
+      <button
+        class="flex items-center gap-1 text-xs text-body/50 dark:text-cream/50
+               hover:text-ink-700 dark:hover:text-ink-300 transition-colors cursor-pointer"
+        @click="sortDirection = sortDirection === 'desc' ? 'asc' : 'desc'"
+      >
+        <UIcon
+          :name="sortDirection === 'desc' ? 'i-lucide-arrow-down-wide-narrow' : 'i-lucide-arrow-up-wide-narrow'"
+          class="w-3.5 h-3.5"
+        />
+        {{ sortDirection === 'desc' ? 'Highest' : 'Lowest' }}
+      </button>
+    </div>
   </div>
 </template>
