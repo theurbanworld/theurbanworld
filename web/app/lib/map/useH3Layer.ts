@@ -7,7 +7,7 @@
 
 import { H3HexagonLayer } from '@deck.gl/geo-layers'
 import type { Layer } from '@deck.gl/core'
-import type { H3Hexagon, YearEpoch } from '../../types/h3'
+import type { H3Hexagon, YearEpoch } from '~~/types/h3'
 import { getColorForPopulation } from '~/utils/colorScale'
 
 export interface UseH3LayerOptions {

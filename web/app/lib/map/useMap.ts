@@ -15,7 +15,7 @@ import { Protocol } from 'pmtiles'
 import { layersWithCustomTheme, namedTheme } from 'protomaps-themes-base'
 import type { Theme } from 'protomaps-themes-base'
 import { markRaw, type ShallowRef } from 'vue'
-import { MIN_ZOOM, MAX_ZOOM } from './useZoomLevel'
+import { MIN_ZOOM, MAX_ZOOM } from '~/composables/useZoomLevel'
 
 // PMTiles protocol singleton to avoid re-registration
 let pmtilesProtocolRegistered = false
