@@ -34,7 +34,6 @@ function handleCityClose() {
 </script>
 
 <template>
-  <!-- Full-width search strip -->
   <div class="flex items-stretch bg-parchment">
     <StatToggle />
     <div class="flex-1 flex justify-center px-5 py-2.5 border-b border-ink-200/40 dark:border-ink-800/40">
