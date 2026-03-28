@@ -47,7 +47,7 @@ const sliderValue = computed({
     v-if="isExpanded"
     data-testid="eyebrow-panel"
     class="absolute z-100 right-0 top-0 p-4 rounded-bl-xl shadow-lg
-           bg-parchment/95 backdrop-blur-sm
+           bg-parchment/95 dark:bg-ink-950/95 backdrop-blur-sm
            w-70 max-sm:w-auto max-sm:min-w-40"
   >
     <!-- Epoch Slider -->
