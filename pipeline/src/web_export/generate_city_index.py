@@ -21,6 +21,7 @@ from ..cities.density_outliers import identify_outlier_city_ids
 
 # Constants
 CITIES_PARQUET = Path("data/processed/cities/cities.parquet")
+WIKIDATA_MATCHES = Path("data/processed/cities/wikidata_matches.json")
 OUTPUT_JSON = Path("data/processed/tiles/cities_index.json")
 R2_KEY = "data/cities_index.json"
 
@@ -33,9 +34,23 @@ def load_cities() -> gpd.GeoDataFrame:
     return gdf
 
 
-def generate_city_index(gdf: gpd.GeoDataFrame) -> list[dict]:
+def load_wikidata_matches() -> dict[str, str]:
+    """Load Wikidata matches if available."""
+    if not WIKIDATA_MATCHES.exists():
+        print("  No Wikidata matches found (run src.cities.match_wikidata first)")
+        return {}
+    with open(WIKIDATA_MATCHES) as f:
+        matches = json.load(f)
+    print(f"  Loaded {len(matches):,} Wikidata matches")
+    return matches
+
+
+def generate_city_index(
+    gdf: gpd.GeoDataFrame, wikidata_matches: dict[str, str] | None = None
+) -> list[dict]:
     """Generate city index list from GeoDataFrame."""
     print("Generating city index...")
+    wikidata_matches = wikidata_matches or {}
 
     cities = []
     for _, row in gdf.iterrows():
@@ -69,6 +84,11 @@ def generate_city_index(gdf: gpd.GeoDataFrame) -> list[dict]:
         pop = row.get("ucdb_population_2025")
         if pop is not None and pop > 0:
             city["population"] = int(pop)
+
+        # Wikidata ID (if matched)
+        city_id = str(row["city_id"])
+        if city_id in wikidata_matches:
+            city["wikidata_id"] = wikidata_matches[city_id]
 
         cities.append(city)
 
@@ -120,8 +140,11 @@ def main(local_only: bool = False) -> None:
         gdf = gdf[~gdf["city_id"].isin(outlier_ids)]
         print(f"  After outlier filter: {len(gdf):,} cities")
 
+    # Load Wikidata matches
+    wikidata_matches = load_wikidata_matches()
+
     # Generate index
-    cities = generate_city_index(gdf)
+    cities = generate_city_index(gdf, wikidata_matches)
 
     # Save locally
     save_json(cities, OUTPUT_JSON)
