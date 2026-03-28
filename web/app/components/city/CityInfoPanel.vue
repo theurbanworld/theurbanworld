@@ -110,7 +110,14 @@ const {
             source-label="Source: GHSL"
             content-path="/data/source-ghsl"
           >
-            <EpochSparkline :city-id="cityId" metric="population" class="mt-1" />
+            <ChartToggle>
+              <template #a>
+                <EpochSparkline :city-id="cityId" metric="population" />
+              </template>
+              <template #b>
+                <DistributionStrip :city-id="cityId" metric="population" />
+              </template>
+            </ChartToggle>
           </DataPoint>
         </div>
 
@@ -125,7 +132,14 @@ const {
             source-label="Source: GHSL"
             content-path="/data/source-ghsl"
           >
-            <EpochSparkline :city-id="cityId" metric="density_per_km2" class="mt-1" />
+            <ChartToggle>
+              <template #a>
+                <EpochSparkline :city-id="cityId" metric="density_per_km2" />
+              </template>
+              <template #b>
+                <DistributionStrip :city-id="cityId" metric="density_per_km2" />
+              </template>
+            </ChartToggle>
           </DataPoint>
         </div>
 
@@ -138,7 +152,14 @@ const {
             source-label="Source: GHSL"
             content-path="/data/source-ghsl"
           >
-            <EpochSparkline :city-id="cityId" metric="area_km2" class="mt-1" />
+            <ChartToggle>
+              <template #a>
+                <EpochSparkline :city-id="cityId" metric="area_km2" />
+              </template>
+              <template #b>
+                <DistributionStrip :city-id="cityId" metric="area_km2" />
+              </template>
+            </ChartToggle>
           </DataPoint>
         </div>
       </div>
