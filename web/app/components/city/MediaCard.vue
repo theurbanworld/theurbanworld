@@ -54,9 +54,9 @@ const metadata = computed(() => {
 </script>
 
 <template>
-  <div class="px-4 py-3 rounded-lg border border-forest-200/40 dark:border-forest-800/40 bg-forest-50/30 dark:bg-forest-950/20">
+  <div class="px-4 py-3 rounded-lg border border-ink-200/40 dark:border-ink-800/40 bg-ink-50/30 dark:bg-ink-950/20">
     <div class="flex gap-3">
-      <UIcon :name="icon" class="w-4 h-4 mt-0.5 shrink-0 text-forest-500 dark:text-forest-400" />
+      <UIcon :name="icon" class="w-4 h-4 mt-0.5 shrink-0 text-ink-500 dark:text-ink-400" />
       <div class="min-w-0">
         <component
           :is="url ? 'a' : 'span'"
@@ -64,7 +64,7 @@ const metadata = computed(() => {
           :target="url ? '_blank' : undefined"
           :rel="url ? 'noopener' : undefined"
           class="text-sm font-medium text-body dark:text-cream"
-          :class="url && 'underline hover:text-forest-600 dark:hover:text-forest-400 transition-colors'"
+          :class="url && 'underline hover:text-ink-600 dark:hover:text-ink-400 transition-colors'"
         >
           {{ title }}
         </component>

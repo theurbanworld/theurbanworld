@@ -38,7 +38,7 @@ const groupedMedia = computed(() => {
 <template>
   <div v-if="groupedMedia" class="border-t border-border/30 dark:border-border/20 pt-4">
     <div v-for="group in groupedMedia" :key="group.label" class="mb-4 last:mb-0">
-      <h2 class="text-sm font-medium text-forest-700 dark:text-forest-300 mb-2">
+      <h2 class="text-sm font-medium text-ink-700 dark:text-ink-300 mb-2">
         {{ group.label }}
       </h2>
       <div class="flex flex-col gap-2">

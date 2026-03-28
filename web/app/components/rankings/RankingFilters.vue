@@ -40,7 +40,7 @@ const cityCount = computed(() => {
 </script>
 
 <template>
-  <div class="px-4 py-3 border-b border-forest-200/40 dark:border-forest-800/40">
+  <div class="px-4 py-3 border-b border-ink-200/40 dark:border-ink-800/40">
     <!-- Stat toggle -->
     <div class="flex gap-1 mb-3">
       <button
@@ -48,8 +48,8 @@ const cityCount = computed(() => {
         :key="stat.key"
         class="flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer"
         :class="activeStat === stat.key
-          ? 'bg-forest-700 text-white dark:bg-forest-400 dark:text-forest-950'
-          : 'text-body/70 dark:text-cream/70 hover:bg-forest-100/50 dark:hover:bg-forest-900/30'"
+          ? 'bg-ink-700 text-white dark:bg-ink-400 dark:text-ink-950'
+          : 'text-body/70 dark:text-cream/70 hover:bg-ink-100/50 dark:hover:bg-ink-900/30'"
         @click="activeStat = stat.key"
       >
         {{ stat.label }}
@@ -61,9 +61,9 @@ const cityCount = computed(() => {
       v-model="countryFilter"
       class="w-full text-sm rounded-md
              bg-parchment text-body dark:text-cream/90
-             border border-forest-200/40 dark:border-forest-800/40
+             border border-ink-200/40 dark:border-ink-800/40
              px-2 py-1.5 cursor-pointer
-             focus:outline-none focus:ring-2 focus:ring-forest-300/50 dark:focus:ring-forest-700/50"
+             focus:outline-none focus:ring-2 focus:ring-ink-300/50 dark:focus:ring-ink-700/50"
     >
       <option value="">
         All countries

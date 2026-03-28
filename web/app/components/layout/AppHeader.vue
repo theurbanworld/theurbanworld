@@ -10,7 +10,7 @@
   <header
     class="flex items-center px-5 py-3
            bg-parchment
-           border-b border-forest-200/40 dark:border-forest-800/40
+           border-b border-ink-200/40 dark:border-ink-800/40
            max-sm:px-3 max-sm:py-2"
   >
     <div class="grid grid-cols-[1fr_auto_1fr] items-center w-full gap-3">
@@ -47,10 +47,10 @@
           :key="link.to"
           :to="link.to"
           class="text-sm font-medium transition-colors max-sm:text-xs"
-          active-class="text-forest-700 dark:text-forest-300"
+          active-class="text-ink-700 dark:text-ink-300"
           :class="$route.path === link.to
             ? ''
-            : 'text-body/60 dark:text-cream/60 hover:text-forest-600 dark:hover:text-forest-400'"
+            : 'text-body/60 dark:text-cream/60 hover:text-ink-600 dark:hover:text-ink-400'"
         >
           {{ link.label }}
         </NuxtLink>

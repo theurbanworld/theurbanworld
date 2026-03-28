@@ -124,8 +124,8 @@ await loadOutline()
       >
         <path
           :d="svgPath"
-          fill="rgba(106, 143, 94, 0.25)"
-          stroke="#3A5233"
+          fill="rgba(58, 72, 86, 0.25)"
+          stroke="#3A4856"
           stroke-width="1.5"
         />
       </svg>
@@ -145,8 +145,8 @@ await loadOutline()
             width: '120px',
             height: '120px',
             borderRadius: '50%',
-            backgroundColor: 'rgba(106, 143, 94, 0.15)',
-            border: '2px solid rgba(58, 82, 51, 0.3)'
+            backgroundColor: 'rgba(58, 72, 86, 0.15)',
+            border: '2px solid rgba(58, 72, 86, 0.3)'
           }"
         />
       </div>
@@ -168,7 +168,7 @@ await loadOutline()
           fontFamily: 'Crimson Pro, serif',
           fontSize: '52px',
           fontWeight: 600,
-          color: '#3A5233',
+          color: '#3A4856',
           lineHeight: '1.1'
         }"
       >
@@ -242,7 +242,7 @@ await loadOutline()
         display: 'flex',
         justifyContent: 'center',
         padding: '16px 0 24px',
-        borderTop: '1px solid rgba(58, 82, 51, 0.15)'
+        borderTop: '1px solid rgba(58, 72, 86, 0.15)'
       }"
     >
       <div
@@ -250,7 +250,7 @@ await loadOutline()
           fontFamily: 'Crimson Pro, serif',
           fontSize: '18px',
           fontWeight: 600,
-          color: '#3A5233',
+          color: '#3A4856',
           letterSpacing: '0.05em'
         }"
       >

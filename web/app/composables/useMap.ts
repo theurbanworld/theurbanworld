@@ -104,14 +104,14 @@ function createSepiaTheme(): Theme {
     water: '#B8C5CE', // Slate blue-gray water
     glacier: '#D5E0E5',
 
-    // Natural features — muted sage greens for parks/woods/scrub to maintain
-    // green tones at higher zoom (landuse_park replaces landcover at zoom 7+)
-    wood_a: '#D4DFCF',
-    wood_b: '#CDDAC8',
-    scrub_a: '#DBE0D0',
-    scrub_b: '#D6DAC8',
-    park_a: '#D4DFCF',
-    park_b: '#CDDAC8',
+    // Natural features — desaturated sage tones closer to sepia palette
+    // (landuse_park replaces landcover at zoom 7+)
+    wood_a: '#DDD8CC',
+    wood_b: '#D6D1C5',
+    scrub_a: '#DDD9CC',
+    scrub_b: '#D8D4C6',
+    park_a: '#DDD8CC',
+    park_b: '#D6D1C5',
     sand: '#F0E8D8',
     beach: '#F0E8D8',
 
@@ -195,15 +195,15 @@ function createSepiaTheme(): Theme {
     zoo: '#E5DDD0',
     military: '#E0D8C8',
 
-    // Landcover - muted sage/olive tones that complement sepia aesthetic
+    // Landcover - desaturated tones closer to sepia palette
     landcover: {
-      grassland: 'rgba(200, 220, 190, 1)',
+      grassland: 'rgba(210, 215, 195, 1)',
       barren: 'rgba(230, 220, 200, 1)',
       urban_area: 'rgba(228, 222, 210, 1)',
-      farmland: 'rgba(205, 218, 192, 1)',
+      farmland: 'rgba(212, 215, 198, 1)',
       glacier: 'rgba(213, 224, 229, 1)',
-      scrub: 'rgba(215, 218, 195, 1)',
-      forest: 'rgba(190, 212, 185, 1)',
+      scrub: 'rgba(218, 216, 200, 1)',
+      forest: 'rgba(200, 210, 195, 1)',
     },
 
     // Fonts - use Inter for all basemap labels
@@ -229,14 +229,14 @@ function createDarkSepiaTheme(): Theme {
     water: '#3A4550', // Darker slate blue-gray water
     glacier: '#4A5560',
 
-    // Natural features — dark muted greens for parks/woods/scrub to maintain
-    // green tones at higher zoom (landuse_park replaces landcover at zoom 7+)
-    wood_a: '#2E3828',
-    wood_b: '#2A3425',
-    scrub_a: '#303428',
-    scrub_b: '#2D3025',
-    park_a: '#2E3828',
-    park_b: '#2A3425',
+    // Natural features — desaturated dark sage closer to sepia palette
+    // (landuse_park replaces landcover at zoom 7+)
+    wood_a: '#33302A',
+    wood_b: '#302D27',
+    scrub_a: '#34312B',
+    scrub_b: '#312E28',
+    park_a: '#33302A',
+    park_b: '#302D27',
     sand: '#3A3428',
     beach: '#3A3428',
 
@@ -320,15 +320,15 @@ function createDarkSepiaTheme(): Theme {
     zoo: '#302B22',
     military: '#383028',
 
-    // Landcover - dark muted greens for natural geography
+    // Landcover - desaturated dark tones closer to sepia palette
     landcover: {
-      grassland: 'rgba(45, 55, 40, 1)',
+      grassland: 'rgba(48, 48, 42, 1)',
       barren: 'rgba(50, 45, 38, 1)',
       urban_area: 'rgba(48, 44, 40, 1)',
-      farmland: 'rgba(42, 52, 38, 1)',
+      farmland: 'rgba(46, 48, 40, 1)',
       glacier: 'rgba(55, 65, 70, 1)',
-      scrub: 'rgba(48, 52, 42, 1)',
-      forest: 'rgba(38, 50, 38, 1)',
+      scrub: 'rgba(50, 48, 42, 1)',
+      forest: 'rgba(44, 46, 40, 1)',
     },
 
     // Fonts - use Inter for all basemap labels

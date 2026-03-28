@@ -32,11 +32,11 @@ watch(() => props.cityId, () => {
   <div class="border-t border-border/30 dark:border-border/20 pt-4">
     <div class="flex items-center justify-between mb-3">
       <div class="flex items-center gap-1.5">
-        <h2 class="text-sm font-medium text-forest-700 dark:text-forest-300">
+        <h2 class="text-sm font-medium text-ink-700 dark:text-ink-300">
           Radial Profile
         </h2>
         <button
-          class="text-body/40 dark:text-cream/40 hover:text-forest-600 dark:hover:text-forest-400 transition-colors cursor-pointer"
+          class="text-body/40 dark:text-cream/40 hover:text-ink-600 dark:hover:text-ink-400 transition-colors cursor-pointer"
           aria-label="About radial profiles"
           @click="openInfoModal('/methodology/bertaud-radial')"
         >
@@ -47,8 +47,8 @@ watch(() => props.cityId, () => {
         class="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs cursor-pointer
                transition-colors"
         :class="isRadialLayerActive
-          ? 'bg-forest-600 text-white dark:bg-forest-500'
-          : 'text-body/60 dark:text-cream/60 hover:bg-forest-100/50 dark:hover:bg-forest-900/30'"
+          ? 'bg-ink-600 text-white dark:bg-ink-500'
+          : 'text-body/60 dark:text-cream/60 hover:bg-ink-100/50 dark:hover:bg-ink-900/30'"
         @click="toggleMapLayer"
       >
         <UIcon name="i-lucide-map" class="w-3.5 h-3.5" />

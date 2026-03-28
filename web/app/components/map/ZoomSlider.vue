@@ -37,9 +37,9 @@
           :style="getLevelStyle(level.centerZoom)"
           :class="[
             'absolute left-0 right-0 flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors',
-            'hover:bg-forest-100 dark:hover:bg-forest-900/50',
+            'hover:bg-ink-100 dark:hover:bg-ink-900/50',
             currentLevelName === level.name
-              ? 'bg-forest-200 dark:bg-forest-800 text-forest-700 dark:text-forest-300 font-medium'
+              ? 'bg-ink-200 dark:bg-ink-800 text-ink-700 dark:text-ink-300 font-medium'
               : 'text-body/60 dark:text-cream/60'
           ]"
           :aria-label="`Zoom to ${level.name} level`"

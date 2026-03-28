@@ -62,11 +62,11 @@ const chartData = computed<ChartData<'line'>>(() => {
     datasets: [{
       data,
       fill: true,
-      backgroundColor: 'rgba(181, 201, 175, 0.2)',
-      borderColor: '#4A6741',
+      backgroundColor: 'rgba(74, 91, 106, 0.15)',
+      borderColor: '#4A5B6A',
       borderWidth: 1.5,
-      pointBackgroundColor: '#4A6741',
-      pointBorderColor: '#4A6741',
+      pointBackgroundColor: '#4A5B6A',
+      pointBorderColor: '#4A5B6A',
       pointRadius,
       pointHoverRadius,
       tension: 0.3,
@@ -133,7 +133,7 @@ const selectedYearPlugin = computed<Plugin<'line'>>(() => ({
 
     const { ctx, chartArea } = chart
     ctx.save()
-    ctx.strokeStyle = 'rgba(74, 103, 65, 0.3)'
+    ctx.strokeStyle = 'rgba(74, 91, 106, 0.3)'
     ctx.lineWidth = 1
     ctx.setLineDash([2, 2])
     ctx.beginPath()

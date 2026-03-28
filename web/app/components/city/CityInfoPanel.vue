@@ -69,7 +69,7 @@ const {
         <div class="flex items-start justify-between gap-2">
           <h1
             data-testid="city-name"
-            class="text-4xl font-bold font-heading text-forest-700 dark:text-forest-300"
+            class="text-4xl font-bold font-heading text-ink-700 dark:text-ink-300"
           >
             {{ cityName }}
           </h1>
@@ -77,8 +77,8 @@ const {
             data-testid="sidebar-close-button"
             class="shrink-0 p-1 rounded-md cursor-pointer
                    text-body/50 dark:text-cream/50
-                   hover:bg-forest-100/50 dark:hover:bg-forest-900/30
-                   hover:text-forest-700 dark:hover:text-forest-300
+                   hover:bg-ink-100/50 dark:hover:bg-ink-900/30
+                   hover:text-ink-700 dark:hover:text-ink-300
                    transition-colors"
             aria-label="Close sidebar"
             @click="emit('close')"

@@ -16,7 +16,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="my-4 px-4 py-3 rounded-lg border border-forest-200/40 dark:border-forest-800/40 bg-forest-50/30 dark:bg-forest-950/20">
+  <div class="my-4 px-4 py-3 rounded-lg border border-ink-200/40 dark:border-ink-800/40 bg-ink-50/30 dark:bg-ink-950/20">
     <p class="text-sm text-body/80 dark:text-cream/80">
       <span class="font-medium">{{ author }}</span>
       <span class="text-body/60 dark:text-cream/60"> ({{ year }})</span>.
@@ -25,7 +25,7 @@ defineProps<{
           :href="url"
           target="_blank"
           rel="noopener"
-          class="italic underline hover:text-forest-600 dark:hover:text-forest-400 transition-colors"
+          class="italic underline hover:text-ink-600 dark:hover:text-ink-400 transition-colors"
         >{{ title }}</a>.
       </template>
       <template v-else>
