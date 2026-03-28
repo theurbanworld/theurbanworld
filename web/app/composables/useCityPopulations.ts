@@ -136,6 +136,8 @@ export function useCityPopulations() {
     /** Check if city data exists */
     hasCity,
     /** Check if any data is available */
-    hasData
+    hasData,
+    /** Read-only populations map for distribution calculations */
+    populationsMap: populationsMapRef as Readonly<ComputedRef<Map<string, Record<YearEpoch, CityPopulationEpoch>> | null>>
   }
 }
