@@ -47,17 +47,13 @@ const city = computed(() => getCity(props.cityId))
 const identityColor = computed(() => props.mapId === 'A' ? CITY_A_COLOR : CITY_B_COLOR)
 
 // Track whether we're currently applying a zoom change from the other map
-let isApplyingSharedZoom = false
+let isSyncingZoom = false
 
 // Sync zoom from this map to the shared state
 function setupZoomSync(mapInstance: maplibregl.Map) {
-  mapInstance.on('zoomend', () => {
-    if (isApplyingSharedZoom) {
-      // This zoom was caused by syncing from the other map — don't write back
-      isApplyingSharedZoom = false
-      clearZoomSource()
-      return
-    }
+  // Use 'zoom' event (fires continuously during zoom) for real-time sync
+  mapInstance.on('zoom', () => {
+    if (isSyncingZoom) return
     onZoomChange(mapInstance.getZoom(), props.mapId)
   })
 
@@ -68,20 +64,18 @@ function setupZoomSync(mapInstance: maplibregl.Map) {
   })
 }
 
-// Watch shared zoom changes from the other map and apply
+// Watch shared zoom changes from the other map and apply instantly
 watch(sharedZoom, (newZoom) => {
   if (!map.value) return
-  // Skip if this map caused the change
   if (isZoomSource(props.mapId)) return
 
   const currentZoom = map.value.getZoom()
   if (Math.abs(currentZoom - newZoom) < 0.01) return
 
-  isApplyingSharedZoom = true
-  map.value.easeTo({
-    zoom: newZoom,
-    duration: 200
-  })
+  // Use jumpTo for instant sync — no animation delay
+  isSyncingZoom = true
+  map.value.jumpTo({ zoom: newZoom })
+  isSyncingZoom = false
 })
 
 // Set initial center from city bbox after map loads
