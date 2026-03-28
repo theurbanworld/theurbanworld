@@ -22,6 +22,9 @@ const emit = defineEmits<{
 // Create a computed ref for the city ID to ensure reactivity
 const cityIdRef = computed(() => props.cityId)
 
+// Compare modal state
+const compareModalOpen = ref(false)
+
 // Get reactive city statistics
 const {
   isLoading,
@@ -92,7 +95,24 @@ const {
         >
           {{ countryName }}
         </p>
+        <!-- Compare with... button -->
+        <UButton
+          variant="ghost"
+          color="neutral"
+          size="xs"
+          icon="i-lucide-columns-2"
+          class="mt-2 cursor-pointer"
+          @click="compareModalOpen = true"
+        >
+          Compare with...
+        </UButton>
       </header>
+
+      <!-- Compare search modal -->
+      <CompareSearchModal
+        v-model:open="compareModalOpen"
+        :current-city-id="cityId"
+      />
 
       <!-- DataPoints -->
       <div
