@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "setup": "cd web && pnpm install && [ -f \"$CONDUCTOR_ROOT_PATH/web/.env\" ] && ln -sf \"$CONDUCTOR_ROOT_PATH/web/.env\" .env || true",
+    "run": "cd web && PORT=$CONDUCTOR_PORT pnpm dev"
+  },
+  "runScriptMode": "nonconcurrent"
+}
