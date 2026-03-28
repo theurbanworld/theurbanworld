@@ -1,21 +1,14 @@
 <script setup lang="ts">
 /**
- * GlobalContextPanel - Right-side panel with epoch controls and global statistics
+ * EyebrowPanel - Right-anchored panel with epoch controls and global statistics
  *
- * Displays the current epoch year, a data source toggle, a slider to change epochs,
- * and global population data points (world and urban population).
- * Positioned fixed on the right side of the viewport.
- * On mobile, shows only year, toggle, and slider; data points are hidden.
+ * Drops down vertically from the top-right of the map area.
+ * Visibility is controlled by useEyebrowPanel (toggle lives in the search strip).
  */
 
 import { useSelectedYear } from '../../composables/useSelectedYear'
 import { useGlobalStats } from '../../composables/useGlobalStats'
-import { useDataSource, type DataSource } from '../../composables/useDataSource'
-
-const sourceOptions: { value: DataSource; label: string }[] = [
-  { value: 'grid-1km', label: 'Grid 1km' },
-  { value: 'h3-r8', label: 'H3 R8' }
-]
+import { useEyebrowPanel } from '../../composables/useEyebrowPanel'
 
 // Constants for epoch range
 const MIN_YEAR = 1975
@@ -23,7 +16,6 @@ const MAX_YEAR = 2030
 const STEP = 5
 
 // Composables for state
-const { dataSource, setDataSource } = useDataSource()
 const { selectedYear, setYear } = useSelectedYear()
 const {
   worldPopulation,
@@ -34,14 +26,15 @@ const {
   urbanPopulationRaw,
   urbanPopulationTrendPrevious,
   urbanPopulationTrendNext,
-  urbanPercentageOfWorld
+  urbanPercentageOfWorld,
+  datasetUrbanPopulation
 } = useGlobalStats()
+const { isExpanded } = useEyebrowPanel()
 
 // Two-way binding for slider
 const sliderValue = computed({
   get: () => selectedYear.value,
   set: (value: number) => {
-    // Snap to nearest epoch
     const snappedYear = Math.round(value / STEP) * STEP
     const clampedYear = Math.max(MIN_YEAR, Math.min(MAX_YEAR, snappedYear))
     setYear(clampedYear)
@@ -51,39 +44,12 @@ const sliderValue = computed({
 
 <template>
   <div
-    data-testid="global-context-panel"
-    class="absolute z-100 p-4 rounded-xl shadow-lg bg-parchment/95 backdrop-blur-sm
-           right-4 top-4 w-56
-           max-sm:right-2 max-sm:top-2 max-sm:w-auto max-sm:min-w-40"
+    v-if="isExpanded"
+    data-testid="eyebrow-panel"
+    class="absolute z-100 right-0 top-0 p-4 rounded-bl-xl shadow-lg
+           bg-parchment/95 backdrop-blur-sm
+           w-70 max-sm:w-auto max-sm:min-w-40"
   >
-    <!-- Epoch Year Display -->
-    <div class="text-center mb-3">
-      <span
-        data-testid="epoch-year"
-        class="font-mono text-4xl max-sm:text-3xl font-bold text-ink-700 dark:text-ink-300 tracking-wide"
-      >
-        {{ selectedYear }}
-      </span>
-    </div>
-
-    <!-- Data Source Toggle -->
-    <div class="flex justify-center mb-3">
-      <div class="inline-flex rounded-lg bg-ink-100/60 dark:bg-ink-900/40 p-0.5">
-        <button
-          v-for="option in sourceOptions"
-          :key="option.value"
-          :data-testid="`source-${option.value}`"
-          class="px-3 py-1 text-xs font-mono rounded-md transition-colors"
-          :class="dataSource === option.value
-            ? 'bg-parchment text-ink-700 dark:text-ink-300 shadow-sm'
-            : 'text-body/50 dark:text-cream/40 hover:text-body/70 dark:hover:text-cream/60'"
-          @click="setDataSource(option.value)"
-        >
-          {{ option.label }}
-        </button>
-      </div>
-    </div>
-
     <!-- Epoch Slider -->
     <div class="px-1">
       <USlider
@@ -114,12 +80,14 @@ const sliderValue = computed({
         :raw-value="worldPopulationRaw"
         :trend-previous="worldPopulationTrendPrevious"
         :trend-next="worldPopulationTrendNext"
+        source-label="Source: UN WPP"
+        content-path="/data/source-un-wpp"
       />
 
       <!-- Spacer -->
       <div class="h-4" />
 
-      <!-- Urban Population -->
+      <!-- Urban Population (UN official, with dataset coverage context) -->
       <DataPoint
         id="urban-population"
         label="Urban Population"
@@ -131,7 +99,19 @@ const sliderValue = computed({
         percentage-label="of"
         percentage-ref-label="World Population"
         percentage-ref-id="world-population"
-      />
+        source-label="Source: UN WUP"
+        content-path="/data/source-un-wup"
+      >
+        <!-- Dataset coverage context -->
+        <div class="flex items-center gap-1 mt-1">
+          <span class="font-mono text-xs font-medium text-ink-600/70 dark:text-ink-400/70">
+            {{ datasetUrbanPopulation }}
+          </span>
+          <span class="text-xs text-body/50 dark:text-cream/50">
+            in our dataset
+          </span>
+        </div>
+      </DataPoint>
     </div>
   </div>
 </template>

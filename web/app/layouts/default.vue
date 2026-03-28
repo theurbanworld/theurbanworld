@@ -2,8 +2,9 @@
 /**
  * Default layout — explore mode (map + sidebar)
  *
- * Contains the search strip, sidebar, map, and overlay panels.
- * Extracted from app.vue so content pages can use a different layout.
+ * Full-width search strip sits above the sidebar+map flex row.
+ * The strip uses a 3-column flex: stat buttons (left, sidebar-width),
+ * search (center), dataset+epoch (right).
  */
 
 // Get city selection state
@@ -12,18 +13,18 @@ const { selectedCityId, clearSelection } = useCitySelection()
 // Get dark mode state for map
 const { isDarkMode } = useDarkMode()
 
+// Epoch year for compact display
+const { selectedYear } = useSelectedYear()
+
+// Eyebrow panel toggle
+const { isExpanded, toggle: toggleEyebrow } = useEyebrowPanel()
+
 // Route detection for sidebar content
 const route = useRoute()
 const isRankingsRoute = computed(() => route.path === '/')
 
 // Mobile sidebar visibility
 const mobileSidebarOpen = computed(() => !!selectedCityId.value || isRankingsRoute.value)
-
-// Navigate to rankings (home)
-function goToRankings() {
-  clearSelection()
-  navigateTo('/')
-}
 
 // Handle city info close - back to global view
 function handleCityClose() {
@@ -33,33 +34,44 @@ function handleCityClose() {
 </script>
 
 <template>
-  <!-- Search strip: toggle left, search centered on page -->
-  <div class="relative bg-parchment border-b border-forest-200/40 dark:border-forest-800/40">
-    <!-- Cities toggle — sidebar width, left-aligned with border -->
-    <div class="absolute inset-y-0 left-0 w-96 flex items-center px-4 border-r border-forest-200/40 dark:border-forest-800/40">
-      <UButton
-        variant="ghost"
-        color="neutral"
-        size="sm"
-        class="cursor-pointer"
-        :active="isRankingsRoute"
-        active-variant="subtle"
-        @click="goToRankings"
-      >
-        Cities
-      </UButton>
-    </div>
-    <!-- Search — centered on full page width -->
-    <div class="flex justify-center px-5 py-2.5">
+  <!-- Full-width search strip -->
+  <div class="flex items-stretch bg-parchment">
+    <!-- Stat toggle — same width as sidebar, full-height right border -->
+    <StatToggle />
+    <!-- Search — centered in remaining space -->
+    <div class="flex-1 flex justify-center px-5 py-2.5 border-b border-ink-200/40 dark:border-ink-800/40">
       <CitySearch class="w-full max-w-sm" />
+    </div>
+    <!-- Dataset + epoch + eyebrow toggle — right -->
+    <div class="flex items-center justify-end gap-3 px-4 shrink-0 border-b border-ink-200/40 dark:border-ink-800/40">
+      <DatasetPicker />
+      <button
+        data-testid="eyebrow-toggle"
+        class="flex flex-col items-start py-1 px-2 -mr-2 rounded-md
+               hover:bg-ink-100/50 dark:hover:bg-ink-900/30
+               transition-colors cursor-pointer"
+        :title="isExpanded ? 'Hide global stats' : 'Show global stats'"
+        @click="toggleEyebrow"
+      >
+        <span class="text-[10px] leading-tight text-body/50 dark:text-cream/50">Epoch</span>
+        <span class="flex items-center gap-1">
+          <span class="font-mono text-sm font-bold leading-tight text-ink-700 dark:text-ink-300 tracking-wide">
+            {{ selectedYear }}
+          </span>
+          <UIcon
+            :name="isExpanded ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+            class="w-3.5 h-3.5 block text-body/50 dark:text-cream/50"
+          />
+        </span>
+      </button>
     </div>
   </div>
 
+  <!-- 2-column layout: sidebar | map -->
   <div class="flex flex-1 min-h-0 overflow-hidden">
-    <!-- Sidebar — always visible on desktop, overlay on mobile -->
     <AppSidebar :open="mobileSidebarOpen">
-      <template v-if="isRankingsRoute" #header>
-        <RankingFilters />
+      <template #header>
+        <RankingFilters v-if="isRankingsRoute" />
       </template>
       <CityRankings v-if="isRankingsRoute" />
       <div v-else-if="selectedCityId" class="p-5">
@@ -68,16 +80,8 @@ function handleCityClose() {
     </AppSidebar>
 
     <UMain class="flex-1 !min-h-0 relative overflow-hidden">
-      <!-- Persistent map and overlays -->
       <GlobalMap :is-dark-mode="isDarkMode" />
-
-      <!-- Global Context Panel (epoch controls and population data) -->
-      <GlobalContextPanel />
-
-      <!-- Zoom Slider (scale level control) — hidden, replaced by MapLibre NavigationControl -->
-      <!-- <ZoomSlider /> -->
-
-      <!-- Route-specific content -->
+      <EyebrowPanel />
       <slot />
     </UMain>
   </div>

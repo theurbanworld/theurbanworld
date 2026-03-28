@@ -42,7 +42,7 @@ const BOUNDARIES_CONFIG = {
 const FIT_BOUNDS_MIN_ZOOM = 8
 const FIT_BOUNDS_MAX_ZOOM = 12
 const FIT_BOUNDS_PADDING = 80
-const RIGHT_PANEL_WIDTH = 256 // w-56 + right-4 = 224px + 16px gap ≈ 256px
+const RIGHT_PANEL_WIDTH = 280 // EyebrowPanel w-70 = 280px
 
 // Basemap layers to hide (we show only land/water + our city data)
 const BASEMAP_LAYERS_TO_HIDE = [
