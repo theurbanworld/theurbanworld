@@ -63,11 +63,7 @@ useSeoMeta({
   }
 })
 
-// Provide comparison city IDs to layout via injection
-provide('comparisonCityA', cityA)
-provide('comparisonCityB', cityB)
-provide('comparisonIsValid', isValid)
-provide('comparisonIsLoading', isLoading)
+// Layout reads useComparisonState() directly (layout is parent, can't inject from child)
 </script>
 
 <template>

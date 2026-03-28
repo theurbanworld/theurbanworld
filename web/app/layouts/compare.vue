@@ -10,10 +10,8 @@
 // Get dark mode state for maps
 const { isDarkMode } = useDarkMode()
 
-// Inject comparison city IDs from the page
-const cityA = inject<Ref<string | null>>('comparisonCityA', ref(null))
-const cityB = inject<Ref<string | null>>('comparisonCityB', ref(null))
-const isValid = inject<Ref<boolean>>('comparisonIsValid', ref(false))
+// Read comparison state directly (layout is parent of page, so inject won't work)
+const { cityA, cityB, isValid } = useComparisonState()
 
 // Mobile toggle state
 const activeMapSide = ref<'A' | 'B'>('A')
