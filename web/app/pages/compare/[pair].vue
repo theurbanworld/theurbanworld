@@ -72,9 +72,15 @@ provide('comparisonIsLoading', isLoading)
 
 <template>
   <div>
+    <!-- Comparison sidebar content (renders inside AppSidebar via layout slot) -->
+    <ComparisonPanel
+      v-if="isValid && cityA && cityB"
+      :city-id-a="cityA"
+      :city-id-b="cityB"
+    />
     <!-- Loading state while cities index loads -->
-    <div v-if="isLoading" class="flex items-center justify-center h-full">
-      <p class="text-body/50 dark:text-cream/50">Loading comparison...</p>
+    <div v-else-if="isLoading" class="flex items-center justify-center p-8">
+      <p class="text-body/50 dark:text-cream/50 text-sm">Loading comparison...</p>
     </div>
   </div>
 </template>
