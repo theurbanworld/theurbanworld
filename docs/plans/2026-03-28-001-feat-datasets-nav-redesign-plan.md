@@ -1,7 +1,7 @@
 ---
 title: "feat: Introduce dataset abstraction and navigation redesign"
 type: feat
-status: active
+status: completed
 date: 2026-03-28
 origin: docs/brainstorms/2026-03-28-datasets-nav-requirements.md
 ---
