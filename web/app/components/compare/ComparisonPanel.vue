@@ -66,17 +66,6 @@ const cityB = computed(() => getCity(props.cityIdB))
       :city-id-b="cityIdB"
     />
 
-    <!-- Radial profile overlay (will be extended in Unit 5) -->
-    <div class="flex flex-col gap-1">
-      <h3 class="text-xs font-medium text-body/70 dark:text-cream/70">
-        Radial Density Profile
-      </h3>
-      <RadialProfileChart
-        :city-id="cityIdA"
-        :city-ids="[cityIdA, cityIdB]"
-      />
-    </div>
-
     <!-- Population sparkline overlay -->
     <div class="flex flex-col gap-1">
       <h3 class="text-xs font-medium text-body/70 dark:text-cream/70">
@@ -110,6 +99,17 @@ const cityB = computed(() => getCity(props.cityIdB))
         :city-id="cityIdA"
         :city-ids="[cityIdA, cityIdB]"
         metric="area_km2"
+      />
+    </div>
+
+    <!-- Radial density profile overlay -->
+    <div class="flex flex-col gap-1">
+      <h3 class="text-xs font-medium text-body/70 dark:text-cream/70">
+        Radial Density Profile
+      </h3>
+      <RadialProfileChart
+        :city-id="cityIdA"
+        :city-ids="[cityIdA, cityIdB]"
       />
     </div>
   </div>

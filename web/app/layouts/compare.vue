@@ -33,7 +33,7 @@ function goToRankings() {
   <!-- Search strip: toggle left, search centered on page -->
   <div class="relative bg-parchment border-b border-forest-200/40 dark:border-forest-800/40">
     <!-- Cities toggle — sidebar width, left-aligned with border -->
-    <div class="absolute inset-y-0 left-0 w-80 flex items-center px-4 border-r border-forest-200/40 dark:border-forest-800/40">
+    <div class="absolute inset-y-0 left-0 w-96 flex items-center px-4 border-r border-forest-200/40 dark:border-forest-800/40">
       <UButton
         variant="ghost"
         color="neutral"
