@@ -4,16 +4,44 @@
 
 export default defineNuxtConfig({
   modules: [
+    '@nuxtjs/seo',
     '@nuxt/content',
     '@nuxt/eslint',
     '@nuxt/ui',
     '@nuxt/fonts',
-    '@nuxt/test-utils/module',
-    'nuxt-og-image'
+    '@nuxt/test-utils/module'
   ],
 
   site: {
-    url: 'https://theurban.world'
+    url: 'https://theurban.world',
+    name: 'The Urban World',
+    description: 'An observatory of urban complexity — telling the story of global urbanization through data.'
+  },
+
+  robots: {
+    blockAiBots: true
+  },
+
+  sitemap: {
+    sitemaps: {
+      pages: {
+        includeAppSources: true
+      },
+      cities: {
+        sources: ['/api/__sitemap__/cities'],
+        chunks: true
+      }
+    },
+    defaultSitemapsChunkSize: 1000,
+    cacheMaxAgeSeconds: 3600
+  },
+
+  schemaOrg: {
+    identity: {
+      type: 'Person',
+      name: 'Jonathan Pichot',
+      url: 'https://pichot.us'
+    }
   },
 
   components: [

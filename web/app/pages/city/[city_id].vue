@@ -4,9 +4,10 @@
  *
  * Route: /city/[city_id]
  *
- * Triggers data loading for city statistics (SSR-compatible via useAsyncData).
+ * Fetches lightweight city metadata server-side for SEO (meta tags,
+ * OG images, schema.org). Triggers full data loading client-side
+ * for the interactive map and sidebar.
  * Syncs route params with city selection state.
- * The sidebar and map are rendered in app.vue.
  */
 import { humanizeNumber } from '~/composables/useGlobalStats'
 
@@ -27,43 +28,94 @@ const cityId = computed(() => {
   return Array.isArray(id) ? id[0] : id
 })
 
-// Load data (SSR-compatible, deduped via useAsyncData keys)
+// SSR-compatible city metadata (lightweight, ~200 bytes)
+const { data: cityMeta } = await useAsyncData(
+  `city-meta-${cityId.value}`,
+  () => $fetch(`/api/city/${cityId.value}`)
+)
+
+// Load interactive data (client-only, deduped via useAsyncData keys)
 await Promise.all([
   loadCitiesIndex(),
   loadPopulations(),
   loadRadialProfiles()
 ])
 
-// City lookup for SEO
-const { getCity } = useCitiesIndex()
-const city = computed(() => cityId.value ? getCity(cityId.value) : undefined)
-
+// SEO meta tags — use SSR-compatible cityMeta
 useSeoMeta({
-  title: () => city.value
-    ? `${city.value.name}, ${city.value.country} — The Urban World`
+  title: () => cityMeta.value
+    ? `${cityMeta.value.name}, ${cityMeta.value.country} — The Urban World`
     : 'City — The Urban World',
-  description: () => city.value
-    ? `Urban density, population trends, and growth patterns for ${city.value.name}, ${city.value.country}.`
+  description: () => cityMeta.value
+    ? `Urban density, population trends, and growth patterns for ${cityMeta.value.name}, ${cityMeta.value.country}.`
     : 'Explore urban density, population, and growth patterns.'
 })
 
-// OG image with city outline, name, and stats (epoch 2025)
+// OG image — uses cityMeta (available during SSR) for name/country,
+// and client-only population data for stats (gracefully empty during SSR)
 const { getCityPopulationData } = useCityPopulations()
 const ogPopData = computed(() => cityId.value ? getCityPopulationData(cityId.value, 2025) : undefined)
 
 defineOgImage({
   component: 'City',
-  cityName: city.value?.name,
-  countryName: city.value?.country,
-  population: ogPopData.value ? humanizeNumber(ogPopData.value.population) : '',
-  density: ogPopData.value
+  cityName: computed(() => cityMeta.value?.name),
+  countryName: computed(() => cityMeta.value?.country),
+  population: computed(() => ogPopData.value ? humanizeNumber(ogPopData.value.population) : ''),
+  density: computed(() => ogPopData.value
     ? (ogPopData.value.density_per_km2 >= 1000
         ? `${Math.round(ogPopData.value.density_per_km2 / 100) / 10} K/km2`
         : `${Math.round(ogPopData.value.density_per_km2)}/km2`)
-    : '',
-  area: ogPopData.value ? `${Math.round(ogPopData.value.area_km2).toLocaleString()} km2` : '',
+    : ''),
+  area: computed(() => ogPopData.value ? `${Math.round(ogPopData.value.area_km2).toLocaleString()} km2` : ''),
   outlineUrl: `https://data.theurban.world/data/outlines/${cityId.value}.json`
 })
+
+// Schema.org structured data — City entity (SSR-compatible via cityMeta)
+const schemaOrgNodes = computed(() => {
+  if (!cityMeta.value) return []
+
+  const city = cityMeta.value
+  const node: Record<string, unknown> = {
+    '@type': 'City',
+    'name': city.name,
+    'url': `https://theurban.world/city/${city.id}`,
+    'containedInPlace': {
+      '@type': 'Country',
+      'name': city.country
+    },
+    'identifier': {
+      '@type': 'PropertyValue',
+      'propertyID': 'GHS-UCDB',
+      'value': city.id
+    }
+  }
+
+  if (city.centroid) {
+    node.geo = {
+      '@type': 'GeoCoordinates',
+      latitude: city.centroid[1],
+      longitude: city.centroid[0]
+    }
+  }
+
+  if (city.population) {
+    node.additionalProperty = [{
+      '@type': 'PropertyValue',
+      'name': 'population',
+      'value': city.population,
+      'unitText': 'people'
+    }]
+  }
+
+  // Wikidata sameAs (populated once pipeline adds wikidata_id)
+  if (city.wikidata_id) {
+    node.sameAs = [`https://www.wikidata.org/wiki/${city.wikidata_id}`]
+  }
+
+  return [node]
+})
+
+useSchemaOrg(schemaOrgNodes)
 
 // Sync route param to city selection state
 watchEffect(() => {
