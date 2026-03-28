@@ -50,6 +50,11 @@ export default defineNuxtConfig({
   routeRules: {},
 
   content: {
+    build: {
+      markdown: {
+        highlight: false
+      }
+    },
     database: {
       type: 'd1',
       bindingName: 'DB'
