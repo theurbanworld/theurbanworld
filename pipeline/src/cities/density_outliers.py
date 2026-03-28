@@ -12,21 +12,24 @@ Root cause: GHSL assigns population to ~1km grid cells using satellite-derived b
             resulting density can be 2-5x higher than the densest real cities (Dhaka,
             Manila at ~25-30K/km²).
 
-Approach: Two-tier filtering
-  - Tier 1 (tiny cities): Cities with fewer than TINY_CELL_COUNT cells are always
-    excluded — too few data points for any meaningful density estimate.
-  - Tier 2 (small + dense): Cities with fewer than SMALL_CELL_COUNT cells AND density
-    above MAX_DENSITY_PER_KM2 are excluded — small cities claiming to be denser than
-    the world's densest major cities are data artifacts, not real urban areas.
-  - A city is excluded if it triggers EITHER tier at ANY epoch.
+Approach: Median-based two-tier filtering
+  - Compute each city's MEDIAN density and MEDIAN cell count across all 12 epochs.
+    Using medians smooths out early-epoch noise (1975-1990 GHSL data is lower
+    resolution, so growing cities may appear artificially tiny/dense at early epochs).
+  - Tier 1 (tiny cities): Cities with median cell count below TINY_CELL_COUNT are
+    always excluded — persistently too few data points for any meaningful estimate.
+  - Tier 2 (small + dense): Cities with median cell count below SMALL_CELL_COUNT AND
+    median density above MAX_DENSITY_PER_KM2 are excluded — persistently small cities
+    with implausibly high density are data artifacts, not real urban areas.
 
 Thresholds:
   - TINY_CELL_COUNT = 5: ~3.7 km² for H3-R8, ~5 km² for grid-1km. Below this,
     the area is too small for any reliable city-level estimate.
   - SMALL_CELL_COUNT = 50: ~37 km² for H3-R8, ~50 km² for grid-1km. Below this,
     density estimates are unreliable if they exceed the physical limits of real cities.
-  - MAX_DENSITY_PER_KM2 = 25,000: The densest real UCDB cities (Mumbai, Dhaka, Manila)
-    reach ~25-28K/km². Small cities above this threshold are data artifacts.
+  - MAX_DENSITY_PER_KM2 = 20,000: The densest real UCDB cities (Mumbai, Dhaka, Manila)
+    reach ~25-28K/km² but have hundreds of cells. Small cities with median density
+    above 20K are data artifacts.
 
 Usage:
   # As a library (in compute_rankings, web_export)
@@ -63,10 +66,10 @@ TINY_CELL_COUNT = 5
 # H3-R8: 50 cells ≈ 37 km². Grid-1km: 50 cells = 50 km².
 SMALL_CELL_COUNT = 50
 
-# Maximum plausible density (people/km²) for small cities.
+# Maximum plausible median density (people/km²) for small cities.
 # Major cities like Mumbai (~28K), Dhaka (~25K) are preserved because they have
-# hundreds of cells. Small cities above this are data artifacts.
-MAX_DENSITY_PER_KM2 = 25_000
+# hundreds of cells. Small cities with median density above this are artifacts.
+MAX_DENSITY_PER_KM2 = 20_000
 
 # Report output path
 REPORT_PATH = Path("data/processed/cities/density_outliers_report.json")
@@ -84,11 +87,16 @@ def identify_outlier_city_ids(
     max_density: float = MAX_DENSITY_PER_KM2,
 ) -> set[str]:
     """
-    Identify city_ids that are density outliers at ANY epoch.
+    Identify city_ids that are density outliers based on median values across epochs.
 
-    Two-tier filter — a city is flagged if, at any epoch:
-      - Tier 1: cell_count < tiny_cell_count (always exclude), OR
-      - Tier 2: cell_count < small_cell_count AND density_per_km2 > max_density
+    Computes each city's median density and median cell count across all epochs,
+    then applies the two-tier filter to these stable summaries. This avoids
+    false positives from early-epoch noise (e.g. cities that were tiny in 1975
+    but grew into legitimate cities by 2025).
+
+    Two-tier filter on medians:
+      - Tier 1: median_cells < tiny_cell_count (always exclude), OR
+      - Tier 2: median_cells < small_cell_count AND median_density > max_density
 
     Args:
         df: Population DataFrame with city_id, epoch, cell_count, density_per_km2
@@ -99,14 +107,18 @@ def identify_outlier_city_ids(
     Returns:
         Set of city_ids to exclude
     """
-    outliers = df.filter(
-        (pl.col("cell_count") < tiny_cell_count)
+    city_medians = df.group_by("city_id").agg(
+        pl.col("density_per_km2").median().alias("median_density"),
+        pl.col("cell_count").median().alias("median_cells"),
+    )
+    outliers = city_medians.filter(
+        (pl.col("median_cells") < tiny_cell_count)
         | (
-            (pl.col("cell_count") < small_cell_count)
-            & (pl.col("density_per_km2") > max_density)
+            (pl.col("median_cells") < small_cell_count)
+            & (pl.col("median_density") > max_density)
         )
     )
-    return set(outliers["city_id"].unique().to_list())
+    return set(outliers["city_id"].to_list())
 
 
 def filter_density_outliers(
@@ -119,7 +131,7 @@ def filter_density_outliers(
     """
     Remove density outlier cities from a population DataFrame.
 
-    Removes all epochs for a city if ANY epoch triggers the outlier criteria.
+    Removes all epochs for a city if its median values trigger the outlier criteria.
     This prevents partial time series and ensures consistent city sets across epochs.
 
     Args:
@@ -167,6 +179,20 @@ def build_outlier_report(
     """Build a structured report of excluded cities."""
     outlier_ids = identify_outlier_city_ids(pop, tiny_cell_count, small_cell_count, max_density)
 
+    # Compute medians for outlier cities (used for reason classification)
+    city_medians = (
+        pop.filter(pl.col("city_id").is_in(outlier_ids))
+        .group_by("city_id")
+        .agg(
+            pl.col("density_per_km2").median().alias("median_density"),
+            pl.col("cell_count").median().alias("median_cells"),
+        )
+    )
+    median_map = {
+        row["city_id"]: (row["median_density"], row["median_cells"])
+        for row in city_medians.to_dicts()
+    }
+
     excluded_cities = []
     for row in (
         pop.filter(pl.col("city_id").is_in(outlier_ids) & (pl.col("epoch") == 2025))
@@ -174,10 +200,11 @@ def build_outlier_report(
         .to_dicts()
     ):
         cid = row["city_id"]
+        med_density, med_cells = median_map.get(cid, (0, 0))
         reasons = []
-        if row["cell_count"] < tiny_cell_count:
+        if med_cells < tiny_cell_count:
             reasons.append("tiny_city")
-        elif row["cell_count"] < small_cell_count and row["density_per_km2"] > max_density:
+        elif med_cells < small_cell_count and med_density > max_density:
             reasons.append("small_city_high_density")
 
         excluded_cities.append({
@@ -185,15 +212,18 @@ def build_outlier_report(
             "name": name_map.get(cid),
             "country": country_map.get(cid),
             "density_per_km2": round(row["density_per_km2"], 1),
+            "median_density": round(med_density, 1),
             "population": round(row["population"]),
             "area_km2": round(row["area_km2"], 1),
             "cell_count": row["cell_count"],
+            "median_cells": round(med_cells),
             "reasons": reasons,
         })
 
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "source": source,
+        "method": "median-based two-tier filter",
         "thresholds": {
             "tiny_cell_count": tiny_cell_count,
             "small_cell_count": small_cell_count,
@@ -255,14 +285,28 @@ def analyze_outliers(
         print("\nNo outliers found with current thresholds.")
         return
 
+    # Compute medians for display
+    city_medians = (
+        pop.filter(pl.col("city_id").is_in(outlier_ids))
+        .group_by("city_id")
+        .agg(
+            pl.col("density_per_km2").median().alias("median_density"),
+            pl.col("cell_count").median().alias("median_cells"),
+        )
+    )
+    median_map = {
+        row["city_id"]: (row["median_density"], row["median_cells"])
+        for row in city_medians.to_dicts()
+    }
+
     # Detail each outlier
     print(f"\n{'='*90}")
-    print(f"DENSITY OUTLIERS: {len(outlier_ids)} cities")
+    print(f"DENSITY OUTLIERS: {len(outlier_ids)} cities (median-based filter)")
     print(f"Thresholds: tiny_cells={tiny_cell_count}, small_cells={small_cell_count}, "
           f"max_density={max_density:,}/km²")
     print(f"{'='*90}")
 
-    # Get 2025 data for outlier cities, sorted by density
+    # Get 2025 data for outlier cities, sorted by median density
     outlier_data = (
         pop.filter(
             pl.col("city_id").is_in(outlier_ids) & (pl.col("epoch") == 2025)
@@ -270,47 +314,43 @@ def analyze_outliers(
         .sort("density_per_km2", descending=True)
     )
 
-    print(f"\n{'City ID':>8}  {'Name':30} {'Country':20} {'Density':>10} {'Pop':>12} "
-          f"{'Area km²':>8} {'Cells':>5}  Reason")
-    print("-" * 120)
+    print(f"\n{'City ID':>8}  {'Name':30} {'Country':20} {'Med Density':>11} {'Med Cells':>9} "
+          f"{'Pop 2025':>12} {'Cells 2025':>10}  Reason")
+    print("-" * 130)
 
     for row in outlier_data.to_dicts():
         cid = row["city_id"]
         name = name_map.get(cid, "???")
         country = country_map.get(cid, "???")
-        density = row["density_per_km2"]
+        med_density, med_cells = median_map.get(cid, (0, 0))
         pop_val = row["population"]
-        area = row["area_km2"]
         cells = row["cell_count"]
 
         reasons = []
-        if cells < tiny_cell_count:
-            reasons.append(f"tiny (cells={cells} < {tiny_cell_count})")
-        elif cells < small_cell_count and density > max_density:
-            reasons.append(f"small+dense (cells={cells}, density={density:,.0f})")
+        if med_cells < tiny_cell_count:
+            reasons.append(f"tiny (median_cells={med_cells:.0f})")
+        elif med_cells < small_cell_count and med_density > max_density:
+            reasons.append(f"small+dense (med_cells={med_cells:.0f}, med_density={med_density:,.0f})")
 
-        print(f"{cid:>8}  {name[:30]:30} {country[:20]:20} {density:10,.0f} "
-              f"{pop_val:12,.0f} {area:8.1f} {cells:5}  {'; '.join(reasons)}")
+        print(f"{cid:>8}  {name[:30]:30} {country[:20]:20} {med_density:11,.0f} {med_cells:9.0f} "
+              f"{pop_val:12,.0f} {cells:10}  {'; '.join(reasons)}")
 
     # Summary statistics
     print(f"\n{'='*90}")
     print("SUMMARY")
     print(f"{'='*90}")
 
-    epoch_2025 = pop.filter(
-        pl.col("city_id").is_in(outlier_ids) & (pl.col("epoch") == 2025)
-    )
-    tiny_cities = epoch_2025.filter(pl.col("cell_count") < tiny_cell_count)
-    small_dense = epoch_2025.filter(
-        (pl.col("cell_count") >= tiny_cell_count)
-        & (pl.col("cell_count") < small_cell_count)
-        & (pl.col("density_per_km2") > max_density)
+    tiny_cities = city_medians.filter(pl.col("median_cells") < tiny_cell_count)
+    small_dense = city_medians.filter(
+        (pl.col("median_cells") >= tiny_cell_count)
+        & (pl.col("median_cells") < small_cell_count)
+        & (pl.col("median_density") > max_density)
     )
 
-    print(f"  Tier 1 — tiny cities (cells < {tiny_cell_count}): "
-          f"{tiny_cities['city_id'].n_unique()}")
-    print(f"  Tier 2 — small + dense (cells < {small_cell_count} & density > {max_density:,}): "
-          f"{small_dense['city_id'].n_unique()}")
+    print(f"  Tier 1 — tiny cities (median cells < {tiny_cell_count}): "
+          f"{tiny_cities.height}")
+    print(f"  Tier 2 — small + dense (median cells < {small_cell_count} & median density > {max_density:,}): "
+          f"{small_dense.height}")
     print(f"  Total unique cities removed: {len(outlier_ids)}")
 
     # Show what the top density rankings look like after filtering

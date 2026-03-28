@@ -79,9 +79,9 @@ from rankings and web exports (but preserved in raw `city_populations` parquet f
 
 **Module**: `src/cities/density_outliers.py`
 
-**Criteria** (two-tier filter, a city is excluded if ANY epoch triggers either):
-- Tier 1: `cell_count < 5` — tiny cities always excluded (~3.7 km² for H3-R8)
-- Tier 2: `cell_count < 50 AND density_per_km2 > 25,000` — small cities with implausibly high density
+**Criteria** (median-based two-tier filter — uses median values across all 12 epochs):
+- Tier 1: `median_cells < 5` — persistently tiny cities always excluded (~3.7 km² for H3-R8)
+- Tier 2: `median_cells < 50 AND median_density > 20,000` — persistently small cities with implausibly high density
 
 **Where applied**:
 - `compute_rankings` — outliers excluded before computing all rankings
