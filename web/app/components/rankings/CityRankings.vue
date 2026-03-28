@@ -7,10 +7,10 @@
  */
 
 import type { YearEpoch } from '../../../types/h3'
-import { formatCompactNumber, formatDensity, formatArea, formatGrowthRate } from '~/utils/formatNumber'
+import { formatCompactNumber, formatDensity, formatArea, formatGrowthRate, formatGrowthAbs } from '~/utils/formatNumber'
 import { toAnnualRate, YEAR_EPOCHS } from '~/composables/useGlobalStats'
 
-const { activeStat, countryFilter, sortDirection } = useRankingFilters()
+const { activeStat, growthMode, countryFilter, sortDirection } = useRankingFilters()
 const { selectedYear } = useSelectedYear()
 const { allCities } = useCitiesIndex()
 const { getCityPopulationData } = useCityPopulations()
@@ -24,7 +24,8 @@ interface RankedCity {
   population: number
   density: number
   area: number
-  growth: number | null
+  growthRate: number | null
+  growthAbs: number | null
 }
 
 const rankedCities = computed<RankedCity[]>(() => {
@@ -38,12 +39,14 @@ const rankedCities = computed<RankedCity[]>(() => {
     if (!popData) continue
     if (countryFilter.value && city.country !== countryFilter.value) continue
 
-    let growth: number | null = null
+    let growthRate: number | null = null
+    let growthAbs: number | null = null
     if (prevYear !== null) {
       const prevData = getCityPopulationData(city.id, prevYear)
       if (prevData && prevData.population > 0) {
         const fiveYearRate = ((popData.population - prevData.population) / prevData.population) * 100
-        growth = toAnnualRate(fiveYearRate)
+        growthRate = toAnnualRate(fiveYearRate)
+        growthAbs = popData.population - prevData.population
       }
     }
 
@@ -54,18 +57,20 @@ const rankedCities = computed<RankedCity[]>(() => {
       population: popData.population,
       density: popData.density_per_km2,
       area: popData.area_km2,
-      growth
+      growthRate,
+      growthAbs
     })
   }
 
   const asc = sortDirection.value === 'asc'
 
   if (activeStat.value === 'growth') {
+    const field = growthMode.value === 'rate' ? 'growthRate' as const : 'growthAbs' as const
     cities.sort((a, b) => {
-      if (a.growth === null && b.growth === null) return 0
-      if (a.growth === null) return 1
-      if (b.growth === null) return -1
-      return asc ? a.growth - b.growth : b.growth - a.growth
+      if (a[field] === null && b[field] === null) return 0
+      if (a[field] === null) return 1
+      if (b[field] === null) return -1
+      return asc ? a[field]! - b[field]! : b[field]! - a[field]!
     })
   } else {
     const stat = activeStat.value
@@ -78,11 +83,10 @@ const rankedCities = computed<RankedCity[]>(() => {
 const maxValue = computed(() => {
   if (!rankedCities.value.length) return 1
   if (activeStat.value === 'growth') {
+    const field = growthMode.value === 'rate' ? 'growthRate' as const : 'growthAbs' as const
     let max = 0
     for (const city of rankedCities.value) {
-      if (city.growth !== null) {
-        max = Math.max(max, Math.abs(city.growth))
-      }
+      if (city[field] !== null) max = Math.max(max, Math.abs(city[field]))
     }
     return max || 1
   }
@@ -106,30 +110,40 @@ function formatValue(city: RankedCity): string {
   switch (activeStat.value) {
     case 'density': return formatDensity(city.density)
     case 'area': return formatArea(city.area)
-    case 'growth': return formatGrowthRate(city.growth)
+    case 'growth':
+      return growthMode.value === 'rate'
+        ? formatGrowthRate(city.growthRate)
+        : formatGrowthAbs(city.growthAbs)
     default: return formatCompactNumber(city.population)
   }
 }
 
+function growthValue(city: RankedCity): number | null {
+  return growthMode.value === 'rate' ? city.growthRate : city.growthAbs
+}
+
 function barPercent(city: RankedCity): string {
   if (activeStat.value === 'growth') {
-    if (city.growth === null) return '0%'
-    return `${(Math.abs(city.growth) / maxValue.value) * 50}%`
+    const v = growthValue(city)
+    if (v === null) return '0%'
+    return `${(Math.abs(v) / maxValue.value) * 50}%`
   }
   return `${(city[activeStat.value] / maxValue.value) * 100}%`
 }
 
 function growthBarStyle(city: RankedCity): Record<string, string> {
   const width = barPercent(city)
-  if (city.growth !== null && city.growth < 0) {
+  const v = growthValue(city)
+  if (v !== null && v < 0) {
     return { width, right: '50%' }
   }
   return { width, left: '50%' }
 }
 
 function growthBarColorClass(city: RankedCity): string {
-  if (city.growth === null) return ''
-  return city.growth >= 0
+  const v = growthValue(city)
+  if (v === null) return ''
+  return v >= 0
     ? 'bg-emerald-200/60 dark:bg-emerald-800/30'
     : 'bg-amber-200/60 dark:bg-amber-800/30'
 }
@@ -142,8 +156,8 @@ function selectCity(id: string) {
   navigateTo(`/city/${id}`)
 }
 
-// Reset display count when filter or stat changes
-watch([activeStat, countryFilter, sortDirection], () => {
+// Reset display count when filter, stat, or growth mode changes
+watch([activeStat, growthMode, countryFilter, sortDirection], () => {
   displayCount.value = 100
 })
 </script>
