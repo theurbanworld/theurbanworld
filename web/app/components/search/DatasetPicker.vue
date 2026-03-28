@@ -31,7 +31,6 @@ function viewDatasetInfo(contentPath: string) {
              transition-colors cursor-pointer"
     >
       {{ activeDatasetLabel }}
-      <UIcon name="i-lucide-chevron-down" class="w-3.5 h-3.5" />
     </button>
 
     <template #body>
