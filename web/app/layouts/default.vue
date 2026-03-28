@@ -36,13 +36,10 @@ function handleCityClose() {
 <template>
   <!-- Full-width search strip -->
   <div class="flex items-stretch bg-parchment">
-    <!-- Stat toggle — same width as sidebar, full-height right border -->
     <StatToggle />
-    <!-- Search — centered in remaining space -->
     <div class="flex-1 flex justify-center px-5 py-2.5 border-b border-ink-200/40 dark:border-ink-800/40">
       <CitySearch class="w-full max-w-sm" />
     </div>
-    <!-- Dataset + epoch + eyebrow toggle — right -->
     <div class="flex items-center justify-end gap-3 px-4 shrink-0 border-b border-ink-200/40 dark:border-ink-800/40">
       <DatasetPicker />
       <button
@@ -67,7 +64,6 @@ function handleCityClose() {
     </div>
   </div>
 
-  <!-- 2-column layout: sidebar | map -->
   <div class="flex flex-1 min-h-0 overflow-hidden">
     <AppSidebar :open="mobileSidebarOpen">
       <template #header>
