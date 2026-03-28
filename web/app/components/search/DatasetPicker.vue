@@ -25,12 +25,14 @@ function viewDatasetInfo(contentPath: string) {
 <template>
   <UModal v-model:open="isOpen" title="Choose a dataset" description="Each dataset offers a different view of global urbanization.">
     <button
-      class="flex items-center gap-1 text-sm font-medium
-             text-body/70 dark:text-cream/70
-             hover:text-forest-700 dark:hover:text-forest-300
+      class="flex items-center gap-1.5 py-1 px-2 rounded-md
+             hover:bg-forest-100/50 dark:hover:bg-forest-900/30
              transition-colors cursor-pointer"
     >
-      {{ activeDatasetLabel }}
+      <span class="text-xs text-body/50 dark:text-cream/50">Dataset</span>
+      <span class="text-sm font-medium text-body/70 dark:text-cream/70">
+        {{ activeDatasetLabel }}
+      </span>
     </button>
 
     <template #body>
