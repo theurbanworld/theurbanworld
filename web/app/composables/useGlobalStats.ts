@@ -81,28 +81,51 @@ export function toAnnualRate(fiveYearPercent: number): number {
 
 /**
  * World population by epoch year
- * Source: GHSL Table 20 - UN WPP 2022 calibrated (from pipeline WORLD_POPULATION constant)
+ * Source: UN World Population Prospects via World Bank (indicator SP.POP.TOTL)
+ * 1975-2024 estimates; 2025-2030 medium-variant projections (WPP 2024 revision)
  */
 const WORLD_POPULATION: Record<YearEpoch, number> = {
-  1975: 4069437259,
-  1980: 4444007748,
-  1985: 4861730652,
-  1990: 5316175909,
-  1995: 5743219510,
-  2000: 6148899024,
-  2005: 6558176175,
-  2010: 6985603172,
-  2015: 7426597609,
-  2020: 7840952947,
-  2025: 8191988536,
-  2030: 8546141407
+  1975: 4062070771,
+  1980: 4437602892,
+  1985: 4850740788,
+  1990: 5299246757,
+  1995: 5736505517,
+  2000: 6161884811,
+  2005: 6575841506,
+  2010: 7001266876,
+  2015: 7441677465,
+  2020: 7854748424,
+  2025: 8210571822,
+  2030: 8546472348
 }
 
 /**
- * Urban population by epoch year
- * Source: Aggregated from city_populations.parquet
+ * UN official urban population by epoch year
+ * Source: UN World Urbanization Prospects via World Bank (indicator SP.URB.TOTL)
+ * Uses national statistical definitions of "urban" — higher than satellite-derived totals
+ * 1975-2020 from World Bank; 2025/2030 interpolated from UN WUP 2025 medium-variant
  */
-const URBAN_POPULATION: Record<YearEpoch, number> = {
+const UN_URBAN_POPULATION: Record<YearEpoch, number> = {
+  1975: 1531287659,
+  1980: 1751930824,
+  1985: 2007728628,
+  1990: 2269739806,
+  1995: 2541965823,
+  2000: 2886168967,
+  2005: 3245690391,
+  2010: 3623784825,
+  2015: 4050109267,
+  2020: 4378993944,
+  2025: 4693031052,
+  2030: 5028207672
+}
+
+/**
+ * Dataset urban population by epoch year
+ * Source: Aggregated from city_populations.parquet (satellite-derived city boundaries)
+ * Represents the urban population we can see and measure — a subset of the UN total
+ */
+const DATASET_URBAN_POPULATION: Record<YearEpoch, number> = {
   1975: 1178323105,
   1980: 1346953243,
   1985: 1532907872,
@@ -197,77 +220,67 @@ export function useGlobalStats() {
     return toAnnualRate(fiveYearRate)
   })
 
-  /**
-   * Raw urban population for selected year
-   */
+  // --- UN official urban population ---
+
   const urbanPopulationRaw = computed(() => {
-    return URBAN_POPULATION[selectedYear.value]
+    return UN_URBAN_POPULATION[selectedYear.value]
   })
 
-  /**
-   * Humanized urban population for display
-   */
   const urbanPopulation = computed(() => {
     return humanizeNumber(urbanPopulationRaw.value)
   })
 
-  /**
-   * Annualized growth rate from previous epoch for urban population
-   * Returns null if no previous epoch exists (at 1975)
-   */
   const urbanPopulationTrendPrevious = computed((): number | null => {
     const currentIndex = YEAR_EPOCHS.indexOf(selectedYear.value)
     if (currentIndex <= 0) return null
     const prevYear = YEAR_EPOCHS[currentIndex - 1]!
-    const prevValue = URBAN_POPULATION[prevYear]
-    const currValue = URBAN_POPULATION[selectedYear.value]
+    const prevValue = UN_URBAN_POPULATION[prevYear]
+    const currValue = UN_URBAN_POPULATION[selectedYear.value]
     const fiveYearRate = ((currValue - prevValue) / prevValue) * 100
     return toAnnualRate(fiveYearRate)
   })
 
-  /**
-   * Annualized growth rate to next epoch for urban population
-   * Returns null if no next epoch exists (at 2030)
-   */
   const urbanPopulationTrendNext = computed((): number | null => {
     const currentIndex = YEAR_EPOCHS.indexOf(selectedYear.value)
     if (currentIndex >= YEAR_EPOCHS.length - 1) return null
     const nextYear = YEAR_EPOCHS[currentIndex + 1]!
-    const nextValue = URBAN_POPULATION[nextYear]
-    const currValue = URBAN_POPULATION[selectedYear.value]
+    const nextValue = UN_URBAN_POPULATION[nextYear]
+    const currValue = UN_URBAN_POPULATION[selectedYear.value]
     const fiveYearRate = ((nextValue - currValue) / currValue) * 100
     return toAnnualRate(fiveYearRate)
   })
 
-  /**
-   * Urban population as percentage of world population
-   */
   const urbanPercentageOfWorld = computed((): number => {
     return calculatePercentage(urbanPopulationRaw.value, worldPopulationRaw.value)
   })
 
+  // --- Dataset urban population (our measured coverage) ---
+
+  const datasetUrbanPopulationRaw = computed(() => {
+    return DATASET_URBAN_POPULATION[selectedYear.value]
+  })
+
+  const datasetUrbanPopulation = computed(() => {
+    return humanizeNumber(datasetUrbanPopulationRaw.value)
+  })
+
   return {
-    /** Raw world population value */
+    // World population
     worldPopulationRaw,
-    /** Humanized world population string (e.g., "8.2 billion") */
     worldPopulation,
-    /** Annualized growth rate from previous epoch for world population (null at 1975) */
     worldPopulationTrendPrevious,
-    /** Annualized growth rate to next epoch for world population (null at 2030) */
     worldPopulationTrendNext,
-    /** Raw urban population value */
+    // UN official urban population (headline number)
     urbanPopulationRaw,
-    /** Humanized urban population string (e.g., "3.6 billion") */
     urbanPopulation,
-    /** Annualized growth rate from previous epoch for urban population (null at 1975) */
     urbanPopulationTrendPrevious,
-    /** Annualized growth rate to next epoch for urban population (null at 2030) */
     urbanPopulationTrendNext,
-    /** Urban population as percentage of world population */
     urbanPercentageOfWorld,
-    /** Helper function to humanize numbers */
+    // Dataset urban population (our measured coverage)
+    datasetUrbanPopulationRaw,
+    datasetUrbanPopulation,
+    // Utilities
     humanizeNumber,
-    /** Helper function to format exact numbers */
     formatExactNumber
   }
 }

@@ -1,25 +1,18 @@
 <script setup lang="ts">
 /**
- * RankingFilters - Stat toggle and country filter for rankings
+ * RankingFilters - Country filter, city count, and sort toggle for rankings
  *
  * Rendered in the sidebar header (non-scrollable section).
- * Shares state with CityRankings via useRankingFilters composable.
+ * The stat toggle buttons (Population/Density/Area/Growth) live in the
+ * StatToggle component in the search strip, not here.
  */
 
 import type { YearEpoch } from '../../../types/h3'
-import type { RankingStat } from '~/composables/useRankingFilters'
 
-const { activeStat, countryFilter, sortDirection } = useRankingFilters()
+const { countryFilter, sortDirection } = useRankingFilters()
 const { selectedYear } = useSelectedYear()
 const { allCities } = useCitiesIndex()
 const { getCityPopulationData } = useCityPopulations()
-
-const stats: { key: RankingStat; label: string }[] = [
-  { key: 'population', label: 'Population' },
-  { key: 'density', label: 'Density' },
-  { key: 'area', label: 'Area' },
-  { key: 'growth', label: 'Growth' }
-]
 
 // Unique countries sorted
 const countries = computed(() => {
@@ -42,21 +35,6 @@ const cityCount = computed(() => {
 
 <template>
   <div class="px-4 py-3 border-b border-ink-200/40 dark:border-ink-800/40">
-    <!-- Stat toggle -->
-    <div class="flex gap-1 mb-3">
-      <button
-        v-for="stat in stats"
-        :key="stat.key"
-        class="flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer"
-        :class="activeStat === stat.key
-          ? 'bg-ink-700 text-white dark:bg-ink-400 dark:text-ink-950'
-          : 'text-body/70 dark:text-cream/70 hover:bg-ink-100/50 dark:hover:bg-ink-900/30'"
-        @click="activeStat = stat.key"
-      >
-        {{ stat.label }}
-      </button>
-    </div>
-
     <!-- Country filter -->
     <select
       v-model="countryFilter"

@@ -2,6 +2,7 @@
 title: "Bertaud Radial Density Profiles"
 modalTitle: "Radial Density Profile"
 parentPage: "/methodology"
+dataset: "urban-world-v1"
 ---
 
 # Radial Density Profiles

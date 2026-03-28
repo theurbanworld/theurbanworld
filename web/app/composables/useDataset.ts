@@ -1,0 +1,127 @@
+/**
+ * Dataset selection state management
+ *
+ * Provides the primary API for selecting and querying the active dataset.
+ * Wraps useDataSource internally — existing consumers of useDataSource
+ * (useMap, useCityPopulations) continue to work unchanged.
+ */
+
+import { YEAR_EPOCHS } from '../../types/h3'
+import type { Dataset, DatasetFeature } from '../../types/dataset'
+
+export const DATASETS: Dataset[] = [
+  {
+    id: 'urban-world-v1',
+    name: 'Urban World',
+    version: 'v1',
+    description: 'Curated dataset using H3 hexagonal grids with density outlier filtering and radial profiles. Our improved subset of GHSL for analysis and storytelling.',
+    dataSource: 'h3-r8',
+    slug: 'h3_r8',
+    features: ['radialProfiles', 'h3Overlay'],
+    contentPath: '/data/urban-world-v1',
+    epochs: YEAR_EPOCHS
+  },
+  {
+    id: 'ghsl-r2024',
+    name: 'GHSL',
+    version: 'R2024',
+    description: 'Raw Global Human Settlement Layer on its native 1 km grid. Explore the full dataset as published by the EU Joint Research Centre, including outliers.',
+    dataSource: 'grid-1km',
+    slug: 'grid_1km',
+    features: [],
+    contentPath: '/data/ghsl-r2024',
+    epochs: YEAR_EPOCHS
+  }
+]
+
+const DEFAULT_DATASET_ID = 'urban-world-v1'
+
+// Singleton reactive state
+const activeDatasetId = ref<string>(DEFAULT_DATASET_ID)
+
+export function useDataset() {
+  const { setDataSource } = useDataSource()
+
+  /** The full config object for the active dataset */
+  const activeDataset = computed(() => {
+    return DATASETS.find(d => d.id === activeDatasetId.value)!
+  })
+
+  /** Display label: "Name Version" (e.g. "Urban World v1") */
+  const activeDatasetLabel = computed(() => {
+    const d = activeDataset.value
+    return `${d.name} ${d.version}`
+  })
+
+  /**
+   * Switch to a different dataset by ID.
+   * Ignores unknown IDs. Preserves city selection when possible —
+   * after population data reloads, falls back to rankings if the
+   * current city doesn't exist in the new dataset.
+   */
+  function setDataset(id: string) {
+    const dataset = DATASETS.find(d => d.id === id)
+    if (!dataset) return
+
+    const previousId = activeDatasetId.value
+    if (id === previousId) return
+
+    activeDatasetId.value = id
+    setDataSource(dataset.dataSource)
+
+    // Defensive epoch reset: snap to nearest available if needed
+    const { selectedYear, setYear } = useSelectedYear()
+    if (!dataset.epochs.includes(selectedYear.value)) {
+      const nearest = dataset.epochs.reduce((prev, curr) =>
+        Math.abs(curr - selectedYear.value) < Math.abs(prev - selectedYear.value) ? curr : prev
+      )
+      setYear(nearest)
+    }
+
+    // City preservation: after population data reloads, check if city still exists
+    const { selectedCityId, clearSelection } = useCitySelection()
+    if (selectedCityId.value) {
+      const cityId = selectedCityId.value
+      const { status, hasCity } = useCityPopulations()
+
+      const unwatch = watch(status, (newStatus) => {
+        if (newStatus === 'success') {
+          unwatch()
+          if (!hasCity(cityId)) {
+            clearSelection()
+            navigateTo('/')
+          }
+        }
+      })
+    }
+  }
+
+  /**
+   * Check if the active dataset supports a given feature
+   */
+  function hasFeature(feature: DatasetFeature): boolean {
+    return activeDataset.value.features.includes(feature)
+  }
+
+  /** Reactive computed version of hasFeature for template use */
+  const hasFeatureComputed = (feature: DatasetFeature) => {
+    return computed(() => activeDataset.value.features.includes(feature))
+  }
+
+  return {
+    /** Active dataset ID (readonly) */
+    activeDatasetId: readonly(activeDatasetId),
+    /** Full config for the active dataset */
+    activeDataset,
+    /** Display label for the active dataset */
+    activeDatasetLabel,
+    /** All available datasets */
+    datasets: DATASETS,
+    /** Switch to a dataset by ID */
+    setDataset,
+    /** Check if active dataset supports a feature (imperative) */
+    hasFeature,
+    /** Check if active dataset supports a feature (reactive computed) */
+    hasFeatureComputed
+  }
+}

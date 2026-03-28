@@ -24,7 +24,7 @@ describe('useGlobalStats', () => {
 
     const { worldPopulation, worldPopulationRaw } = useGlobalStats()
 
-    expect(worldPopulationRaw.value).toBe(8191988536)
+    expect(worldPopulationRaw.value).toBe(8210571822)
     expect(worldPopulation.value).toBe('8.2 billion')
   })
 
@@ -34,8 +34,9 @@ describe('useGlobalStats', () => {
 
     const { urbanPopulation, urbanPopulationRaw } = useGlobalStats()
 
-    expect(urbanPopulationRaw.value).toBe(3569570193)
-    expect(urbanPopulation.value).toBe('3.6 billion')
+    // UN official urban population (not dataset coverage)
+    expect(urbanPopulationRaw.value).toBe(4693031052)
+    expect(urbanPopulation.value).toBe('4.7 billion')
   })
 
   it('updates population values when epoch changes', () => {
@@ -46,14 +47,14 @@ describe('useGlobalStats', () => {
 
     const { worldPopulationRaw, urbanPopulationRaw } = useGlobalStats()
 
-    expect(worldPopulationRaw.value).toBe(4069437259)
-    expect(urbanPopulationRaw.value).toBe(1178323105)
+    expect(worldPopulationRaw.value).toBe(4062070771)
+    expect(urbanPopulationRaw.value).toBe(1531287659) // UN urban pop at 1975
 
     // Change to 2030
     setYear(2030)
 
-    expect(worldPopulationRaw.value).toBe(8546141407)
-    expect(urbanPopulationRaw.value).toBe(3759831609)
+    expect(worldPopulationRaw.value).toBe(8546472348)
+    expect(urbanPopulationRaw.value).toBe(5028207672) // UN urban pop at 2030
   })
 
   it('humanizes numbers correctly', () => {
@@ -70,8 +71,8 @@ describe('useGlobalStats', () => {
 
     const { urbanPopulationTrendPrevious } = useGlobalStats()
 
-    // 2020->2025: 5-year rate ~6.55% → annualized ~1.28%
-    expect(urbanPopulationTrendPrevious.value).toBeCloseTo(1.28, 1)
+    // UN urban: 2020->2025: 5-year rate ~7.17% → annualized ~1.39%
+    expect(urbanPopulationTrendPrevious.value).toBeCloseTo(1.39, 1)
   })
 
   it('calculates annualized world population trend from previous epoch', () => {
@@ -106,8 +107,8 @@ describe('useGlobalStats', () => {
 
     const { urbanPercentageOfWorld } = useGlobalStats()
 
-    // 3569570193 / 8191988536 * 100 ≈ 43.6%
-    expect(urbanPercentageOfWorld.value).toBeCloseTo(43.6, 1)
+    // UN urban: 4693031052 / 8210571822 * 100 ≈ 57.2%
+    expect(urbanPercentageOfWorld.value).toBeCloseTo(57.2, 1)
   })
 })
 

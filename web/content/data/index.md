@@ -2,18 +2,22 @@
 title: Data
 ---
 
-# Data Sources
+# Datasets
 
-The Urban World draws on satellite-derived, globally consistent datasets to measure urbanization. This page describes each data source, how we process it, and what it measures.
+The Urban World provides two datasets for exploring global urbanization. Each dataset uses a different spatial representation and level of curation.
+
+## Available datasets
+
+- **[Urban World v1](/data/urban-world-v1)** — a curated dataset using H3 hexagonal grids with outlier filtering and radial density profiles
+- **[GHSL R2024](/data/ghsl-r2024)** — the raw Global Human Settlement Layer on its native 1 km grid, presented without filtering
 
 ## Pipeline overview
 
-Raw raster data is downloaded, reprojected, and aggregated into two canonical datasets:
-
-- **GHSL Grid 1 km** — population and built-up area on a regular 1 km Mollweide grid
-- **GHSL H3 Resolution 8** — the same variables reaggregated onto Uber's H3 hexagonal grid
-
-Both datasets cover seven epochs: 1975, 1980, 1990, 2000, 2005, 2010, 2015, 2020, 2025, and 2030.
+Raw raster data is downloaded from the GHSL, reprojected, and aggregated into these datasets:
 
 ::pipeline-diagram
 ::
+
+## Source data
+
+Both datasets are derived from the [Global Human Settlement Layer (GHSL)](/data/source-ghsl) produced by the European Commission's Joint Research Centre.

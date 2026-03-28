@@ -11,7 +11,8 @@ export default defineContentConfig({
       type: 'page',
       schema: z.object({
         modalTitle: z.string().optional(),
-        parentPage: z.string().optional()
+        parentPage: z.string().optional(),
+        dataset: z.string().optional()
       })
     }),
     methodology: defineCollection({
@@ -19,7 +20,8 @@ export default defineContentConfig({
       type: 'page',
       schema: z.object({
         modalTitle: z.string().optional(),
-        parentPage: z.string().optional()
+        parentPage: z.string().optional(),
+        dataset: z.string().optional()
       })
     }),
     media: defineCollection({

@@ -1,5 +1,5 @@
 /**
- * Unit tests for GlobalContextPanel component
+ * Unit tests for EyebrowPanel component
  *
  * Tests panel structure, epoch display, and population data
  */
@@ -84,9 +84,9 @@ const DataPointStub = defineComponent({
   }
 })
 
-// Simplified GlobalContextPanel for testing
-const GlobalContextPanelTest = defineComponent({
-  name: 'GlobalContextPanel',
+// Simplified EyebrowPanel for testing
+const EyebrowPanelTest = defineComponent({
+  name: 'EyebrowPanel',
   components: { USlider: USliderStub, DataPoint: DataPointStub },
   setup() {
     const { selectedYear, setYear, yearEpochs: _yearEpochs } = {
@@ -107,7 +107,7 @@ const GlobalContextPanelTest = defineComponent({
 
     return () => h('div', {
       'class': 'fixed right-4 top-20 z-100 w-56 p-4 rounded-xl bg-parchment/95 dark:bg-espresso/95',
-      'data-testid': 'global-context-panel'
+      'data-testid': 'eyebrow-panel'
     }, [
       // Year display
       h('div', { class: 'text-center mb-3' }, [
@@ -142,14 +142,14 @@ const GlobalContextPanelTest = defineComponent({
   }
 })
 
-describe('GlobalContextPanel', () => {
+describe('EyebrowPanel', () => {
   beforeEach(() => {
     mockSelectedYear.value = 2025
     mockSetYear.mockClear()
   })
 
   it('displays current epoch year prominently', () => {
-    const wrapper = mount(GlobalContextPanelTest)
+    const wrapper = mount(EyebrowPanelTest)
 
     const yearDisplay = wrapper.find('[data-testid="epoch-year"]')
     expect(yearDisplay.exists()).toBe(true)
@@ -158,7 +158,7 @@ describe('GlobalContextPanel', () => {
   })
 
   it('displays world population data point', () => {
-    const wrapper = mount(GlobalContextPanelTest)
+    const wrapper = mount(EyebrowPanelTest)
 
     const worldPopDataPoint = wrapper.find('[data-testid="datapoint-world-population"]')
     expect(worldPopDataPoint.exists()).toBe(true)
@@ -167,7 +167,7 @@ describe('GlobalContextPanel', () => {
   })
 
   it('displays urban population data point', () => {
-    const wrapper = mount(GlobalContextPanelTest)
+    const wrapper = mount(EyebrowPanelTest)
 
     const urbanPopDataPoint = wrapper.find('[data-testid="datapoint-urban-population"]')
     expect(urbanPopDataPoint.exists()).toBe(true)
@@ -176,7 +176,7 @@ describe('GlobalContextPanel', () => {
   })
 
   it('updates population data when epoch changes', async () => {
-    const wrapper = mount(GlobalContextPanelTest)
+    const wrapper = mount(EyebrowPanelTest)
 
     // Initially at 2025
     expect(wrapper.find('[data-testid="datapoint-world-population"]').text()).toContain('8.2 billion')
@@ -191,7 +191,7 @@ describe('GlobalContextPanel', () => {
   })
 
   it('contains epoch slider', () => {
-    const wrapper = mount(GlobalContextPanelTest)
+    const wrapper = mount(EyebrowPanelTest)
 
     const slider = wrapper.find('[data-testid="epoch-slider"]')
     expect(slider.exists()).toBe(true)
