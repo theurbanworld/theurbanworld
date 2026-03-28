@@ -2,18 +2,37 @@
  * Radial density map layer
  *
  * Creates a deck.gl H3HexagonLayer showing a city's H3 cells
- * colored by ring distance from centroid. Loads cell indices
- * on-demand per city from R2 (tiny JSON files, ~1-150KB each).
+ * colored by density intensity. Loads cell indices on-demand
+ * per city from R2 (tiny JSON files, ~1-150KB each).
+ *
+ * Supports both single-city mode (reads from useCitySelection)
+ * and comparison mode (accepts explicit cityId + density options).
  */
 
 import { H3HexagonLayer } from '@deck.gl/geo-layers'
 import type { Layer } from '@deck.gl/core'
 import { cellToLatLng } from 'h3-js'
+import { getDensityColorRGBA } from '~/utils/densityColors'
 import { getRingColorRGBA } from '~/utils/radialColors'
 
 interface RadialHexagon {
   h3Index: string
   ringIndex: number
+}
+
+export interface UseRadialLayerOptions {
+  /** Override city ID (default: reads from useCitySelection) */
+  cityId?: Ref<string | null>
+  /** Per-ring density array for density-based coloring */
+  densityProfile?: Ref<(number | null)[] | null>
+  /** Max density for normalizing the color scale */
+  maxDensity?: Ref<number>
+  /** Suffix for unique deck.gl layer ID (e.g. 'A', 'B') */
+  layerIdSuffix?: string
+  /** Always show layer (skip isRadialLayerActive check). Can be a ref for reactive toggling. */
+  alwaysActive?: boolean | Ref<boolean>
+  /** Disable hover interactions (for comparison maps) */
+  disableHover?: boolean
 }
 
 /**
@@ -33,12 +52,17 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 // Cache fetched cell indices per city
 const cellsCache = new Map<string, string[]>()
 
-export function useRadialLayer() {
+export function useRadialLayer(options?: UseRadialLayerOptions) {
   const runtimeConfig = useRuntimeConfig()
-  const { selectedYear: _selectedYear } = useSelectedYear()
   const { selectedCityId } = useCitySelection()
   const { getCity } = useCitiesIndex()
   const { highlightedRing, isRadialLayerActive, setHighlightedRing } = useRadialHighlight()
+
+  // Effective city ID: options override or singleton
+  const effectiveCityId = computed(() => options?.cityId?.value ?? selectedCityId.value)
+
+  // Whether this layer should be active
+  const isActive = computed(() => unref(options?.alwaysActive) || isRadialLayerActive.value)
 
   const radialData = ref<RadialHexagon[]>([])
   const isLoadingCells = ref(false)
@@ -60,7 +84,7 @@ export function useRadialLayer() {
 
   // Build radial data when city or active state changes
   watch(
-    [selectedCityId, isRadialLayerActive],
+    [effectiveCityId, isActive],
     async ([cityId, active]) => {
       if (!active || !cityId) {
         radialData.value = []
@@ -100,12 +124,22 @@ export function useRadialLayer() {
     if (radialData.value.length === 0) return null
 
     const highlighted = highlightedRing.value
+    const profile = options?.densityProfile?.value
+    const maxDen = options?.maxDensity?.value ?? 0
+    const useDensityColoring = profile != null && maxDen > 0
+    const layerId = 'radial-ring-layer' + (options?.layerIdSuffix ? `-${options.layerIdSuffix}` : '')
 
     return new H3HexagonLayer({
-      id: 'radial-ring-layer',
+      id: layerId,
       data: radialData.value,
       getHexagon: (d: RadialHexagon) => d.h3Index,
       getFillColor: (d: RadialHexagon) => {
+        if (useDensityColoring) {
+          const density = profile[d.ringIndex] ?? 0
+          const alpha = (highlighted != null && d.ringIndex !== highlighted) ? 80 : 220
+          return getDensityColorRGBA(density, maxDen, false, alpha)
+        }
+        // Fallback: ring-distance coloring
         if (highlighted != null && d.ringIndex !== highlighted) {
           return getRingColorRGBA(d.ringIndex, 80)
         }
@@ -115,17 +149,19 @@ export function useRadialLayer() {
       coverage: 1,
       opacity: 0.85,
       stroked: false,
-      pickable: true,
+      pickable: !options?.disableHover,
       autoHighlight: false,
-      onHover: (info) => {
-        if (info.object) {
-          setHighlightedRing((info.object as RadialHexagon).ringIndex)
-        } else {
-          setHighlightedRing(null)
-        }
-      },
+      ...(options?.disableHover ? {} : {
+        onHover: (info: { object?: unknown }) => {
+          if (info.object) {
+            setHighlightedRing((info.object as RadialHexagon).ringIndex)
+          } else {
+            setHighlightedRing(null)
+          }
+        },
+      }),
       updateTriggers: {
-        getFillColor: [highlighted]
+        getFillColor: [highlighted, profile, maxDen]
       }
     }) as unknown as Layer
   })

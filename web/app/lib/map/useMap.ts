@@ -340,10 +340,23 @@ function createDarkSepiaTheme(): Theme {
 
 export interface UseMapOptions {
   container: ShallowRef<HTMLElement | null>
+  /** Override city ID for boundary highlighting (bypasses useCitySelection singleton) */
+  cityId?: string
+  /** Disable click-to-navigate on city boundaries */
+  disableClickNavigation?: boolean
+  /** Disable watching useCitySelection for fly-to and highlight */
+  disableSelectionWatch?: boolean
+  /** Disable hover state sync via useCityHover singleton */
+  disableHoverSync?: boolean
+  /** Override right panel padding for fitBounds (default: RIGHT_PANEL_WIDTH) */
+  rightPanelWidth?: number
+  /** Override boundary line color for the selected city (used in comparison mode) */
+  boundaryColor?: string
 }
 
 export function useMap(options: UseMapOptions) {
-  const { container } = options
+  const { container, cityId: overrideCityId, disableClickNavigation, disableSelectionWatch, disableHoverSync, rightPanelWidth, boundaryColor } = options
+  const effectiveRightPanelWidth = rightPanelWidth ?? RIGHT_PANEL_WIDTH
 
   const map = shallowRef<maplibregl.Map | null>(null)
   const isLoading = ref(true)
@@ -555,18 +568,31 @@ export function useMap(options: UseMapOptions) {
         'source': CITY_BOUNDARIES_SOURCE,
         'source-layer': sourceLayer,
         'paint': {
-          // Color varies by city_id hash (hue) and population (brightness)
-          'line-color': [
-            'interpolate', ['linear'], ['get', 'population'],
-            // Small cities: lighter colors
-            0, ['match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
-              0, lightPalette[0], 1, lightPalette[1], 2, lightPalette[2],
-              3, lightPalette[3], 4, lightPalette[4], 5, lightPalette[5], defaultLight],
-            // Large cities: darker colors
-            5000000, ['match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
-              0, darkPalette[0], 1, darkPalette[1], 2, darkPalette[2],
-              3, darkPalette[3], 4, darkPalette[4], 5, darkPalette[5], defaultDark]
-          ],
+          // Color: use identity color override for selected city in comparison mode,
+          // otherwise hash-based hue with population brightness
+          'line-color': boundaryColor
+            ? [
+              'case',
+              ['boolean', ['feature-state', 'selected'], false],
+              boundaryColor,
+              // Non-selected cities: hash-based colors
+              ['interpolate', ['linear'], ['get', 'population'],
+                0, ['match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
+                  0, lightPalette[0], 1, lightPalette[1], 2, lightPalette[2],
+                  3, lightPalette[3], 4, lightPalette[4], 5, lightPalette[5], defaultLight],
+                5000000, ['match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
+                  0, darkPalette[0], 1, darkPalette[1], 2, darkPalette[2],
+                  3, darkPalette[3], 4, darkPalette[4], 5, darkPalette[5], defaultDark]]
+            ]
+            : [
+              'interpolate', ['linear'], ['get', 'population'],
+              0, ['match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
+                0, lightPalette[0], 1, lightPalette[1], 2, lightPalette[2],
+                3, lightPalette[3], 4, lightPalette[4], 5, lightPalette[5], defaultLight],
+              5000000, ['match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
+                0, darkPalette[0], 1, darkPalette[1], 2, darkPalette[2],
+                3, darkPalette[3], 4, darkPalette[4], 5, darkPalette[5], defaultDark]
+            ],
           // Line width: selected = 6, hover = 4, default = 3
           'line-width': [
             'case',
@@ -793,7 +819,7 @@ export function useMap(options: UseMapOptions) {
     const camera = mapInstance.cameraForBounds(bounds, {
       padding: {
         top: FIT_BOUNDS_PADDING,
-        right: RIGHT_PANEL_WIDTH + FIT_BOUNDS_PADDING,
+        right: effectiveRightPanelWidth + FIT_BOUNDS_PADDING,
         bottom: FIT_BOUNDS_PADDING,
         left: FIT_BOUNDS_PADDING
       },
@@ -852,10 +878,12 @@ export function useMap(options: UseMapOptions) {
             { hover: true }
           )
 
-          // Set hovered city ID for external use
-          const cityId = feature.properties?.city_id as string | undefined
-          if (cityId) {
-            setHoveredCityId(cityId)
+          // Set hovered city ID for external use (unless disabled for comparison mode)
+          if (!disableHoverSync) {
+            const cityId = feature.properties?.city_id as string | undefined
+            if (cityId) {
+              setHoveredCityId(cityId)
+            }
           }
         }
       } else {
@@ -867,31 +895,35 @@ export function useMap(options: UseMapOptions) {
             { hover: false }
           )
           hoveredFeatureId = null
-          clearHover()
+          if (!disableHoverSync) {
+            clearHover()
+          }
         }
       }
     })
 
     // Click handler for city selection
-    // Clicking a city navigates to /city/[city_id]
+    // Clicking a city navigates to /city/[city_id] (unless disabled for comparison mode)
     // Clicking empty space does NOT deselect (close button only)
-    mapInstance.on('click', (e) => {
-      // Query features at click position from both layers
-      const features = mapInstance.queryRenderedFeatures(e.point, {
-        layers: [CITY_BOUNDARIES_HOVER_LAYER, CITY_BOUNDARIES_LAYER]
-      })
+    if (!disableClickNavigation) {
+      mapInstance.on('click', (e) => {
+        // Query features at click position from both layers
+        const features = mapInstance.queryRenderedFeatures(e.point, {
+          layers: [CITY_BOUNDARIES_HOVER_LAYER, CITY_BOUNDARIES_LAYER]
+        })
 
-      const feature = features[0]
-      if (feature) {
-        const cityId = feature.properties?.city_id as string | undefined
-        if (cityId) {
-          // Navigate to city page - this will trigger the route change
-          // which in turn updates useCitySelection state
-          navigateTo(`/city/${cityId}`)
+        const feature = features[0]
+        if (feature) {
+          const cityId = feature.properties?.city_id as string | undefined
+          if (cityId) {
+            // Navigate to city page - this will trigger the route change
+            // which in turn updates useCitySelection state
+            navigateTo(`/city/${cityId}`)
+          }
         }
-      }
-      // Do NOT handle empty space clicks - deselection is via close button only
-    })
+        // Do NOT handle empty space clicks - deselection is via close button only
+      })
+    }
   }
 
   /**
@@ -909,7 +941,9 @@ export function useMap(options: UseMapOptions) {
 
       // Check if a city is already selected (e.g., SSR direct load of /city/:id).
       // If so, initialize the map at the city's bbox to avoid a flash of the world view.
-      const initialCity = selectedCityId.value ? getCity(selectedCityId.value) : null
+      // In comparison mode, use the override cityId instead of the singleton.
+      const effectiveCityId = overrideCityId ?? selectedCityId.value
+      const initialCity = effectiveCityId ? getCity(effectiveCityId) : null
 
       const mapOptions: maplibregl.MapOptions = {
         container: container.value,
@@ -933,7 +967,7 @@ export function useMap(options: UseMapOptions) {
         mapOptions.fitBoundsOptions = {
           padding: {
             top: FIT_BOUNDS_PADDING,
-            right: RIGHT_PANEL_WIDTH + FIT_BOUNDS_PADDING,
+            right: effectiveRightPanelWidth + FIT_BOUNDS_PADDING,
             bottom: FIT_BOUNDS_PADDING,
             left: FIT_BOUNDS_PADDING
           },
@@ -964,9 +998,11 @@ export function useMap(options: UseMapOptions) {
 
           // If a city is already selected (e.g., from URL), update feature state
           // and ensure exact positioning with jumpTo (no animation on initial load)
-          if (selectedCityId.value) {
-            updateSelectedFeatureState(selectedCityId.value)
-            flyToCity(selectedCityId.value, false)
+          // In comparison mode, use the override cityId.
+          const loadCityId = overrideCityId ?? selectedCityId.value
+          if (loadCityId) {
+            updateSelectedFeatureState(loadCityId)
+            flyToCity(loadCityId, false)
           }
         }, 100)
       })
@@ -1040,14 +1076,17 @@ export function useMap(options: UseMapOptions) {
   })
 
   // Watch for selected city changes and update feature state + fly to city
-  watch(selectedCityId, (cityId) => {
-    if (map.value && cityBoundariesLoaded.value) {
-      updateSelectedFeatureState(cityId)
-      if (cityId) {
-        flyToCity(cityId)
+  // Skip in comparison mode (disableSelectionWatch) — comparison maps manage their own city
+  if (!disableSelectionWatch) {
+    watch(selectedCityId, (cityId) => {
+      if (map.value && cityBoundariesLoaded.value) {
+        updateSelectedFeatureState(cityId)
+        if (cityId) {
+          flyToCity(cityId)
+        }
       }
-    }
-  })
+    })
+  }
 
   // Clean up on unmount
   onUnmounted(() => {
