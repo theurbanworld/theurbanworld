@@ -20,6 +20,7 @@ export interface CityIndexEntry {
   centroid: [number, number]
   bbox: [number, number, number, number]
   population: number
+  wikidata_id?: string
 }
 
 export function useCitiesIndex() {

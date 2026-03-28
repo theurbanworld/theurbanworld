@@ -45,6 +45,8 @@ dependencies = [
     "pandera[io]>=0.21.0",
     "ibis-framework[duckdb]>=9.0.0",
     "fonttools>=4.61.1",
+    "rapidfuzz>=3.14.3",
+    "sparqlwrapper>=2.0.0",
 ]
 
 [project.scripts]

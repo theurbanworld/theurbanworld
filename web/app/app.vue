@@ -21,6 +21,15 @@ defineOgImage({
   component: 'Default'
 })
 
+// Site-wide structured data
+useSchemaOrg([
+  defineWebSite({
+    name: 'The Urban World',
+    description: 'An observatory of urban complexity — telling the story of global urbanization through data.',
+    inLanguage: 'en'
+  })
+])
+
 // Initialize dark mode on mount
 const { initializeDarkMode } = useDarkMode()
 
