@@ -71,3 +71,14 @@ export function formatArea(areaKm2: number): string {
   const rounded = Math.round(areaKm2)
   return `${rounded.toLocaleString()} km2`
 }
+
+/**
+ * Format an annualized growth rate for display
+ * Shows +/- sign and one decimal place with %/yr suffix
+ * Returns "N/A" for null values (e.g., at 1975 epoch)
+ */
+export function formatGrowthRate(rate: number | null): string {
+  if (rate === null) return 'N/A'
+  const sign = rate >= 0 ? '+' : ''
+  return `${sign}${rate.toFixed(1)}%/yr`
+}
