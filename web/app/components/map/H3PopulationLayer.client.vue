@@ -13,6 +13,7 @@
  */
 
 import type { Layer } from '@deck.gl/core'
+import { useH3Layer } from '~/lib/map/useH3Layer'
 
 const props = defineProps<{
   /** Whether dark mode is enabled */

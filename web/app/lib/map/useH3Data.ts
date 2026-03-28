@@ -8,7 +8,7 @@
 
 import { load } from '@loaders.gl/core'
 import { ParquetLoader } from '@loaders.gl/parquet'
-import { getPopulationColumnKey, type YearEpoch, type H3Hexagon } from '../../types/h3'
+import { getPopulationColumnKey, type YearEpoch, type H3Hexagon } from '~~/types/h3'
 
 // Data URL for H3 population timeseries
 const H3_DATA_URL = 'https://data.theurban.world/data/h3_r8_pop_timeseries.parquet'

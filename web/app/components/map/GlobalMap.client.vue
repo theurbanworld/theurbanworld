@@ -78,6 +78,9 @@
 import type maplibregl from 'maplibre-gl'
 import type { Layer } from '@deck.gl/core'
 import type { ShallowRef } from 'vue'
+import { useMap } from '~/lib/map/useMap'
+import { useDeckGL } from '~/lib/map/useDeckGL'
+import { useRadialLayer } from '~/lib/map/useRadialLayer'
 
 // Props for configuration
 const props = defineProps<{
