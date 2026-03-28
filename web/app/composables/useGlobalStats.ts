@@ -81,21 +81,22 @@ export function toAnnualRate(fiveYearPercent: number): number {
 
 /**
  * World population by epoch year
- * Source: GHSL Table 20 - UN WPP 2022 calibrated (from pipeline WORLD_POPULATION constant)
+ * Source: UN World Population Prospects via World Bank (indicator SP.POP.TOTL)
+ * 1975-2024 estimates; 2025-2030 medium-variant projections (WPP 2024 revision)
  */
 const WORLD_POPULATION: Record<YearEpoch, number> = {
-  1975: 4069437259,
-  1980: 4444007748,
-  1985: 4861730652,
-  1990: 5316175909,
-  1995: 5743219510,
-  2000: 6148899024,
-  2005: 6558176175,
-  2010: 6985603172,
-  2015: 7426597609,
-  2020: 7840952947,
-  2025: 8191988536,
-  2030: 8546141407
+  1975: 4062070771,
+  1980: 4437602892,
+  1985: 4850740788,
+  1990: 5299246757,
+  1995: 5736505517,
+  2000: 6161884811,
+  2005: 6575841506,
+  2010: 7001266876,
+  2015: 7441677465,
+  2020: 7854748424,
+  2025: 8210571822,
+  2030: 8546472348
 }
 
 /**

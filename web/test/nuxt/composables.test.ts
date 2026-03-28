@@ -24,7 +24,7 @@ describe('useGlobalStats', () => {
 
     const { worldPopulation, worldPopulationRaw } = useGlobalStats()
 
-    expect(worldPopulationRaw.value).toBe(8191988536)
+    expect(worldPopulationRaw.value).toBe(8210571822)
     expect(worldPopulation.value).toBe('8.2 billion')
   })
 
@@ -47,13 +47,13 @@ describe('useGlobalStats', () => {
 
     const { worldPopulationRaw, urbanPopulationRaw } = useGlobalStats()
 
-    expect(worldPopulationRaw.value).toBe(4069437259)
+    expect(worldPopulationRaw.value).toBe(4062070771)
     expect(urbanPopulationRaw.value).toBe(1531287659) // UN urban pop at 1975
 
     // Change to 2030
     setYear(2030)
 
-    expect(worldPopulationRaw.value).toBe(8546141407)
+    expect(worldPopulationRaw.value).toBe(8546472348)
     expect(urbanPopulationRaw.value).toBe(5028207672) // UN urban pop at 2030
   })
 
@@ -107,8 +107,8 @@ describe('useGlobalStats', () => {
 
     const { urbanPercentageOfWorld } = useGlobalStats()
 
-    // UN urban: 4693031052 / 8191988536 * 100 ≈ 57.3%
-    expect(urbanPercentageOfWorld.value).toBeCloseTo(57.3, 1)
+    // UN urban: 4693031052 / 8210571822 * 100 ≈ 57.2%
+    expect(urbanPercentageOfWorld.value).toBeCloseTo(57.2, 1)
   })
 })
 
