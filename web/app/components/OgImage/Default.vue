@@ -27,8 +27,8 @@
         width: '80px',
         height: '80px',
         borderRadius: '50%',
-        backgroundColor: 'rgba(106, 143, 94, 0.15)',
-        border: '2px solid rgba(58, 82, 51, 0.3)',
+        backgroundColor: 'rgba(58, 72, 86, 0.15)',
+        border: '2px solid rgba(58, 72, 86, 0.3)',
         marginBottom: '8px'
       }"
     />
@@ -39,7 +39,7 @@
         fontFamily: 'Crimson Pro, serif',
         fontSize: '64px',
         fontWeight: 600,
-        color: '#3A5233',
+        color: '#3A4856',
         letterSpacing: '0.02em',
         lineHeight: '1.1'
       }"
@@ -63,7 +63,7 @@
       :style="{
         width: '120px',
         height: '2px',
-        backgroundColor: 'rgba(58, 82, 51, 0.2)',
+        backgroundColor: 'rgba(58, 72, 86, 0.2)',
         marginTop: '16px'
       }"
     />

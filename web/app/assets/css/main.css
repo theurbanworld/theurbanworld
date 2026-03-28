@@ -7,7 +7,7 @@
   --font-heading: 'Crimson Pro', serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Forest green color scale (primary accent) */
+  /* Forest green color scale (brand mark + map natural features only) */
   --color-forest-50: #F4F7F3;
   --color-forest-100: #E5EBE3;
   --color-forest-200: #D4DED0;
@@ -19,6 +19,32 @@
   --color-forest-800: #2F4229;
   --color-forest-900: #273622;
   --color-forest-950: #131D10;
+
+  /* Ink color scale (slate blue-gray — primary UI accent) */
+  --color-ink-50: #F4F6F8;
+  --color-ink-100: #E4E9EE;
+  --color-ink-200: #CED6DE;
+  --color-ink-300: #A8B5C2;
+  --color-ink-400: #7E8F9F;
+  --color-ink-500: #5E7080;
+  --color-ink-600: #4A5B6A;
+  --color-ink-700: #3A4856;
+  --color-ink-800: #303C47;
+  --color-ink-900: #28323B;
+  --color-ink-950: #181F26;
+
+  /* Brass color scale (warm gold — emphasis, selection, data viz) */
+  --color-brass-50: #FBF6ED;
+  --color-brass-100: #F5E9D1;
+  --color-brass-200: #EBDAB0;
+  --color-brass-300: #DAB87A;
+  --color-brass-400: #CC9B4E;
+  --color-brass-500: #B58234;
+  --color-brass-600: #966828;
+  --color-brass-700: #7A5223;
+  --color-brass-800: #63431F;
+  --color-brass-900: #52381C;
+  --color-brass-950: #2E1D0C;
 
   /* Typography colors */
   --color-espresso: #3D352C;
@@ -42,7 +68,7 @@
   --color-city-boundary: #4A4238;
 
   /* Selection highlight */
-  --color-selection: #D4DED0;
+  --color-selection: #EBDAB0;
 
   /* Dark mode basemap sepia colors */
   --color-dark-parchment: #2A2420;
@@ -85,5 +111,5 @@
   --color-body: #D8D0C5;
   --color-data: #C8C0B5;
 
-  --color-selection: #3A5233;
+  --color-selection: #63431F;
 }

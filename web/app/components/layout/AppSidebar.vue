@@ -19,7 +19,7 @@ withDefaults(defineProps<Props>(), { open: true })
   <aside
     data-testid="app-sidebar"
     class="w-80 shrink-0 bg-parchment
-           border-r border-forest-200/40 dark:border-forest-800/40
+           border-r border-ink-200/40 dark:border-ink-800/40
            max-sm:fixed max-sm:inset-0 max-sm:z-200 max-sm:border-r-0
            max-sm:transition-transform max-sm:duration-300 max-sm:ease-in-out"
     :class="[

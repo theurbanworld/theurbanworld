@@ -2,7 +2,7 @@
   <div
     :class="[
       'flex flex-col gap-0.5 rounded-lg transition-shadow duration-200',
-      isCurrentlyHighlighted && 'ring-2 ring-forest-400/50'
+      isCurrentlyHighlighted && 'ring-2 ring-ink-400/50'
     ]"
   >
     <!-- Label -->
@@ -33,7 +33,7 @@
         >
           <span
             data-testid="datapoint-value"
-            class="font-mono text-2xl font-semibold text-forest-700 dark:text-forest-300"
+            class="font-mono text-2xl font-semibold text-ink-700 dark:text-ink-300"
           >
             {{ value }}
           </span>
@@ -45,7 +45,7 @@
     <div v-if="percentageValue !== undefined" class="flex items-center gap-1">
       <span
         data-testid="datapoint-percentage"
-        class="font-mono text-sm font-medium text-forest-600 dark:text-forest-400"
+        class="font-mono text-sm font-medium text-ink-600 dark:text-ink-400"
       >
         {{ formattedPercentage }}
       </span>
@@ -61,7 +61,7 @@
       <span
         v-if="percentageRefLabel"
         data-testid="datapoint-percentage-ref-label"
-        class="text-xs px-1.5 py-0.5 rounded bg-forest-100/50 dark:bg-forest-900/30 cursor-pointer transition-colors hover:bg-forest-200/70 dark:hover:bg-forest-800/50 text-body/70 dark:text-cream/70"
+        class="text-xs px-1.5 py-0.5 rounded bg-ink-100/50 dark:bg-ink-900/30 cursor-pointer transition-colors hover:bg-ink-200/70 dark:hover:bg-ink-800/50 text-body/70 dark:text-cream/70"
         @mouseenter="onPercentageLabelMouseEnter"
         @mouseleave="onPercentageLabelMouseLeave"
       >
@@ -75,7 +75,7 @@
     <!-- Source link -->
     <span
       data-testid="datapoint-source"
-      class="text-xs text-body/50 dark:text-cream/50 hover:text-forest-600 dark:hover:text-forest-400 cursor-pointer transition-colors"
+      class="text-xs text-body/50 dark:text-cream/50 hover:text-ink-600 dark:hover:text-ink-400 cursor-pointer transition-colors"
       @click="onSourceClick"
     >
       {{ sourceLabel || 'Source' }}

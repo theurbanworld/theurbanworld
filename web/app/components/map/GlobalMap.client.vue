@@ -22,7 +22,7 @@
       <div class="flex flex-col items-center text-center">
         <UIcon
           name="i-lucide-loader-2"
-          class="animate-spin text-4xl text-forest-600"
+          class="animate-spin text-4xl text-ink-600"
         />
         <p class="mt-2 text-body">
           Loading map...
@@ -39,7 +39,7 @@
     >
       <UIcon
         name="i-lucide-loader-2"
-        class="animate-spin text-lg text-forest-600 dark:text-forest-400"
+        class="animate-spin text-lg text-ink-600 dark:text-ink-400"
       />
       <span class="text-sm text-body dark:text-cream font-medium">
         Loading radial cells...

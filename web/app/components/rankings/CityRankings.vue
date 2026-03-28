@@ -92,13 +92,13 @@ watch([activeStat, countryFilter], () => {
       v-for="(city, index) in displayedCities"
       :key="city.id"
       class="w-full text-left relative py-2 px-5
-             hover:bg-forest-100/30 dark:hover:bg-forest-900/20
+             hover:bg-ink-100/30 dark:hover:bg-ink-900/20
              transition-colors cursor-pointer"
       @click="selectCity(city.id)"
     >
       <!-- Bar background -->
       <div
-        class="absolute inset-y-0 left-0 bg-forest-100/60 dark:bg-forest-800/30"
+        class="absolute inset-y-0 left-0 bg-ink-100/60 dark:bg-ink-800/30"
         :style="{ width: barPercent(city) }"
       />
       <!-- Content -->
@@ -112,7 +112,7 @@ watch([activeStat, countryFilter], () => {
         <span class="text-[11px] text-body/50 dark:text-cream/50 shrink-0 max-w-20 truncate">
           {{ city.country }}
         </span>
-        <span class="text-xs font-mono font-semibold text-forest-700 dark:text-forest-300 shrink-0 tabular-nums">
+        <span class="text-xs font-mono font-semibold text-ink-700 dark:text-ink-300 shrink-0 tabular-nums">
           {{ formatValue(city) }}
         </span>
       </div>
@@ -121,7 +121,7 @@ watch([activeStat, countryFilter], () => {
     <!-- Show more -->
     <div v-if="hasMore" class="px-5 py-3 text-center">
       <button
-        class="text-xs text-forest-600 dark:text-forest-400 hover:text-forest-700 dark:hover:text-forest-300 transition-colors cursor-pointer"
+        class="text-xs text-ink-600 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-300 transition-colors cursor-pointer"
         @click="showMore"
       >
         Show more ({{ (rankedCities.length - displayCount).toLocaleString() }} remaining)

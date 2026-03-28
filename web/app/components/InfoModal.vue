@@ -37,13 +37,13 @@ const parentLabel = computed(() => {
         <ContentRenderer
           v-if="content"
           :value="content"
-          class="prose prose-forest dark:prose-invert prose-sm max-w-none"
+          class="prose dark:prose-invert prose-sm max-w-none"
         />
 
-        <div v-if="parentPage" class="mt-6 pt-4 border-t border-forest-200/40 dark:border-forest-800/40">
+        <div v-if="parentPage" class="mt-6 pt-4 border-t border-ink-200/40 dark:border-ink-800/40">
           <NuxtLink
             :to="parentPage"
-            class="text-sm text-forest-600 dark:text-forest-400 hover:underline"
+            class="text-sm text-ink-600 dark:text-ink-400 hover:underline"
             @click="close"
           >
             Read more on the {{ parentLabel }}

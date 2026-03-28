@@ -60,7 +60,7 @@ const sliderValue = computed({
     <div class="text-center mb-3">
       <span
         data-testid="epoch-year"
-        class="font-mono text-4xl max-sm:text-3xl font-bold text-forest-700 dark:text-forest-300 tracking-wide"
+        class="font-mono text-4xl max-sm:text-3xl font-bold text-ink-700 dark:text-ink-300 tracking-wide"
       >
         {{ selectedYear }}
       </span>
@@ -68,14 +68,14 @@ const sliderValue = computed({
 
     <!-- Data Source Toggle -->
     <div class="flex justify-center mb-3">
-      <div class="inline-flex rounded-lg bg-forest-100/60 dark:bg-forest-900/40 p-0.5">
+      <div class="inline-flex rounded-lg bg-ink-100/60 dark:bg-ink-900/40 p-0.5">
         <button
           v-for="option in sourceOptions"
           :key="option.value"
           :data-testid="`source-${option.value}`"
           class="px-3 py-1 text-xs font-mono rounded-md transition-colors"
           :class="dataSource === option.value
-            ? 'bg-parchment text-forest-700 dark:text-forest-300 shadow-sm'
+            ? 'bg-parchment text-ink-700 dark:text-ink-300 shadow-sm'
             : 'text-body/50 dark:text-cream/40 hover:text-body/70 dark:hover:text-cream/60'"
           @click="setDataSource(option.value)"
         >
