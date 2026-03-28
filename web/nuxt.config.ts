@@ -50,6 +50,11 @@ export default defineNuxtConfig({
   routeRules: {},
 
   content: {
+    build: {
+      markdown: {
+        highlight: false
+      }
+    },
     database: {
       type: 'd1',
       bindingName: 'DB'
@@ -67,15 +72,17 @@ export default defineNuxtConfig({
     rollupConfig: {
       plugins: [
         {
-          name: 'mock-ws-optional-deps',
+          name: 'mock-unused-heavy-deps',
           resolveId(id: string) {
-            if (id === 'utf-8-validate' || id === 'bufferutil') {
+            const stubbed = ['utf-8-validate', 'bufferutil', 'shiki', '@shikijs/core', '@shikijs/engine-oniguruma', '@shikijs/engine-javascript', '@shikijs/langs', '@shikijs/themes']
+            if (stubbed.includes(id) || id.startsWith('shiki/') || id.startsWith('@shikijs/')) {
               return id
             }
           },
           load(id: string) {
-            if (id === 'utf-8-validate' || id === 'bufferutil') {
-              return 'export default {}'
+            const stubbed = ['utf-8-validate', 'bufferutil', 'shiki', '@shikijs/core', '@shikijs/engine-oniguruma', '@shikijs/engine-javascript', '@shikijs/langs', '@shikijs/themes']
+            if (stubbed.includes(id) || id.startsWith('shiki/') || id.startsWith('@shikijs/')) {
+              return 'export default {}; export const createHighlighter = () => undefined; export const createHighlighterCore = () => undefined;'
             }
           }
         }
