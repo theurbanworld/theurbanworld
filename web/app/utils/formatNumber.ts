@@ -82,3 +82,13 @@ export function formatGrowthRate(rate: number | null): string {
   const sign = rate >= 0 ? '+' : ''
   return `${sign}${rate.toFixed(1)}%/yr`
 }
+
+/**
+ * Format absolute population growth with +/- sign in compact notation
+ * Returns "N/A" for null values (e.g., at 1975 epoch)
+ */
+export function formatGrowthAbs(change: number | null): string {
+  if (change === null) return 'N/A'
+  const sign = change >= 0 ? '+' : '-'
+  return `${sign}${formatCompactNumber(Math.abs(change))}`
+}
