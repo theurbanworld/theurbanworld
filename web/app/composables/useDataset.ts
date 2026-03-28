@@ -53,13 +53,45 @@ export function useDataset() {
 
   /**
    * Switch to a different dataset by ID.
-   * Ignores unknown IDs.
+   * Ignores unknown IDs. Preserves city selection when possible —
+   * after population data reloads, falls back to rankings if the
+   * current city doesn't exist in the new dataset.
    */
   function setDataset(id: string) {
     const dataset = DATASETS.find(d => d.id === id)
     if (!dataset) return
+
+    const previousId = activeDatasetId.value
+    if (id === previousId) return
+
     activeDatasetId.value = id
     setDataSource(dataset.dataSource)
+
+    // Defensive epoch reset: snap to nearest available if needed
+    const { selectedYear, setYear } = useSelectedYear()
+    if (!dataset.epochs.includes(selectedYear.value)) {
+      const nearest = dataset.epochs.reduce((prev, curr) =>
+        Math.abs(curr - selectedYear.value) < Math.abs(prev - selectedYear.value) ? curr : prev
+      )
+      setYear(nearest)
+    }
+
+    // City preservation: after population data reloads, check if city still exists
+    const { selectedCityId, clearSelection } = useCitySelection()
+    if (selectedCityId.value) {
+      const cityId = selectedCityId.value
+      const { status, hasCity } = useCityPopulations()
+
+      const unwatch = watch(status, (newStatus) => {
+        if (newStatus === 'success') {
+          unwatch()
+          if (!hasCity(cityId)) {
+            clearSelection()
+            navigateTo('/')
+          }
+        }
+      })
+    }
   }
 
   /**

@@ -7,6 +7,7 @@
  */
 
 import { useCityStats } from '../../composables/useCityStats'
+import { useDataset } from '../../composables/useDataset'
 
 interface Props {
   /** City ID to display statistics for */
@@ -24,6 +25,10 @@ const cityIdRef = computed(() => props.cityId)
 
 // Compare modal state
 const compareModalOpen = ref(false)
+
+// Dataset feature gating
+const { hasFeatureComputed } = useDataset()
+const showRadialProfiles = hasFeatureComputed('radialProfiles')
 
 // Get reactive city statistics
 const {
@@ -189,8 +194,8 @@ const {
         </div>
       </div>
 
-      <!-- Radial Profile Section -->
-      <RadialProfileSection :city-id="cityId" class="mt-4" />
+      <!-- Radial Profile Section (Urban World only) -->
+      <RadialProfileSection v-if="showRadialProfiles" :city-id="cityId" class="mt-4" />
 
       <!-- Media Resources -->
       <CityMediaSection :city-id="cityId" class="mt-4" />

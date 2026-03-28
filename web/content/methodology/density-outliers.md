@@ -1,6 +1,7 @@
 ---
 title: "Density Outlier Filtering"
 parentPage: "/methodology"
+dataset: "urban-world-v1"
 ---
 
 # Density Outlier Filtering

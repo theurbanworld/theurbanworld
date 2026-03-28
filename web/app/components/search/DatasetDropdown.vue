@@ -10,6 +10,7 @@
 import type { DropdownMenuItem } from '@nuxt/ui'
 
 const { activeDataset, activeDatasetLabel, datasets, setDataset } = useDataset()
+const { open: openInfoModal } = useInfoModal()
 
 const items = computed<DropdownMenuItem[][]>(() => [
   datasets.map(dataset => ({
@@ -20,6 +21,11 @@ const items = computed<DropdownMenuItem[][]>(() => [
     dataset
   }))
 ])
+
+function handleInfoClick(event: Event, contentPath: string) {
+  event.stopPropagation()
+  openInfoModal(contentPath)
+}
 </script>
 
 <template>
@@ -40,17 +46,16 @@ const items = computed<DropdownMenuItem[][]>(() => [
     </UButton>
 
     <template #item-trailing="{ item }">
-      <NuxtLink
+      <button
         v-if="(item as any).dataset"
-        :to="(item as any).dataset.contentPath"
         class="ml-2 p-0.5 rounded text-body/40 dark:text-cream/40
                hover:text-forest-700 dark:hover:text-forest-300
-               transition-colors"
+               transition-colors cursor-pointer"
         title="Dataset info"
-        @click.stop
+        @click="handleInfoClick($event, (item as any).dataset.contentPath)"
       >
         <UIcon name="i-lucide-info" class="w-3.5 h-3.5" />
-      </NuxtLink>
+      </button>
     </template>
   </UDropdownMenu>
 </template>
