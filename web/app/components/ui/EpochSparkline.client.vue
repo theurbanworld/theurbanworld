@@ -22,18 +22,24 @@ import {
 } from 'chart.js'
 import { YEAR_EPOCHS } from '../../../types/h3'
 import { formatCompactNumber } from '../../utils/formatNumber'
+import { CITY_A_COLOR, CITY_B_COLOR } from '../../utils/comparisonColors'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip)
 
 const props = defineProps<{
   cityId: string
   metric: 'population' | 'density_per_km2' | 'area_km2'
+  /** Optional: overlay two cities' data on the same chart */
+  cityIds?: string[]
 }>()
 
 const { selectedYear, setYear } = useSelectedYear()
 const { getCityAllEpochs } = useCityPopulations()
+const { getCityName } = useCitiesIndex()
 
+const isComparisonMode = computed(() => !!props.cityIds && props.cityIds.length === 2)
 const epochs = computed(() => getCityAllEpochs(props.cityId))
+const epochsB = computed(() => isComparisonMode.value ? getCityAllEpochs(props.cityIds![1]!) : null)
 
 function formatTooltipValue(value: number): string {
   switch (props.metric) {
@@ -57,21 +63,44 @@ const chartData = computed<ChartData<'line'>>(() => {
   const pointRadius = YEAR_EPOCHS.map(y => y === selectedYear.value ? 4 : 0)
   const pointHoverRadius = YEAR_EPOCHS.map(y => y === selectedYear.value ? 5 : 3)
 
-  return {
-    labels,
-    datasets: [{
-      data,
-      fill: true,
-      backgroundColor: 'rgba(74, 91, 106, 0.15)',
-      borderColor: '#4A5B6A',
-      borderWidth: 1.5,
-      pointBackgroundColor: '#4A5B6A',
-      pointBorderColor: '#4A5B6A',
-      pointRadius,
-      pointHoverRadius,
-      tension: 0.3,
-    }],
+  const datasetA = {
+    label: isComparisonMode.value ? (getCityName(props.cityIds![0]!) ?? 'City A') : undefined,
+    data,
+    fill: true,
+    backgroundColor: isComparisonMode.value ? CITY_A_COLOR.fill : 'rgba(74, 91, 106, 0.15)',
+    borderColor: isComparisonMode.value ? CITY_A_COLOR.primary : '#4A5B6A',
+    borderWidth: 1.5,
+    pointBackgroundColor: isComparisonMode.value ? CITY_A_COLOR.primary : '#4A5B6A',
+    pointBorderColor: isComparisonMode.value ? CITY_A_COLOR.primary : '#4A5B6A',
+    pointRadius,
+    pointHoverRadius,
+    tension: 0.3,
   }
+
+  if (!isComparisonMode.value || !epochsB.value) {
+    return { labels, datasets: [datasetA] }
+  }
+
+  // Comparison mode — add city B dataset
+  const dataB = YEAR_EPOCHS.map(y => epochsB.value![y]?.[props.metric] ?? 0)
+  const pointRadiusB = YEAR_EPOCHS.map(y => y === selectedYear.value ? 4 : 0)
+  const pointHoverRadiusB = YEAR_EPOCHS.map(y => y === selectedYear.value ? 5 : 3)
+
+  const datasetB = {
+    label: getCityName(props.cityIds![1]!) ?? 'City B',
+    data: dataB,
+    fill: true,
+    backgroundColor: CITY_B_COLOR.fill,
+    borderColor: CITY_B_COLOR.primary,
+    borderWidth: 1.5,
+    pointBackgroundColor: CITY_B_COLOR.primary,
+    pointBorderColor: CITY_B_COLOR.primary,
+    pointRadius: pointRadiusB,
+    pointHoverRadius: pointHoverRadiusB,
+    tension: 0.3,
+  }
+
+  return { labels, datasets: [datasetA, datasetB] }
 })
 
 const chartOptions = computed<ChartOptions<'line'>>(() => ({
@@ -99,7 +128,17 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
     y: { display: false, beginAtZero: true },
   },
   plugins: {
-    legend: { display: false },
+    legend: {
+      display: isComparisonMode.value,
+      labels: {
+        boxWidth: 8,
+        boxHeight: 8,
+        font: { family: 'monospace', size: 9 },
+        color: '#8B7355',
+        padding: 4,
+      },
+      position: 'bottom' as const,
+    },
     tooltip: {
       callbacks: {
         title: (items) => {
@@ -112,7 +151,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
       titleFont: { family: 'monospace', size: 10 },
       bodyFont: { family: 'monospace', size: 10 },
       padding: 6,
-      displayColors: false,
+      displayColors: isComparisonMode.value,
     },
   },
   layout: {
@@ -148,7 +187,7 @@ const plugins = computed(() => [selectedYearPlugin.value])
 </script>
 
 <template>
-  <div v-if="epochs" class="h-[40px]">
+  <div v-if="epochs" :class="isComparisonMode ? 'h-[65px]' : 'h-[40px]'">
     <Line :data="chartData" :options="chartOptions" :plugins="plugins" />
   </div>
 </template>
