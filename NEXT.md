@@ -1,5 +1,0 @@
-- Reasses colors
-- Add search
-- Finish the about page with methodology
-- Finish basic city page
-- Get to MVP
