@@ -2,7 +2,7 @@
 /**
  * StatToggle - Population/Density/Area/Growth ranking stat buttons
  *
- * Sits in the search strip's left column, matching the sidebar width.
+ * Rendered in the sidebar header on the rankings route.
  * Shares state with CityRankings via useRankingFilters composable.
  * Growth has a nested sub-toggle for rate vs absolute mode.
  */
@@ -25,7 +25,7 @@ const growthModes: { key: GrowthMode; label: string }[] = [
 </script>
 
 <template>
-  <div class="w-96 shrink-0 flex items-center gap-1 px-4 border-r border-ink-200/40 dark:border-ink-800/40 max-sm:hidden">
+  <div class="flex items-center gap-1 px-4 py-3 border-b border-ink-200/40 dark:border-ink-800/40">
     <template v-for="stat in stats" :key="stat.key">
       <button
         v-if="stat.key !== 'growth'"
