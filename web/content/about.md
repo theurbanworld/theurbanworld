@@ -2,18 +2,16 @@
 title: About
 ---
 
-# About The Urban World
+# The Urban World
 
-The Urban World is an observatory of urban complexity. It tells the story of global urbanization through data, making visible the shape, density, and growth of cities over time.
+Too many reports about cities start with a sentence that goes more or less like "By 2050, over 68% of the earth's population will live in cities." But what does this actually mean? Is living in Lagos, Nigeria the same as living in Lincoln, Nebraska? If not, but they are both "cities", what does "living in a city" actually mean?
 
-## What we do
+Turns out, defining a city is quite hard.
 
-We transform satellite-derived datasets into interactive visualizations that reveal how cities have evolved from 1975 to 2030. By combining population grids, density analysis, and radial profiling, we offer a multiscale view of urbanization — from the global pattern down to the neighborhood.
+The Urban World is an atlas of this complexity. It uses foundational datasets and academic methodologies, but framed through meaning — what makes one city different from another? How does it *feel* to live in Budapest, and how is that different from Bangkok?
 
-## Who we are
+Data is the starting point, not the destination. The goal is understanding — the kind you get from comparing, exploring, and sitting with the numbers long enough that they start to tell stories.
 
-The Urban World is a project by [Urbancodes](https://urbancod.es), a studio focused on urban data and spatial analysis.
+This is meant to be a resource, and a collaborative one. A place that groups together the lovers of cities around the world. Over time, it will grow to collect the best writing about cities — books, essays, and much more. If you love cities too, [get in touch](mailto:jonathan@pichot.us).
 
-## Open data
-
-All data processing is transparent and reproducible. Our pipeline transforms publicly available datasets — primarily from the European Commission's Global Human Settlement Layer — into the formats that power this observatory.
+–– [Jonathan Pichot](https://pichot.us)

@@ -14,6 +14,8 @@
            bg-parchment/95 backdrop-blur-sm
            max-sm:left-2 max-sm:top-2"
   >
-    <AppLogo />
+    <NuxtLink to="/">
+      <AppLogo />
+    </NuxtLink>
   </div>
 </template>
