@@ -731,7 +731,7 @@ export function useMap(options: UseMapOptions) {
       mapInstance.setFilter(CITY_LABELS_LAYER, labelFilter)
 
       cityBoundariesLoaded.value = true
-      console.log('City boundaries and labels added for epoch:', selectedYear.value)
+
     } catch (e) {
       console.error('Failed to add city boundaries layer:', e)
     }
@@ -801,7 +801,7 @@ export function useMap(options: UseMapOptions) {
 
     const city = getCity(cityId)
     if (!city || !city.bbox) {
-      console.warn('City not found or missing bbox:', cityId)
+
       return
     }
 

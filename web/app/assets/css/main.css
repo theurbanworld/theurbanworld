@@ -92,6 +92,11 @@
   --color-dark-data: #C8C0B5;
 }
 
+/* Prose heading typography — use Crimson Pro for content pages */
+.prose :is(h1, h2, h3, h4) {
+  font-family: var(--font-heading);
+}
+
 /* Dark mode variable overrides */
 .dark {
   --color-parchment: #2A2420;

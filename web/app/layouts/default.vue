@@ -2,9 +2,8 @@
 /**
  * Default layout — explore mode (map + sidebar)
  *
- * Full-height sidebar (left) with search strip + map (right).
- * StatToggle and RankingFilters render in the sidebar header
- * only on the rankings route.
+ * Desktop: sidebar (left) + controls strip + map (right).
+ * Mobile: map-first with bottom drawer for sidebar content.
  */
 
 // Get city selection state
@@ -23,8 +22,13 @@ const { isExpanded, toggle: toggleEyebrow } = useEyebrowPanel()
 const route = useRoute()
 const isRankingsRoute = computed(() => route.path === '/')
 
-// Mobile sidebar visibility
-const mobileSidebarOpen = computed(() => !!selectedCityId.value || isRankingsRoute.value)
+// Mobile sidebar
+const { open: openMobileSidebar } = useMobileSidebar()
+
+// Auto-open mobile drawer when a city is selected
+watch(selectedCityId, (id) => {
+  if (id) openMobileSidebar()
+})
 
 // Handle city info close - back to global view
 function handleCityClose() {
@@ -35,7 +39,7 @@ function handleCityClose() {
 
 <template>
   <div class="flex flex-1 min-h-0 overflow-hidden">
-    <AppSidebar :open="mobileSidebarOpen">
+    <AppSidebar>
       <template #header>
         <StatToggle v-if="isRankingsRoute" />
         <RankingFilters v-if="isRankingsRoute" />
@@ -47,39 +51,50 @@ function handleCityClose() {
     </AppSidebar>
 
     <div class="flex-1 flex flex-col min-h-0">
-      <!-- Search strip — search bar offset left by half sidebar width to center on viewport -->
-      <div class="grid grid-cols-[1fr_auto_1fr] items-center bg-parchment border-b border-ink-200/40 dark:border-ink-800/40">
-        <div />
-        <div class="-translate-x-48 px-5 py-2.5">
-          <CitySearch class="w-full max-w-xs" />
-        </div>
-        <div class="flex items-center justify-end gap-3 px-4">
-          <DatasetPicker />
-          <button
-            data-testid="eyebrow-toggle"
-            class="flex flex-col items-start py-1 px-2 -mr-2 rounded-md
-                   hover:bg-ink-100/50 dark:hover:bg-ink-900/30
-                   transition-colors cursor-pointer"
-            :title="isExpanded ? 'Hide global stats' : 'Show global stats'"
-            @click="toggleEyebrow"
-          >
-            <span class="text-[10px] leading-tight text-body/50 dark:text-cream/50">Epoch</span>
-            <span class="flex items-center gap-1">
-              <span class="font-mono text-sm font-bold leading-tight text-ink-700 dark:text-ink-300 tracking-wide">
-                {{ selectedYear }}
-              </span>
-              <UIcon
-                :name="isExpanded ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
-                class="w-3.5 h-3.5 block text-body/50 dark:text-cream/50"
-              />
+      <!-- Controls strip — dataset picker and epoch toggle -->
+      <div class="flex items-center justify-end gap-3 px-4 py-2 bg-parchment border-b border-ink-200/40 dark:border-ink-800/40">
+        <DatasetPicker />
+        <button
+          data-testid="eyebrow-toggle"
+          class="flex flex-col items-start py-1 px-2 -mr-2 rounded-md
+                 hover:bg-ink-100/50 dark:hover:bg-ink-900/30
+                 transition-colors cursor-pointer"
+          :title="isExpanded ? 'Hide global stats' : 'Show global stats'"
+          @click="toggleEyebrow"
+        >
+          <span class="text-[10px] leading-tight text-body/50 dark:text-cream/50">Epoch</span>
+          <span class="flex items-center gap-1">
+            <span class="font-mono text-sm font-bold leading-tight text-ink-700 dark:text-ink-300 tracking-wide">
+              {{ selectedYear }}
             </span>
-          </button>
-        </div>
+            <UIcon
+              :name="isExpanded ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+              class="w-3.5 h-3.5 block text-body/50 dark:text-cream/50"
+            />
+          </span>
+        </button>
       </div>
 
       <UMain class="flex-1 !min-h-0 relative overflow-hidden">
         <GlobalMap :is-dark-mode="isDarkMode" />
         <EyebrowPanel />
+
+        <!-- Mobile floating pill to open sidebar drawer -->
+        <button
+          class="sm:hidden absolute bottom-6 left-1/2 -translate-x-1/2 z-50
+                 bg-parchment/95 dark:bg-ink-950/95 backdrop-blur-sm
+                 rounded-full px-4 py-2.5 shadow-lg
+                 flex items-center gap-2 text-sm font-medium
+                 text-ink-700 dark:text-ink-300
+                 active:scale-95 transition-transform cursor-pointer"
+          @click="openMobileSidebar"
+        >
+          <UIcon name="i-lucide-bar-chart-3" class="w-4 h-4" />
+          <span v-if="isRankingsRoute">Rankings</span>
+          <span v-else-if="selectedCityId">City Info</span>
+          <span v-else>Rankings</span>
+        </button>
+
         <slot />
       </UMain>
     </div>

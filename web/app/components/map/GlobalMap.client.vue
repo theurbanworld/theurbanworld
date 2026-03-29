@@ -61,6 +61,9 @@
         </p>
       </div>
     </div>
+
+    <!-- Map attribution -->
+    <DataAttribution />
   </div>
 </template>
 

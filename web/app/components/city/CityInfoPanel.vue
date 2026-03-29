@@ -105,11 +105,13 @@ const {
       <!-- Action bar -->
       <div class="flex items-center gap-1.5 mb-4 -mt-3">
         <button
-          class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium cursor-pointer
-                 text-body/70 dark:text-cream/70
-                 bg-sand-100/60 dark:bg-forest-900/30
-                 hover:bg-sand-200/80 dark:hover:bg-forest-800/40
-                 hover:text-forest-700 dark:hover:text-forest-300
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer
+                 text-ink-600 dark:text-cream/70
+                 border border-ink-200 dark:border-ink-800/60
+                 bg-white dark:bg-forest-900/30
+                 shadow-sm
+                 hover:bg-ink-50 dark:hover:bg-forest-800/40
+                 hover:text-ink-700 dark:hover:text-forest-300
                  transition-colors"
           @click="compareModalOpen = true"
         >
@@ -139,15 +141,15 @@ const {
             :trend-next="populationTrendNext"
             source-label="Source: GHSL"
             content-path="/data/source-ghsl"
+            toggle-label-a="over time"
+            toggle-label-b="vs all cities"
           >
-            <ChartToggle>
-              <template #a>
-                <EpochSparkline :city-id="cityId" metric="population" />
-              </template>
-              <template #b>
-                <DistributionStrip :city-id="cityId" metric="population" />
-              </template>
-            </ChartToggle>
+            <template #chart-a>
+              <EpochSparkline :city-id="cityId" metric="population" />
+            </template>
+            <template #chart-b>
+              <DistributionStrip :city-id="cityId" metric="population" />
+            </template>
           </DataPoint>
         </div>
 
@@ -161,15 +163,15 @@ const {
             :trend-next="densityTrendNext"
             source-label="Source: GHSL"
             content-path="/data/source-ghsl"
+            toggle-label-a="over time"
+            toggle-label-b="vs all cities"
           >
-            <ChartToggle>
-              <template #a>
-                <EpochSparkline :city-id="cityId" metric="density_per_km2" />
-              </template>
-              <template #b>
-                <DistributionStrip :city-id="cityId" metric="density_per_km2" />
-              </template>
-            </ChartToggle>
+            <template #chart-a>
+              <EpochSparkline :city-id="cityId" metric="density_per_km2" />
+            </template>
+            <template #chart-b>
+              <DistributionStrip :city-id="cityId" metric="density_per_km2" />
+            </template>
           </DataPoint>
         </div>
 
@@ -181,15 +183,15 @@ const {
             :raw-value="area"
             source-label="Source: GHSL"
             content-path="/data/source-ghsl"
+            toggle-label-a="over time"
+            toggle-label-b="vs all cities"
           >
-            <ChartToggle>
-              <template #a>
-                <EpochSparkline :city-id="cityId" metric="area_km2" />
-              </template>
-              <template #b>
-                <DistributionStrip :city-id="cityId" metric="area_km2" />
-              </template>
-            </ChartToggle>
+            <template #chart-a>
+              <EpochSparkline :city-id="cityId" metric="area_km2" />
+            </template>
+            <template #chart-b>
+              <DistributionStrip :city-id="cityId" metric="area_km2" />
+            </template>
           </DataPoint>
         </div>
       </div>
@@ -197,8 +199,7 @@ const {
       <!-- Radial Profile Section (Urban World only) -->
       <RadialProfileSection v-if="showRadialProfiles" :city-id="cityId" class="mt-4" />
 
-      <!-- Media Resources -->
-      <CityMediaSection :city-id="cityId" class="mt-4" />
+      <!-- Media Resources (deferred — CityMediaSection component exists but content not yet populated) -->
     </template>
   </div>
 </template>

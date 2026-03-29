@@ -52,21 +52,21 @@ useSeoMeta({
 })
 
 // OG image — uses cityMeta (available during SSR) for name/country,
-// and client-only population data for stats (gracefully empty during SSR)
+// and population data for stats (resolved by awaits above)
 const { getCityPopulationData } = useCityPopulations()
-const ogPopData = computed(() => cityId.value ? getCityPopulationData(cityId.value, 2025) : undefined)
+const popData = cityId.value ? getCityPopulationData(cityId.value, 2025) : undefined
 
 defineOgImage({
   component: 'City',
-  cityName: computed(() => cityMeta.value?.name),
-  countryName: computed(() => cityMeta.value?.country),
-  population: computed(() => ogPopData.value ? humanizeNumber(ogPopData.value.population) : ''),
-  density: computed(() => ogPopData.value
-    ? (ogPopData.value.density_per_km2 >= 1000
-        ? `${Math.round(ogPopData.value.density_per_km2 / 100) / 10} K/km2`
-        : `${Math.round(ogPopData.value.density_per_km2)}/km2`)
-    : ''),
-  area: computed(() => ogPopData.value ? `${Math.round(ogPopData.value.area_km2).toLocaleString()} km2` : ''),
+  cityName: cityMeta.value?.name ?? '',
+  countryName: cityMeta.value?.country ?? '',
+  population: popData ? humanizeNumber(popData.population) : '',
+  density: popData
+    ? (popData.density_per_km2 >= 1000
+        ? `${Math.round(popData.density_per_km2 / 100) / 10} K/km2`
+        : `${Math.round(popData.density_per_km2)}/km2`)
+    : '',
+  area: popData ? `${Math.round(popData.area_km2).toLocaleString()} km2` : '',
   outlineUrl: `https://data.theurban.world/data/outlines/${cityId.value}.json`
 })
 

@@ -110,7 +110,7 @@ export function useH3Data() {
           } else if (rawH3Index && typeof rawH3Index === 'object' && 'toString' in rawH3Index) {
             h3Index = String(rawH3Index)
           } else {
-            console.warn(`Unexpected h3_index type at row ${i}:`, typeof rawH3Index, rawH3Index)
+
             continue
           }
 
@@ -146,7 +146,7 @@ export function useH3Data() {
         loadProgress.value = 100
         isDataLoaded.value = true
 
-        console.log(`Loaded ${h3Indices.length} H3 hexagons with population data`)
+
       } catch (e) {
         console.error('Failed to load H3 data:', e)
         error.value = e instanceof Error ? e : new Error('Failed to load H3 data')
@@ -176,7 +176,7 @@ export function useH3Data() {
     const populations = populationByYear.get(year)
 
     if (!populations) {
-      console.warn(`No population data for year ${year}`)
+
       return []
     }
 

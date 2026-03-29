@@ -5,13 +5,35 @@
       isCurrentlyHighlighted && 'ring-2 ring-ink-400/50'
     ]"
   >
-    <!-- Label -->
-    <span
-      data-testid="datapoint-label"
-      class="text-xs text-body/70 dark:text-cream/70"
-    >
-      {{ label }}
-    </span>
+    <!-- Label row -->
+    <div class="flex items-baseline justify-between">
+      <span
+        data-testid="datapoint-label"
+        class="text-sm text-body/70 dark:text-cream/70"
+      >
+        {{ label }}
+      </span>
+      <div v-if="toggleLabelA" class="flex gap-2">
+        <button
+          class="text-[10px] font-mono transition-colors cursor-pointer"
+          :class="chartMode === 'a'
+            ? 'text-ink-600 dark:text-ink-400'
+            : 'text-body/30 dark:text-cream/30 hover:text-body/50 dark:hover:text-cream/50'"
+          @click="chartMode = 'a'"
+        >
+          {{ toggleLabelA }}
+        </button>
+        <button
+          class="text-[10px] font-mono transition-colors cursor-pointer"
+          :class="chartMode === 'b'
+            ? 'text-ink-600 dark:text-ink-400'
+            : 'text-body/30 dark:text-cream/30 hover:text-body/50 dark:hover:text-cream/50'"
+          @click="chartMode = 'b'"
+        >
+          {{ toggleLabelB }}
+        </button>
+      </div>
+    </div>
 
     <!-- Value row with optional trend indicator -->
     <div class="flex items-center gap-2">
@@ -69,8 +91,12 @@
       </span>
     </div>
 
-    <!-- Slot for content before source (e.g., sparklines) -->
-    <slot />
+    <!-- Chart slots (toggled) or default slot -->
+    <template v-if="toggleLabelA">
+      <slot v-if="chartMode === 'a'" name="chart-a" />
+      <slot v-if="chartMode === 'b'" name="chart-b" />
+    </template>
+    <slot v-else />
 
     <!-- Source link -->
     <span
@@ -121,9 +147,16 @@ interface Props {
   percentageRefId?: string
   /** Content path for info modal (e.g., '/data/source-ghsl') */
   contentPath?: string
+  /** Label for chart toggle option A (e.g., 'over time'). Enables toggle when set. */
+  toggleLabelA?: string
+  /** Label for chart toggle option B (e.g., 'vs all cities') */
+  toggleLabelB?: string
 }
 
 const props = defineProps<Props>()
+
+// Chart toggle state
+const chartMode = ref<'a' | 'b'>('a')
 
 // Info modal
 const { open: openInfoModal } = useInfoModal()

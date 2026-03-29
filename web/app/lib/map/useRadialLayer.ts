@@ -108,7 +108,7 @@ export function useRadialLayer(options?: UseRadialLayerOptions) {
           return { h3Index, ringIndex: Math.floor(distKm) }
         })
 
-        console.log(`[RadialLayer] City ${cityId}: ${radialData.value.length} cells`)
+
       } catch (e) {
         console.error(`[RadialLayer] Failed to load cells for city ${cityId}:`, e)
         radialData.value = []

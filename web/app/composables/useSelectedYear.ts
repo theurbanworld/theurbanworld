@@ -25,7 +25,7 @@ export function useSelectedYear() {
     if (YEAR_EPOCHS.includes(year as YearEpoch)) {
       selectedYear.value = year as YearEpoch
     } else {
-      console.warn(`Invalid year epoch: ${year}. Valid epochs are: ${YEAR_EPOCHS.join(', ')}`)
+
     }
   }
 
