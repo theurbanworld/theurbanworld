@@ -36,7 +36,9 @@
           </g>
         </svg>
       </NuxtLink>
-      <AppLogo />
+      <NuxtLink to="/">
+        <AppLogo />
+      </NuxtLink>
       <nav class="flex justify-end items-center gap-4 max-sm:gap-2">
         <NuxtLink
           v-for="link in [
