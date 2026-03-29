@@ -1,41 +1,52 @@
 <script setup lang="ts">
 /**
- * AppSidebar - Persistent left sidebar that pushes map content
+ * AppSidebar - Left sidebar (desktop) / bottom drawer (mobile)
  *
- * Always visible at w-96 on desktop with a header slot (non-scrollable)
- * and a default content slot (scrollable).
- * On mobile (max-sm), overlays as a full-screen panel controlled by `open` prop.
+ * Desktop: Always visible at w-96, pushes map content.
+ * Mobile: UDrawer from bottom with snap points, controlled via useMobileSidebar.
  */
 
-interface Props {
-  /** Controls sidebar visibility on mobile */
-  open?: boolean
-}
-
-withDefaults(defineProps<Props>(), { open: true })
+const isMobile = useIsMobile()
+const { isOpen: mobileOpen, close: closeMobile } = useMobileSidebar()
 </script>
 
 <template>
+  <!-- Desktop sidebar -->
   <aside
+    v-if="!isMobile"
     data-testid="app-sidebar"
     class="w-96 shrink-0 bg-parchment
-           border-r border-ink-200/40 dark:border-ink-800/40
-           max-sm:fixed max-sm:inset-0 max-sm:z-200 max-sm:border-r-0
-           max-sm:transition-transform max-sm:duration-300 max-sm:ease-in-out"
-    :class="[
-      open ? 'max-sm:translate-x-0' : 'max-sm:-translate-x-full'
-    ]"
+           border-r border-ink-200/40 dark:border-ink-800/40"
   >
     <div class="w-96 min-w-96 h-full flex flex-col">
-      <!-- Non-scrollable header -->
       <slot name="header" />
-      <!-- Scrollable content -->
-      <div
-        data-testid="sidebar-content"
-        class="flex-1 overflow-y-auto"
-      >
+      <div data-testid="sidebar-content" class="flex-1 overflow-y-auto">
         <slot />
       </div>
     </div>
   </aside>
+
+  <!-- Mobile bottom drawer -->
+  <UDrawer
+    v-else
+    v-model:open="mobileOpen"
+    direction="bottom"
+    :handle="true"
+    handle-only
+    :overlay="true"
+    :snap-points="[0.5, 1]"
+    :active-snap-point="0.5"
+  >
+    <template #default>
+      <span />
+    </template>
+    <template #content>
+      <div class="flex flex-col h-full max-h-[calc(100dvh-4rem)]">
+        <slot name="header" />
+        <div class="flex-1 overflow-y-auto">
+          <slot />
+        </div>
+      </div>
+    </template>
+  </UDrawer>
 </template>
