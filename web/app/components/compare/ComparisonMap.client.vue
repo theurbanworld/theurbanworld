@@ -181,5 +181,8 @@ watch(map, (mapInstance) => {
     >
       <p class="text-sm text-red-500">{{ mapError.message }}</p>
     </div>
+
+    <!-- Map attribution -->
+    <DataAttribution />
   </div>
 </template>

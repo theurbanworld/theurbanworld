@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Home page — City Rankings
+ * Home page
  *
  * Route: /
  *
@@ -9,8 +9,9 @@
  */
 
 useSeoMeta({
-  title: 'City Rankings — The Urban World',
-  description: 'Explore the world\'s cities ranked by population, density, and area.'
+  title: 'The Urban World',
+  description: 'an observatory of urban complexity',
+  ogDescription: 'an observatory of urban complexity'
 })
 
 const { clearSelection } = useCitySelection()

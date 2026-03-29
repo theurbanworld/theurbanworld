@@ -82,7 +82,7 @@ export function useDeckGL(options: UseDeckGLOptions) {
    */
   function setLayers(layers: Layer[]) {
     if (!overlay.value) {
-      console.warn('deck.gl overlay not initialized, cannot set layers')
+
       return
     }
     overlay.value.setProps({ layers })
