@@ -29,6 +29,7 @@ const compareModalOpen = ref(false)
 // Dataset feature gating
 const { hasFeatureComputed } = useDataset()
 const showRadialProfiles = hasFeatureComputed('radialProfiles')
+const showH3Overlay = hasFeatureComputed('h3Overlay')
 
 // Get reactive city statistics
 const {
@@ -46,7 +47,13 @@ const {
   densityTrendNext,
   area,
   areaFormatted,
-  isAvailable
+  isAvailable,
+  birthYear,
+  deathYear,
+  isPreCity,
+  isPostCity,
+  isActiveCity,
+  cityStateMessage
 } = useCityStats(cityIdRef)
 </script>
 
@@ -126,6 +133,17 @@ const {
         :current-city-id="cityId"
       />
 
+      <!-- Pre/post-city state banner -->
+      <div
+        v-if="cityStateMessage"
+        class="mb-4 px-3 py-2 rounded-md text-sm font-medium"
+        :class="isPreCity
+          ? 'bg-amber-100/60 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300'
+          : 'bg-stone-100/60 text-stone-600 dark:bg-stone-800/30 dark:text-stone-400'"
+      >
+        {{ cityStateMessage }}
+      </div>
+
       <!-- DataPoints -->
       <div
         data-testid="datapoint-grid"
@@ -137,15 +155,20 @@ const {
             label="Population"
             :value="populationHumanized"
             :raw-value="populationRaw"
-            :trend-previous="populationTrendPrevious"
-            :trend-next="populationTrendNext"
+            :trend-previous="isActiveCity ? populationTrendPrevious : null"
+            :trend-next="isActiveCity ? populationTrendNext : null"
             source-label="Source: GHSL"
             content-path="/data/source-ghsl"
             toggle-label-a="over time"
             toggle-label-b="vs all cities"
           >
             <template #chart-a>
-              <EpochSparkline :city-id="cityId" metric="population" />
+              <EpochSparkline
+                :city-id="cityId"
+                metric="population"
+                :birth-year="birthYear ?? undefined"
+                :death-year="deathYear ?? undefined"
+              />
             </template>
             <template #chart-b>
               <DistributionStrip :city-id="cityId" metric="population" />
@@ -153,7 +176,7 @@ const {
           </DataPoint>
         </div>
 
-        <div data-testid="density-datapoint">
+        <div v-if="isActiveCity" data-testid="density-datapoint">
           <DataPoint
             id="city-density"
             label="Density"
@@ -167,7 +190,12 @@ const {
             toggle-label-b="vs all cities"
           >
             <template #chart-a>
-              <EpochSparkline :city-id="cityId" metric="density_per_km2" />
+              <EpochSparkline
+                :city-id="cityId"
+                metric="density_per_km2"
+                :birth-year="birthYear ?? undefined"
+                :death-year="deathYear ?? undefined"
+              />
             </template>
             <template #chart-b>
               <DistributionStrip :city-id="cityId" metric="density_per_km2" />
@@ -175,7 +203,7 @@ const {
           </DataPoint>
         </div>
 
-        <div data-testid="area-datapoint">
+        <div v-if="isActiveCity" data-testid="area-datapoint">
           <DataPoint
             id="city-area"
             label="Area"
@@ -187,7 +215,12 @@ const {
             toggle-label-b="vs all cities"
           >
             <template #chart-a>
-              <EpochSparkline :city-id="cityId" metric="area_km2" />
+              <EpochSparkline
+                :city-id="cityId"
+                metric="area_km2"
+                :birth-year="birthYear ?? undefined"
+                :death-year="deathYear ?? undefined"
+              />
             </template>
             <template #chart-b>
               <DistributionStrip :city-id="cityId" metric="area_km2" />
@@ -195,6 +228,9 @@ const {
           </DataPoint>
         </div>
       </div>
+
+      <!-- Population Heatmap (H3 datasets only) -->
+      <PopulationHeatmapSection v-if="showH3Overlay" :city-id="cityId" class="mt-4" />
 
       <!-- Radial Profile Section (Urban World only) -->
       <RadialProfileSection v-if="showRadialProfiles" :city-id="cityId" class="mt-4" />

@@ -12,9 +12,15 @@ const props = defineProps<{
 
 const { open: openInfoModal } = useInfoModal()
 const { isRadialLayerActive, setRadialLayerActive } = useRadialHighlight()
+const { isPopulationLayerActive, setPopulationLayerActive } = usePopulationHighlight()
 
 function toggleMapLayer() {
-  setRadialLayerActive(!isRadialLayerActive.value)
+  const next = !isRadialLayerActive.value
+  // Deactivate population layer when activating radial (they overlap)
+  if (next && isPopulationLayerActive.value) {
+    setPopulationLayerActive(false)
+  }
+  setRadialLayerActive(next)
 }
 
 // Deactivate layer when component unmounts

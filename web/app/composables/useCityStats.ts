@@ -51,6 +51,18 @@ export interface CityStats {
   isAvailable: ComputedRef<boolean>
   /** City bounding box [minx, miny, maxx, maxy] */
   bbox: ComputedRef<[number, number, number, number] | null>
+  /** Year the city first became an urban center */
+  birthYear: ComputedRef<number | null>
+  /** Year the city fell below urban center threshold */
+  deathYear: ComputedRef<number | null>
+  /** Whether the selected epoch is before the city's birth */
+  isPreCity: ComputedRef<boolean>
+  /** Whether the selected epoch is after the city's death */
+  isPostCity: ComputedRef<boolean>
+  /** Whether the city is an active urban center in the selected epoch */
+  isActiveCity: ComputedRef<boolean>
+  /** Contextual message for pre/post-city states */
+  cityStateMessage: ComputedRef<string | null>
 }
 
 /**
@@ -240,6 +252,43 @@ export function useCityStats(cityId: MaybeRef<string>): CityStats {
     return toAnnualRate(fiveYearRate)
   })
 
+  // ── Birth/death year and city lifecycle state ──
+
+  const birthYear = computed((): number | null => {
+    // Prefer population record (has birth_year from pipeline), fall back to index
+    const record = cityPopulations.getCityRecord(cityIdRef.value)
+    if (record?.birth_year) return record.birth_year
+    return city.value?.birth_year ?? null
+  })
+
+  const deathYear = computed((): number | null => {
+    const record = cityPopulations.getCityRecord(cityIdRef.value)
+    if (record?.death_year) return record.death_year
+    return city.value?.death_year ?? null
+  })
+
+  const isPreCity = computed(() => {
+    const by = birthYear.value
+    return by !== null && selectedYear.value < by
+  })
+
+  const isPostCity = computed(() => {
+    const dy = deathYear.value
+    return dy !== null && selectedYear.value >= dy
+  })
+
+  const isActiveCity = computed(() => !isPreCity.value && !isPostCity.value)
+
+  const cityStateMessage = computed((): string | null => {
+    if (isPreCity.value && birthYear.value) {
+      return `Becomes urban center in ${birthYear.value}`
+    }
+    if (isPostCity.value && deathYear.value) {
+      return `No longer classified as urban center after ${deathYear.value - 5}`
+    }
+    return null
+  })
+
   return {
     isLoading,
     error,
@@ -256,6 +305,12 @@ export function useCityStats(cityId: MaybeRef<string>): CityStats {
     densityTrendPrevious,
     densityTrendNext,
     isAvailable,
-    bbox
+    bbox,
+    birthYear,
+    deathYear,
+    isPreCity,
+    isPostCity,
+    isActiveCity,
+    cityStateMessage
   }
 }

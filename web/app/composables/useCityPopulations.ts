@@ -19,6 +19,12 @@ export interface CityPopulationEpoch {
   population: number
   area_km2: number
   density_per_km2: number
+  /** True if this epoch is before the city's birth (proto-city) */
+  proto?: boolean
+  /** True if this epoch is after the city's death (post-city) */
+  post?: boolean
+  /** H3 cell index of the population-weighted centroid for this epoch */
+  centroid_h3?: string
 }
 
 /**
@@ -26,6 +32,10 @@ export interface CityPopulationEpoch {
  */
 export interface CityPopulationRecord {
   city_id: string
+  /** Year the city first became an urban center */
+  birth_year?: number
+  /** Year the city fell below urban center threshold */
+  death_year?: number
   epochs: Record<YearEpoch, CityPopulationEpoch>
 }
 
@@ -74,6 +84,12 @@ export function useCityPopulations() {
     return new Map(data.value.map(r => [r.city_id, r.epochs]))
   })
 
+  // Build Map for record-level metadata (birth/death years)
+  const recordsMapRef = computed(() => {
+    if (!data.value?.length) return null
+    return new Map(data.value.map(r => [r.city_id, r]))
+  })
+
   // Computed states
   const isLoading = computed(() => status.value === 'pending')
   const isLoaded = computed(() => status.value === 'success')
@@ -97,6 +113,13 @@ export function useCityPopulations() {
    */
   function getCityAllEpochs(cityId: string): Record<YearEpoch, CityPopulationEpoch> | undefined {
     return populationsMapRef.value?.get(cityId)
+  }
+
+  /**
+   * Get the full population record for a city (includes birth/death years)
+   */
+  function getCityRecord(cityId: string): CityPopulationRecord | undefined {
+    return recordsMapRef.value?.get(cityId)
   }
 
   /**
@@ -133,6 +156,8 @@ export function useCityPopulations() {
     getCityPopulationData,
     /** Get all epoch data for a city */
     getCityAllEpochs,
+    /** Get full record including birth/death years */
+    getCityRecord,
     /** Check if city data exists */
     hasCity,
     /** Check if any data is available */

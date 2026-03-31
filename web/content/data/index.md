@@ -8,7 +8,7 @@ The Urban World provides two datasets for exploring global urbanization. Each da
 
 ## Available datasets
 
-- **[Urban World v1](/data/urban-world-v1)** — a curated dataset using H3 hexagonal grids with outlier filtering and radial density profiles
+- **[Urban World v1](/data/urban-world-v1)** — a curated dataset using H3 hexagonal grids with city emergence narratives, per-cell population heatmaps, outlier filtering, and radial density profiles
 - **[GHSL R2024](/data/ghsl-r2024)** — the raw Global Human Settlement Layer on its native 1 km grid, presented without filtering
 
 ## Pipeline overview

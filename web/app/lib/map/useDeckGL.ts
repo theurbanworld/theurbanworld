@@ -60,6 +60,31 @@ export function useDeckGL(options: UseDeckGLOptions) {
     const deckOverlay = new MapboxOverlay({
       interleaved: true,
       layers: [],
+      getTooltip: (info: PickingInfo) => {
+        if (!info.picked || !info.object) return null
+
+        // Population layer tooltip
+        if (info.layer?.id === 'city-population-layer') {
+          const d = info.object as { population?: number }
+          if (d.population != null) {
+            return {
+              html: `<b>${Math.round(d.population).toLocaleString()}</b> people`,
+              style: {
+                backgroundColor: 'rgba(50, 40, 35, 0.9)',
+                color: '#f0e8d8',
+                fontSize: '12px',
+                fontFamily: 'monospace',
+                padding: '4px 8px',
+                borderRadius: '4px',
+                border: 'none',
+                boxShadow: 'none',
+              }
+            }
+          }
+        }
+
+        return null
+      },
       onHover: (info: PickingInfo) => {
         hoverInfo.value = toHoverInfo(info)
         // Notify all hover callbacks

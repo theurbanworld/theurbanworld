@@ -21,6 +21,8 @@ export interface CityIndexEntry {
   bbox: [number, number, number, number]
   population: number
   wikidata_id?: string
+  birth_year?: number
+  death_year?: number
 }
 
 export function useCitiesIndex() {

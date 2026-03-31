@@ -39,11 +39,35 @@ from ..utils.h3_utils import (
     assign_cells_to_rings,
     compute_population_weighted_centroid,
     h3_cell_area_km2,
+    h3_cell_to_latlng,
 )
+
+CENTROIDS_PARQUET = Path("data/processed/cities/city_centroids_h3_r8.parquet")
+
+
+def load_precomputed_centroids() -> dict[tuple[str, int], tuple[float, float]]:
+    """Load pre-computed H3 centroids if available.
+
+    Returns:
+        Dict of (city_id, epoch) -> (lat, lng) from the H3 cell center
+    """
+    if not CENTROIDS_PARQUET.exists():
+        return {}
+
+    df = pl.read_parquet(CENTROIDS_PARQUET)
+    centroids = {}
+    for row in df.iter_rows(named=True):
+        key = (str(row["city_id"]), int(row["epoch"]))
+        centroids[key] = (row["centroid_lat"], row["centroid_lng"])
+
+    return centroids
 
 
 def compute_radial_profiles_for_epoch(
-    epoch: int, input_dir: Path, canonical_city_ids: set[str] | None = None
+    epoch: int,
+    input_dir: Path,
+    canonical_city_ids: set[str] | None = None,
+    precomputed_centroids: dict[tuple[str, int], tuple[float, float]] | None = None,
 ) -> pl.DataFrame:
     """
     Compute radial profiles for all cities in a single epoch.
@@ -52,6 +76,7 @@ def compute_radial_profiles_for_epoch(
         epoch: Year to process (1975, 1980, ..., 2030)
         input_dir: Directory containing h3_r8_pop_{epoch}.parquet files
         canonical_city_ids: If provided, filter to only these city_ids
+        precomputed_centroids: Pre-computed H3 centroids from modal_extract_city_h3
 
     Returns:
         DataFrame with radial profile data for all cities
@@ -91,7 +116,12 @@ def compute_radial_profiles_for_epoch(
         if total_pop <= 0:
             continue
 
-        center_lat, center_lng = compute_population_weighted_centroid(cells_str, pop_dict)
+        # Use pre-computed H3 centroid if available (snapped to actual H3 cell)
+        centroid_key = (city_id, epoch)
+        if precomputed_centroids and centroid_key in precomputed_centroids:
+            center_lat, center_lng = precomputed_centroids[centroid_key]
+        else:
+            center_lat, center_lng = compute_population_weighted_centroid(cells_str, pop_dict)
 
         # Assign cells to rings
         rings = assign_cells_to_rings(
@@ -174,10 +204,19 @@ def compute_all_radial_profiles(epochs: list[int] | None = None) -> pl.DataFrame
     )
     print(f"  Filtering to {len(canonical_city_ids):,} canonical UCDB city_ids")
 
+    # Load pre-computed H3 centroids (from modal_extract_city_h3.py)
+    precomputed_centroids = load_precomputed_centroids()
+    if precomputed_centroids:
+        print(f"  Using {len(precomputed_centroids):,} pre-computed H3 centroids")
+    else:
+        print("  No pre-computed centroids found, will compute on-the-fly")
+
     all_profiles = []
     for epoch in epochs:
         print(f"  Processing epoch {epoch}...")
-        profiles = compute_radial_profiles_for_epoch(epoch, input_dir, canonical_city_ids)
+        profiles = compute_radial_profiles_for_epoch(
+            epoch, input_dir, canonical_city_ids, precomputed_centroids
+        )
         n_cities = profiles["city_id"].n_unique()
         print(f"    {n_cities:,} cities processed")
         all_profiles.append(profiles)
