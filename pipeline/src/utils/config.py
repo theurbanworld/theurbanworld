@@ -42,6 +42,10 @@ class PipelineConfig(BaseSettings):
     H3_RESOLUTION_1KM: int = 8  # ~0.74 km² per cell - for 1km time series data
     H3_RESOLUTION_RADIAL: int = 10  # ~0.015 km² per cell - for radial profiles
 
+    # Global H3 processing
+    GLOBAL_H3_R8_DIR: ClassVar[Path] = PROCESSED_DIR / "global_h3_r8"
+    H3_CITY_BUFFER_KM: float = 30.0  # Buffer around city boundaries for heatmap
+
     # Radial profile settings (Bertaud methodology)
     RADIAL_MAX_DISTANCE_KM: float = 50.0
     RADIAL_RING_WIDTH_KM: float = 1.0

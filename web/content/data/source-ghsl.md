@@ -17,11 +17,15 @@ Both products are available at 1 km and 100 m resolution, in the Mollweide equal
 
 ## Temporal coverage
 
-GHSL R2023A provides data for epochs: 1975, 1980, 1990, 2000, 2005, 2010, 2015, 2020, 2025, and 2030. The 2025 and 2030 epochs are model-based projections.
+GHSL R2023A provides data for 12 epochs: 1975, 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020, 2025, and 2030. The 2025 and 2030 epochs are model-based projections.
 
 ## How we use it
 
-We download the 1 km resolution GHS-POP and GHS-BUILT-S rasters, extract values for each city's extent, and aggregate them into population, density, and area statistics.
+We download the 1 km resolution GHS-POP rasters in WGS84 projection (30 arc-second) and process the entire world into H3 Resolution 8 hexagons using area-weighted extraction (exactextract). This produces a global population timeseries of ~57 million H3 cells across 12 epochs.
+
+From this global dataset we derive per-city statistics, population heatmaps with 30 km buffer zones, proto-city emergence data, and Bertaud-style radial density profiles using per-epoch population-weighted centroids.
+
+City boundaries and birth years come from the **GHSL Urban Centre Database (UCDB)** and its **Multi-Temporal Urban Centre (MTUC)** boundaries, which track how each city's footprint changes across epochs.
 
 ::citation-card{author="Schiavina, M., Freire, S., Carioli, A., MacManus, K." year="2023" title="GHS-POP R2023A" url="https://ghsl.jrc.ec.europa.eu/ghs_pop2023.php"}
 ::

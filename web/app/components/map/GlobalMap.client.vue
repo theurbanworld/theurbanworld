@@ -30,9 +30,9 @@
       </div>
     </div>
 
-    <!-- Loading indicator for radial cell data -->
+    <!-- Loading indicator for overlay data -->
     <div
-      v-if="isLoadingRadialCells && !isMapLoading"
+      v-if="(isLoadingRadialCells || isLoadingH3) && !isMapLoading"
       class="absolute bottom-20 left-1/2 -translate-x-1/2 z-10
              bg-parchment/95 rounded-lg px-4 py-2.5 shadow-lg
              flex items-center gap-2.5"
@@ -42,7 +42,7 @@
         class="animate-spin text-lg text-ink-600 dark:text-ink-400"
       />
       <span class="text-sm text-body dark:text-cream font-medium">
-        Loading radial cells...
+        {{ isLoadingH3 ? 'Loading population data...' : 'Loading radial cells...' }}
       </span>
     </div>
 
@@ -84,6 +84,7 @@ import type { ShallowRef } from 'vue'
 import { useMap } from '~/lib/map/useMap'
 import { useDeckGL } from '~/lib/map/useDeckGL'
 import { useRadialLayer } from '~/lib/map/useRadialLayer'
+import { usePopulationLayer } from '~/lib/map/usePopulationLayer'
 
 // Props for configuration
 const props = defineProps<{
@@ -118,6 +119,12 @@ const { layer: radialLayer, isLoadingCells: isLoadingRadialCells } = useRadialLa
   maxDensity: radialMaxDensity,
 })
 const { isRadialLayerActive } = useRadialHighlight()
+
+// Population heatmap layer (activated when sidebar toggle is clicked)
+const { layer: populationLayer } = usePopulationLayer({
+  isDarkMode: computed(() => props.isDarkMode ?? false),
+})
+const { isPopulationLayerActive, isLoadingH3 } = usePopulationHighlight()
 
 // Boundary layer IDs to toggle when radial layer is active
 const BOUNDARY_LAYERS = [
@@ -192,20 +199,21 @@ watch(isDeckInitialized, (initialized) => {
   }
 })
 
-// Watch radial layer and update deck.gl
-watch(radialLayer, (layer) => {
+// Watch overlay layers (radial + population) and update deck.gl
+watch([radialLayer, populationLayer], ([radial, population]) => {
   if (!isDeckInitialized.value) return
   const layers: Layer[] = []
   if (currentLayer.value) layers.push(currentLayer.value)
-  if (layer) layers.push(layer)
+  if (radial) layers.push(radial)
+  if (population) layers.push(population)
   setLayers(layers)
 })
 
-// Toggle boundary layer visibility when radial layer is active
-watch(isRadialLayerActive, (active) => {
+// Toggle boundary layer visibility when overlay layers are active
+watch([isRadialLayerActive, isPopulationLayerActive], ([radialActive, popActive]) => {
   const mapInstance = map.value
   if (!mapInstance) return
-  const visibility = active ? 'none' : 'visible'
+  const visibility = (radialActive || popActive) ? 'none' : 'visible'
   for (const layerId of BOUNDARY_LAYERS) {
     if (mapInstance.getLayer(layerId)) {
       mapInstance.setLayoutProperty(layerId, 'visibility', visibility)

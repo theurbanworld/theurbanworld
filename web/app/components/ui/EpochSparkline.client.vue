@@ -31,6 +31,10 @@ const props = defineProps<{
   metric: 'population' | 'density_per_km2' | 'area_km2'
   /** Optional: overlay two cities' data on the same chart */
   cityIds?: string[]
+  /** Year the city first became an urban center (enables dashed pre-birth segments) */
+  birthYear?: number
+  /** Year the city fell below urban center threshold (enables dashed post-death segments) */
+  deathYear?: number
 }>()
 
 const { selectedYear, setYear } = useSelectedYear()
@@ -63,6 +67,27 @@ const chartData = computed<ChartData<'line'>>(() => {
   const pointRadius = YEAR_EPOCHS.map(y => y === selectedYear.value ? 4 : 0)
   const pointHoverRadius = YEAR_EPOCHS.map(y => y === selectedYear.value ? 5 : 3)
 
+  // Build segment styling for pre-birth / post-death dashed lines
+  const birthIdx = props.birthYear ? YEAR_EPOCHS.indexOf(props.birthYear as typeof YEAR_EPOCHS[number]) : -1
+  const deathIdx = props.deathYear ? YEAR_EPOCHS.indexOf(props.deathYear as typeof YEAR_EPOCHS[number]) : -1
+
+  const segmentStyle = (birthIdx >= 0 || deathIdx >= 0) ? {
+    segment: {
+      borderColor: (ctx: { p0DataIndex: number; p1DataIndex: number }) => {
+        // Pre-birth: segment ends before birth index
+        if (birthIdx >= 0 && ctx.p1DataIndex < birthIdx) return 'rgba(180, 150, 100, 0.5)'
+        // Post-death: segment starts at or after death index
+        if (deathIdx >= 0 && ctx.p0DataIndex >= deathIdx) return 'rgba(140, 140, 140, 0.5)'
+        return undefined
+      },
+      borderDash: (ctx: { p0DataIndex: number; p1DataIndex: number }) => {
+        if (birthIdx >= 0 && ctx.p1DataIndex < birthIdx) return [4, 3]
+        if (deathIdx >= 0 && ctx.p0DataIndex >= deathIdx) return [4, 3]
+        return undefined
+      },
+    },
+  } : {}
+
   const datasetA = {
     label: isComparisonMode.value ? (getCityName(props.cityIds![0]!) ?? 'City A') : undefined,
     data,
@@ -75,6 +100,7 @@ const chartData = computed<ChartData<'line'>>(() => {
     pointRadius,
     pointHoverRadius,
     tension: 0.3,
+    ...segmentStyle,
   }
 
   if (!isComparisonMode.value || !epochsB.value) {
@@ -183,7 +209,40 @@ const selectedYearPlugin = computed<Plugin<'line'>>(() => ({
   },
 }))
 
-const plugins = computed(() => [selectedYearPlugin.value])
+// Vertical marker lines at birth/death year transitions
+const lifecycleMarkerPlugin = computed<Plugin<'line'>>(() => ({
+  id: 'lifecycleMarker',
+  afterDraw: (chart) => {
+    const drawMarker = (yearIndex: number, color: string) => {
+      if (yearIndex < 0) return
+      const meta = chart.getDatasetMeta(0)
+      const point = meta.data[yearIndex]
+      if (!point) return
+
+      const { ctx, chartArea } = chart
+      ctx.save()
+      ctx.strokeStyle = color
+      ctx.lineWidth = 1
+      ctx.setLineDash([1, 2])
+      ctx.beginPath()
+      ctx.moveTo(point.x, chartArea.top)
+      ctx.lineTo(point.x, chartArea.bottom)
+      ctx.stroke()
+      ctx.restore()
+    }
+
+    if (props.birthYear) {
+      const idx = YEAR_EPOCHS.indexOf(props.birthYear as typeof YEAR_EPOCHS[number])
+      drawMarker(idx, 'rgba(180, 130, 50, 0.6)')
+    }
+    if (props.deathYear) {
+      const idx = YEAR_EPOCHS.indexOf(props.deathYear as typeof YEAR_EPOCHS[number])
+      drawMarker(idx, 'rgba(140, 140, 140, 0.6)')
+    }
+  },
+}))
+
+const plugins = computed(() => [selectedYearPlugin.value, lifecycleMarkerPlugin.value])
 </script>
 
 <template>

@@ -82,25 +82,48 @@ export function useRadialLayer(options?: UseRadialLayerOptions) {
     return cells
   }
 
-  // Build radial data when city or active state changes
+  // Get epoch-specific centroid if available, otherwise fall back to static centroid
+  const { selectedYear } = useSelectedYear()
+  const { getCityPopulationData } = useCityPopulations()
+
+  function getCentroidForCity(cityId: string): [number, number] | null {
+    // Try epoch-specific H3 centroid first
+    const epochData = getCityPopulationData(cityId, selectedYear.value)
+    if (epochData?.centroid_h3) {
+      const [lat, lng] = cellToLatLng(epochData.centroid_h3)
+      return [lat, lng]
+    }
+
+    // Fall back to static centroid from cities index
+    const city = getCity(cityId)
+    if (city?.centroid) {
+      // cities index centroid is [lng, lat]
+      return [city.centroid[1], city.centroid[0]]
+    }
+
+    return null
+  }
+
+  // Build radial data when city, active state, or selected year changes
   watch(
-    [effectiveCityId, isActive],
+    [effectiveCityId, isActive, selectedYear],
     async ([cityId, active]) => {
       if (!active || !cityId) {
         radialData.value = []
         return
       }
 
-      const city = getCity(cityId)
-      if (!city) {
+      const centroid = getCentroidForCity(cityId)
+      if (!centroid) {
         radialData.value = []
         return
       }
 
+      const [centroidLat, centroidLng] = centroid
+
       isLoadingCells.value = true
       try {
         const h3Indices = await fetchCityCells(cityId)
-        const [centroidLng, centroidLat] = city.centroid
 
         radialData.value = h3Indices.map((h3Index) => {
           const [cellLat, cellLng] = cellToLatLng(h3Index)
@@ -108,7 +131,7 @@ export function useRadialLayer(options?: UseRadialLayerOptions) {
           return { h3Index, ringIndex: Math.floor(distKm) }
         })
 
-
+        console.log(`[RadialLayer] City ${cityId}: ${radialData.value.length} cells (centroid from ${getCityPopulationData(cityId, selectedYear.value)?.centroid_h3 ? 'H3' : 'index'})`)
       } catch (e) {
         console.error(`[RadialLayer] Failed to load cells for city ${cityId}:`, e)
         radialData.value = []

@@ -15,6 +15,7 @@ import json
 from pathlib import Path
 
 import geopandas as gpd
+import pandas as pd
 import polars as pl
 
 from ..cities.density_outliers import identify_outlier_city_ids
@@ -22,8 +23,11 @@ from ..cities.density_outliers import identify_outlier_city_ids
 # Constants
 CITIES_PARQUET = Path("data/processed/cities/cities.parquet")
 WIKIDATA_MATCHES = Path("data/processed/cities/wikidata_matches.json")
+GEOMETRIES_PARQUET = Path("data/interim/mtuc/geometries_by_epoch.parquet")
 OUTPUT_JSON = Path("data/processed/tiles/cities_index.json")
 R2_KEY = "data/cities_index.json"
+
+EPOCHS = [1975, 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020, 2025, 2030]
 
 
 def load_cities() -> gpd.GeoDataFrame:
@@ -45,12 +49,36 @@ def load_wikidata_matches() -> dict[str, str]:
     return matches
 
 
+def load_death_years() -> dict[str, int]:
+    """Derive death years from geometries_by_epoch.parquet.
+
+    A city "dies" when it no longer has a boundary in a later epoch.
+    Death year = first epoch after the last alive epoch.
+    """
+    if not GEOMETRIES_PARQUET.exists():
+        return {}
+
+    geom_gdf = gpd.read_parquet(GEOMETRIES_PARQUET)
+    max_epochs = geom_gdf.groupby("city_id")["epoch"].max()
+    death_years = {}
+    for cid, max_epoch in max_epochs.items():
+        if max_epoch < 2030:
+            idx = EPOCHS.index(max_epoch)
+            if idx + 1 < len(EPOCHS):
+                death_years[str(cid)] = EPOCHS[idx + 1]
+
+    if death_years:
+        print(f"  Derived {len(death_years):,} death years")
+    return death_years
+
+
 def generate_city_index(
     gdf: gpd.GeoDataFrame, wikidata_matches: dict[str, str] | None = None
 ) -> list[dict]:
     """Generate city index list from GeoDataFrame."""
     print("Generating city index...")
     wikidata_matches = wikidata_matches or {}
+    death_years = load_death_years()
 
     cities = []
     for _, row in gdf.iterrows():
@@ -89,6 +117,15 @@ def generate_city_index(
         city_id = str(row["city_id"])
         if city_id in wikidata_matches:
             city["wikidata_id"] = wikidata_matches[city_id]
+
+        # Birth year (from MTUC year-of-birth)
+        yob = row.get("ucdb_year_of_birth")
+        if yob is not None and not pd.isna(yob):
+            city["birth_year"] = int(yob)
+
+        # Death year (derived from epoch geometries)
+        if city_id in death_years:
+            city["death_year"] = death_years[city_id]
 
         cities.append(city)
 
