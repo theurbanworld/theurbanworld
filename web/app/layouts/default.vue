@@ -33,10 +33,12 @@ function handleCityClose() {
 
 <template>
   <div class="flex flex-col flex-1 min-h-0 overflow-hidden">
-    <!-- Full-width controls strip: epoch left, dataset right -->
-    <div class="flex items-center justify-between gap-3 px-4 py-2 bg-parchment border-b border-ink-200/40 dark:border-ink-800/40">
-      <EpochStrip />
-      <div class="flex items-center gap-3">
+    <!-- Full-width controls strip: epoch box (aligned with sidebar) left, dataset right -->
+    <div class="flex items-stretch bg-parchment border-b border-ink-200/40 dark:border-ink-800/40">
+      <div class="w-96 shrink-0 flex items-center px-4 py-2 border-r border-ink-200/40 dark:border-ink-800/40">
+        <EpochStrip />
+      </div>
+      <div class="flex-1 flex items-center justify-end gap-3 px-4 py-2">
         <DatasetPicker />
         <GlobalPopulationDropdown />
       </div>
