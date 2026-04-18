@@ -8,8 +8,7 @@ export default defineNuxtConfig({
     '@nuxt/content',
     '@nuxt/eslint',
     '@nuxt/ui',
-    '@nuxt/fonts',
-    '@nuxt/test-utils/module'
+    '@nuxt/fonts'
   ],
 
   site: {
@@ -76,6 +75,12 @@ export default defineNuxtConfig({
   },
 
   routeRules: {},
+
+  vite: {
+    optimizeDeps: {
+      include: ['fuse.js']
+    }
+  },
 
   content: {
     build: {

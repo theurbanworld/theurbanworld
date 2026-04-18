@@ -17,9 +17,7 @@ useSeoMeta({
   ogDescription: 'The Urban World tells the story of global urbanization through data, making visible the shape, density, and growth of cities over time.'
 })
 
-defineOgImage({
-  component: 'Default'
-})
+defineOgImage('Default')
 
 // Site-wide structured data
 useSchemaOrg([
@@ -46,8 +44,6 @@ onMounted(() => {
       <NuxtLayout>
         <NuxtPage />
       </NuxtLayout>
-
-      <AppFooter />
     </div>
 
     <!-- Global modal — outside layouts so it's always available -->
