@@ -56,8 +56,7 @@ useSeoMeta({
 const { getCityPopulationData } = useCityPopulations()
 const popData = cityId.value ? getCityPopulationData(cityId.value, 2025) : undefined
 
-defineOgImage({
-  component: 'City',
+defineOgImage('City', {
   cityName: cityMeta.value?.name ?? '',
   countryName: cityMeta.value?.country ?? '',
   population: popData ? humanizeNumber(popData.population) : '',
