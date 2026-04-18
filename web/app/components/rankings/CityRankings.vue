@@ -41,7 +41,7 @@ const rankedCities = computed<RankedCity[]>(() => {
 
     let growthRate: number | null = null
     let growthAbs: number | null = null
-    if (prevYear !== null) {
+    if (prevYear != null) {
       const prevData = getCityPopulationData(city.id, prevYear)
       if (prevData && prevData.population > 0) {
         const fiveYearRate = ((popData.population - prevData.population) / prevData.population) * 100
@@ -206,7 +206,10 @@ watch([activeStat, growthMode, countryFilter, sortDirection], () => {
     </button>
 
     <!-- Show more -->
-    <div v-if="hasMore" class="px-5 py-3 text-center">
+    <div
+      v-if="hasMore"
+      class="px-5 py-3 text-center"
+    >
       <button
         class="text-xs text-ink-600 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-300 transition-colors cursor-pointer"
         @click="showMore"

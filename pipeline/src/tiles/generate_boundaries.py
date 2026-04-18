@@ -40,7 +40,9 @@ R2_KEY = "tiles/city_boundaries.pmtiles"
 TREND_THRESHOLD = 0.005
 
 
-def compute_trend(from_prev: Optional[float], to_next: Optional[float], threshold: float = TREND_THRESHOLD) -> int:
+def compute_trend(
+    from_prev: Optional[float], to_next: Optional[float], threshold: float = TREND_THRESHOLD
+) -> int:
     """
     Compute trend indicator from prev/next growth rates.
 
@@ -139,7 +141,8 @@ def load_geometries() -> gpd.GeoDataFrame:
         lambda row: compute_trend(row["growth_from_prev"], row["growth_to_next"]), axis=1
     )
     pop_with_trends["density_trend"] = pop_with_trends.apply(
-        lambda row: compute_trend(row["density_cagr_from_prev"], row["density_cagr_to_next"]), axis=1
+        lambda row: compute_trend(row["density_cagr_from_prev"], row["density_cagr_to_next"]),
+        axis=1,
     )
 
     # Keep only needed columns for join
@@ -165,7 +168,16 @@ def generate_geojson(gdf: gpd.GeoDataFrame, output_path: Path) -> None:
 
     # Keep needed columns including name, population, density, and trends
     gdf_export = gdf[
-        ["city_id", "epoch", "name", "population", "density_per_km2", "pop_trend", "density_trend", "geometry"]
+        [
+            "city_id",
+            "epoch",
+            "name",
+            "population",
+            "density_per_km2",
+            "pop_trend",
+            "density_trend",
+            "geometry",
+        ]
     ].copy()
 
     # Ensure proper types for tippecanoe
@@ -192,7 +204,8 @@ def run_tippecanoe(geojson_path: Path, pmtiles_path: Path) -> None:
 
     cmd = [
         "tippecanoe",
-        "-o", str(pmtiles_path),
+        "-o",
+        str(pmtiles_path),
         "--force",  # Overwrite existing
         "--layer=city_boundaries",
         "--minimum-zoom=0",
@@ -217,7 +230,7 @@ def run_tippecanoe(geojson_path: Path, pmtiles_path: Path) -> None:
 
 def upload_to_r2(local_path: Path, r2_key: str) -> str:
     """Upload PMTiles to R2."""
-    print(f"Uploading to R2...")
+    print("Uploading to R2...")
 
     endpoint_url = os.environ["R2_ENDPOINT_URL"]
     access_key = os.environ["R2_ACCESS_KEY_ID"]
@@ -268,7 +281,7 @@ def main(local_only: bool = False) -> None:
     if not local_only:
         upload_to_r2(OUTPUT_PMTILES, R2_KEY)
     else:
-        print(f"\nLocal only mode - skipping R2 upload")
+        print("\nLocal only mode - skipping R2 upload")
         print(f"Output: {OUTPUT_PMTILES}")
 
     print("\nDone!")

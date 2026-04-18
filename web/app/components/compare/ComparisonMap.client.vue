@@ -60,7 +60,7 @@ const { layer: radialLayer } = useRadialLayer({
   maxDensity: maxDensityRef,
   layerIdSuffix: props.mapId,
   alwaysActive: isComparisonRadialActive,
-  disableHover: true,
+  disableHover: true
 })
 
 // Push radial layer to deck.gl when ready
@@ -75,7 +75,6 @@ const {
   onZoomChange,
   onPanChange,
   isZoomSource,
-  clearZoomSource,
   setCenter
 } = useComparisonViewState()
 
@@ -158,7 +157,10 @@ watch(map, (mapInstance) => {
         class="w-2.5 h-2.5 rounded-full shrink-0"
         :style="{ backgroundColor: identityColor.primary }"
       />
-      <span class="text-sm font-medium leading-tight" :style="{ color: identityColor.primary }">
+      <span
+        class="text-sm font-medium leading-tight"
+        :style="{ color: identityColor.primary }"
+      >
         {{ city.name }}<span class="opacity-50 font-normal">, {{ city.country }}</span>
       </span>
     </div>
@@ -179,7 +181,9 @@ watch(map, (mapInstance) => {
       v-if="mapError"
       class="absolute inset-0 flex items-center justify-center bg-parchment/90 z-10"
     >
-      <p class="text-sm text-red-500">{{ mapError.message }}</p>
+      <p class="text-sm text-red-500">
+        {{ mapError.message }}
+      </p>
     </div>
 
     <!-- Map attribution -->

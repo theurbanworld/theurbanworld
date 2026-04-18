@@ -203,7 +203,7 @@ function createSepiaTheme(): Theme {
       farmland: 'rgba(212, 215, 198, 1)',
       glacier: 'rgba(213, 224, 229, 1)',
       scrub: 'rgba(218, 216, 200, 1)',
-      forest: 'rgba(200, 210, 195, 1)',
+      forest: 'rgba(200, 210, 195, 1)'
     },
 
     // Fonts - use Inter for all basemap labels
@@ -328,7 +328,7 @@ function createDarkSepiaTheme(): Theme {
       farmland: 'rgba(46, 48, 40, 1)',
       glacier: 'rgba(55, 65, 70, 1)',
       scrub: 'rgba(50, 48, 42, 1)',
-      forest: 'rgba(44, 46, 40, 1)',
+      forest: 'rgba(44, 46, 40, 1)'
     },
 
     // Fonts - use Inter for all basemap labels
@@ -572,27 +572,27 @@ export function useMap(options: UseMapOptions) {
           // otherwise hash-based hue with population brightness
           'line-color': boundaryColor
             ? [
-              'case',
-              ['boolean', ['feature-state', 'selected'], false],
-              boundaryColor,
-              // Non-selected cities: hash-based colors
-              ['interpolate', ['linear'], ['get', 'population'],
+                'case',
+                ['boolean', ['feature-state', 'selected'], false],
+                boundaryColor,
+                // Non-selected cities: hash-based colors
+                ['interpolate', ['linear'], ['get', 'population'],
+                  0, ['match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
+                    0, lightPalette[0], 1, lightPalette[1], 2, lightPalette[2],
+                    3, lightPalette[3], 4, lightPalette[4], 5, lightPalette[5], defaultLight],
+                  5000000, ['match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
+                    0, darkPalette[0], 1, darkPalette[1], 2, darkPalette[2],
+                    3, darkPalette[3], 4, darkPalette[4], 5, darkPalette[5], defaultDark]]
+              ]
+            : [
+                'interpolate', ['linear'], ['get', 'population'],
                 0, ['match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
                   0, lightPalette[0], 1, lightPalette[1], 2, lightPalette[2],
                   3, lightPalette[3], 4, lightPalette[4], 5, lightPalette[5], defaultLight],
                 5000000, ['match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
                   0, darkPalette[0], 1, darkPalette[1], 2, darkPalette[2],
-                  3, darkPalette[3], 4, darkPalette[4], 5, darkPalette[5], defaultDark]]
-            ]
-            : [
-              'interpolate', ['linear'], ['get', 'population'],
-              0, ['match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
-                0, lightPalette[0], 1, lightPalette[1], 2, lightPalette[2],
-                3, lightPalette[3], 4, lightPalette[4], 5, lightPalette[5], defaultLight],
-              5000000, ['match', ['%', ['to-number', ['slice', ['get', 'city_id'], -3]], 6],
-                0, darkPalette[0], 1, darkPalette[1], 2, darkPalette[2],
-                3, darkPalette[3], 4, darkPalette[4], 5, darkPalette[5], defaultDark]
-            ],
+                  3, darkPalette[3], 4, darkPalette[4], 5, darkPalette[5], defaultDark]
+              ],
           // Line width: selected = 6, hover = 4, default = 3
           'line-width': [
             'case',
@@ -731,7 +731,6 @@ export function useMap(options: UseMapOptions) {
       mapInstance.setFilter(CITY_LABELS_LAYER, labelFilter)
 
       cityBoundariesLoaded.value = true
-
     } catch (e) {
       console.error('Failed to add city boundaries layer:', e)
     }
@@ -801,7 +800,6 @@ export function useMap(options: UseMapOptions) {
 
     const city = getCity(cityId)
     if (!city || !city.bbox) {
-
       return
     }
 
@@ -833,7 +831,7 @@ export function useMap(options: UseMapOptions) {
       mapInstance.flyTo({
         center: camera.center,
         zoom: targetZoom,
-        curve: 1.0,  // Gentler arc than default 1.42
+        curve: 1.0, // Gentler arc than default 1.42
         speed: 1.4,
         essential: true
       })

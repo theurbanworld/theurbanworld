@@ -27,7 +27,20 @@ class PipelineConfig(BaseSettings):
     PROCESSED_DIR: ClassVar[Path] = DATA_DIR / "processed"
 
     # GHSL settings
-    GHSL_POP_EPOCHS: list[int] = [1975, 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020, 2025, 2030]
+    GHSL_POP_EPOCHS: list[int] = [
+        1975,
+        1980,
+        1985,
+        1990,
+        1995,
+        2000,
+        2005,
+        2010,
+        2015,
+        2020,
+        2025,
+        2030,
+    ]
 
     # Download URLs (centralized for easy updates when JRC changes structure)
     GHSL_UCDB_URL: str = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_UCDB_GLOBE_R2024A/GHS_UCDB_GLOBE_R2024A/V1-1/GHS_UCDB_GLOBE_R2024A_V1_1.zip"
@@ -110,9 +123,7 @@ def get_ghsl_pop_tile_url(epoch: int, resolution: int, row: int, col: int) -> st
 
 def get_ghsl_pop_global_url(epoch: int, resolution: int) -> str:
     """Build GHSL-POP global file download URL (for 1km data)."""
-    return config.GHSL_POP_GLOBAL_URL_TEMPLATE.format(
-        epoch=epoch, resolution=resolution
-    )
+    return config.GHSL_POP_GLOBAL_URL_TEMPLATE.format(epoch=epoch, resolution=resolution)
 
 
 def get_ghsl_ucdb_url() -> str:

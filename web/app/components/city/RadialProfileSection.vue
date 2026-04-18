@@ -46,7 +46,10 @@ watch(() => props.cityId, () => {
           aria-label="About radial profiles"
           @click="openInfoModal('/methodology/bertaud-radial')"
         >
-          <UIcon name="i-lucide-info" class="w-3.5 h-3.5" />
+          <UIcon
+            name="i-lucide-info"
+            class="w-3.5 h-3.5"
+          />
         </button>
       </div>
       <button
@@ -57,7 +60,10 @@ watch(() => props.cityId, () => {
           : 'text-body/60 dark:text-cream/60 hover:bg-ink-100/50 dark:hover:bg-ink-900/30'"
         @click="toggleMapLayer"
       >
-        <UIcon name="i-lucide-map" class="w-3.5 h-3.5" />
+        <UIcon
+          name="i-lucide-map"
+          class="w-3.5 h-3.5"
+        />
         <span>{{ isRadialLayerActive ? 'On map' : 'Show on map' }}</span>
       </button>
     </div>

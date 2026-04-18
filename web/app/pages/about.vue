@@ -13,6 +13,10 @@ const { data: page } = await useAsyncData('about', () =>
 
 <template>
   <div>
-    <ContentRenderer v-if="page" :value="page" class="prose prose-forest dark:prose-invert max-w-none" />
+    <ContentRenderer
+      v-if="page"
+      :value="page"
+      class="prose prose-forest dark:prose-invert max-w-none"
+    />
   </div>
 </template>

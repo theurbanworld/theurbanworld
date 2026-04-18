@@ -27,8 +27,7 @@ import geopandas as gpd
 import pandas as pd
 import polars as pl
 
-from ..utils.config import config, get_interim_path, get_raw_path
-
+from ..utils.config import get_interim_path, get_raw_path
 
 # GeoPackage layer names
 GPKG_LAYER_NAMES = {

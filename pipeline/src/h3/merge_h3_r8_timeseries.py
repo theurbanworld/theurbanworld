@@ -54,8 +54,7 @@ def load_and_merge_epochs() -> pl.DataFrame:
 
     # Get unique h3_index -> city_id mapping (use most recent city_id for each cell)
     cell_cities = (
-        combined
-        .sort("epoch", descending=True)
+        combined.sort("epoch", descending=True)
         .group_by("h3_index")
         .first()
         .select(["h3_index", "city_id"])
@@ -63,13 +62,10 @@ def load_and_merge_epochs() -> pl.DataFrame:
 
     # Pivot to wide format
     print("Pivoting to wide format...")
-    pivoted = (
-        combined
-        .pivot(
-            on="epoch",
-            index="h3_index",
-            values="population",
-        )
+    pivoted = combined.pivot(
+        on="epoch",
+        index="h3_index",
+        values="population",
     )
 
     # Rename columns from epoch numbers to pop_YYYY
@@ -81,17 +77,14 @@ def load_and_merge_epochs() -> pl.DataFrame:
 
     # Fill nulls with 0 (cells that didn't exist in some years)
     pop_cols = [f"pop_{e}" for e in EPOCHS if f"pop_{e}" in result.columns]
-    result = result.with_columns([
-        pl.col(col).fill_null(0.0) for col in pop_cols
-    ])
+    result = result.with_columns([pl.col(col).fill_null(0.0) for col in pop_cols])
 
     # Convert h3_index from int64 to hex string for browser compatibility
     # (JavaScript can't handle int64 values > Number.MAX_SAFE_INTEGER)
     result = result.with_columns(
-        pl.col("h3_index").map_elements(
-            lambda x: format(x, 'x'),
-            return_dtype=pl.Utf8
-        ).alias("h3_index")
+        pl.col("h3_index")
+        .map_elements(lambda x: format(x, "x"), return_dtype=pl.Utf8)
+        .alias("h3_index")
     )
 
     # Ensure consistent column order
@@ -117,7 +110,7 @@ def save_parquet(df: pl.DataFrame, output_path: Path) -> None:
 
 def upload_to_r2(local_path: Path, r2_key: str) -> str:
     """Upload parquet to R2."""
-    print(f"\nUploading to R2...")
+    print("\nUploading to R2...")
 
     endpoint_url = os.environ["R2_ENDPOINT_URL"]
     access_key = os.environ["R2_ACCESS_KEY_ID"]
@@ -161,7 +154,7 @@ def main(local_only: bool = False) -> None:
     if not local_only:
         upload_to_r2(OUTPUT_PARQUET, R2_KEY)
     else:
-        print(f"\nLocal only mode - skipping R2 upload")
+        print("\nLocal only mode - skipping R2 upload")
         print(f"Output: {OUTPUT_PARQUET}")
 
     print("\nDone!")

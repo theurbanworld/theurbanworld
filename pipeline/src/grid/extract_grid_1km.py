@@ -39,7 +39,6 @@ from rasterio.features import rasterize
 
 from ..utils.config import config, get_processed_path, get_raw_path
 
-
 # Mollweide CRS used by GHSL 1km rasters
 MOLLWEIDE_CRS = "ESRI:54009"
 
@@ -70,13 +69,15 @@ def extract_grid_for_epoch(epoch: int) -> pl.DataFrame:
     print(f"    {len(gdf):,} city geometries for epoch {epoch}")
 
     if len(gdf) == 0:
-        return pl.DataFrame(schema={
-            "pixel_id": pl.Int64,
-            "lat": pl.Float64,
-            "lng": pl.Float64,
-            "population": pl.Float64,
-            "city_id": pl.Utf8,
-        })
+        return pl.DataFrame(
+            schema={
+                "pixel_id": pl.Int64,
+                "lat": pl.Float64,
+                "lng": pl.Float64,
+                "population": pl.Float64,
+                "city_id": pl.Utf8,
+            }
+        )
 
     # Reproject geometries from WGS84 to Mollweide
     gdf = gdf.set_crs("EPSG:4326")
@@ -111,7 +112,7 @@ def extract_grid_for_epoch(epoch: int) -> pl.DataFrame:
         )
 
         # Read population raster
-        print(f"    Reading population raster...")
+        print("    Reading population raster...")
         pop_data = src.read(1)
 
     # Find pixels where both city_id > 0 and population > 0
@@ -121,13 +122,15 @@ def extract_grid_for_epoch(epoch: int) -> pl.DataFrame:
     print(f"    {len(rows):,} pixels matched (city + population > 0)")
 
     if len(rows) == 0:
-        return pl.DataFrame(schema={
-            "pixel_id": pl.Int64,
-            "lat": pl.Float64,
-            "lng": pl.Float64,
-            "population": pl.Float64,
-            "city_id": pl.Utf8,
-        })
+        return pl.DataFrame(
+            schema={
+                "pixel_id": pl.Int64,
+                "lat": pl.Float64,
+                "lng": pl.Float64,
+                "population": pl.Float64,
+                "city_id": pl.Utf8,
+            }
+        )
 
     # Compute pixel centroids in Mollweide
     # transform maps (col, row) → (x, y) in Mollweide
@@ -144,13 +147,15 @@ def extract_grid_for_epoch(epoch: int) -> pl.DataFrame:
     city_labels = city_grid[rows, cols]
     city_id_array = np.array([label_to_city_id[label] for label in city_labels])
 
-    df = pl.DataFrame({
-        "pixel_id": pixel_ids,
-        "lat": lats,
-        "lng": lngs,
-        "population": populations,
-        "city_id": city_id_array,
-    })
+    df = pl.DataFrame(
+        {
+            "pixel_id": pixel_ids,
+            "lat": lats,
+            "lng": lngs,
+            "population": populations,
+            "city_id": city_id_array,
+        }
+    )
 
     return df
 

@@ -11,8 +11,8 @@
 
 // Singleton state for comparison view
 const sharedZoom = ref(1.5)
-const centerA = ref<{ lng: number; lat: number }>({ lng: 0, lat: 15 })
-const centerB = ref<{ lng: number; lat: number }>({ lng: 0, lat: 15 })
+const centerA = ref<{ lng: number, lat: number }>({ lng: 0, lat: 15 })
+const centerB = ref<{ lng: number, lat: number }>({ lng: 0, lat: 15 })
 
 // Feedback loop guard: tracks which map last changed the zoom
 // to prevent A → zoom → B → zoom → A oscillation
@@ -33,7 +33,7 @@ export function useComparisonViewState() {
    * Update a map's center from a pan interaction.
    * Only affects the specified map — the other map's center is unchanged.
    */
-  function onPanChange(center: { lng: number; lat: number }, mapId: string) {
+  function onPanChange(center: { lng: number, lat: number }, mapId: string) {
     if (mapId === 'A') {
       centerA.value = center
     } else {
@@ -60,7 +60,7 @@ export function useComparisonViewState() {
   /**
    * Set the initial center for a map (used on mount when fitting to bbox).
    */
-  function setCenter(center: { lng: number; lat: number }, mapId: string) {
+  function setCenter(center: { lng: number, lat: number }, mapId: string) {
     if (mapId === 'A') {
       centerA.value = center
     } else {

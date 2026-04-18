@@ -110,7 +110,6 @@ export function useH3Data() {
           } else if (rawH3Index && typeof rawH3Index === 'object' && 'toString' in rawH3Index) {
             h3Index = String(rawH3Index)
           } else {
-
             continue
           }
 
@@ -145,8 +144,6 @@ export function useH3Data() {
 
         loadProgress.value = 100
         isDataLoaded.value = true
-
-
       } catch (e) {
         console.error('Failed to load H3 data:', e)
         error.value = e instanceof Error ? e : new Error('Failed to load H3 data')
@@ -176,7 +173,6 @@ export function useH3Data() {
     const populations = populationByYear.get(year)
 
     if (!populations) {
-
       return []
     }
 

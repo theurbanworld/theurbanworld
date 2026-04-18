@@ -50,7 +50,9 @@ const expanded = ref(false)
       <button
         class="hover:text-ink-600 dark:hover:text-ink-400 transition-colors cursor-pointer"
         @click="openInfoModal('/data/source-ghsl')"
-      >GHSL</button>
+      >
+        GHSL
+      </button>
       <span class="text-body/30 dark:text-cream/30">·</span>
       <a
         href="https://maplibre.org"

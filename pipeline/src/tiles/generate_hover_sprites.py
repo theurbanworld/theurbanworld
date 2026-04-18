@@ -75,11 +75,7 @@ def create_diagonal_pattern(color: str, size: int = SPRITE_SIZE) -> Image.Image:
     # Draw lines extending beyond the sprite to ensure full coverage
     for offset in range(-size * 2, size * 2, spacing):
         # Line from (offset, size) to (offset + size, 0)
-        draw.line(
-            [(offset, size), (offset + size, 0)],
-            fill=rgba,
-            width=line_width
-        )
+        draw.line([(offset, size), (offset + size, 0)], fill=rgba, width=line_width)
 
     return img
 
@@ -129,7 +125,7 @@ def generate_sprite_sheet(pixel_ratio: int = 1) -> tuple[Image.Image, dict]:
             "y": y,
             "width": scaled_size,
             "height": scaled_size,
-            "pixelRatio": pixel_ratio
+            "pixelRatio": pixel_ratio,
         }
 
     return sprite_sheet, metadata
@@ -193,7 +189,7 @@ def upload_sprites_to_r2(files: list[tuple[Path, Path]]) -> None:
             ExtraArgs={
                 "ContentType": "image/png",
                 "CacheControl": "public, max-age=31536000",  # 1 year
-            }
+            },
         )
         print(f"  Uploaded {png_key}")
 
@@ -206,13 +202,13 @@ def upload_sprites_to_r2(files: list[tuple[Path, Path]]) -> None:
             ExtraArgs={
                 "ContentType": "application/json",
                 "CacheControl": "public, max-age=31536000",  # 1 year
-            }
+            },
         )
         print(f"  Uploaded {json_key}")
 
-    print(f"\nSprites available at:")
-    print(f"  https://data.theurban.world/sprites/patterns.png")
-    print(f"  https://data.theurban.world/sprites/patterns@2x.png")
+    print("\nSprites available at:")
+    print("  https://data.theurban.world/sprites/patterns.png")
+    print("  https://data.theurban.world/sprites/patterns@2x.png")
 
 
 def main(local_only: bool = False) -> None:
@@ -238,7 +234,7 @@ def main(local_only: bool = False) -> None:
     if not local_only:
         upload_sprites_to_r2(files)
     else:
-        print(f"\nLocal only mode - skipping R2 upload")
+        print("\nLocal only mode - skipping R2 upload")
         print(f"Output: {OUTPUT_DIR}")
 
     print("\nDone!")

@@ -96,7 +96,7 @@ def main(local_only: bool = False) -> None:
         print()
         upload_to_r2(output_json, r2_key, content_type="application/json")
     else:
-        print(f"\nLocal only mode - skipping R2 upload")
+        print("\nLocal only mode - skipping R2 upload")
         print(f"Output: {output_json}")
 
     print("\nDone!")

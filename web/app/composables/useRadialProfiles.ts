@@ -30,7 +30,6 @@ export function useRadialProfiles() {
         return await $fetch<RadialProfileData>(getDataUrl())
       } catch (e: unknown) {
         if (e && typeof e === 'object' && 'statusCode' in e && e.statusCode === 404) {
-
           return {}
         }
         throw e

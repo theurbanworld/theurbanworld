@@ -28,7 +28,9 @@ function onFocus() {
 
 function onBlur() {
   // Delay closing so click on item registers
-  setTimeout(() => { open.value = false }, 150)
+  setTimeout(() => {
+    open.value = false
+  }, 150)
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -80,7 +82,7 @@ watch(searchTerm, (val) => {
         @focus="onFocus"
         @blur="onBlur"
         @keydown="onKeydown"
-      />
+      >
     </div>
 
     <ul
@@ -100,8 +102,12 @@ watch(searchTerm, (val) => {
         @mousedown.prevent="onSelect(item)"
         @mouseenter="highlightedIndex = i"
       >
-        <div class="text-sm font-medium text-ink-700 dark:text-ink-200">{{ item.label }}</div>
-        <div class="text-xs text-ink-400 dark:text-ink-500">{{ item.description }}</div>
+        <div class="text-sm font-medium text-ink-700 dark:text-ink-200">
+          {{ item.label }}
+        </div>
+        <div class="text-xs text-ink-400 dark:text-ink-500">
+          {{ item.description }}
+        </div>
       </li>
     </ul>
   </div>

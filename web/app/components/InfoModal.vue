@@ -21,7 +21,7 @@ const { data: content } = await useAsyncData(
 
 const parentPage = computed(() => {
   if (!content.value) return null
-  return (content.value as any).parentPage as string | undefined
+  return (content.value as { parentPage?: string }).parentPage
 })
 
 const parentLabel = computed(() => {
@@ -40,7 +40,10 @@ const parentLabel = computed(() => {
           class="prose dark:prose-invert prose-sm max-w-none"
         />
 
-        <div v-if="parentPage" class="mt-6 pt-4 border-t border-ink-200/40 dark:border-ink-800/40">
+        <div
+          v-if="parentPage"
+          class="mt-6 pt-4 border-t border-ink-200/40 dark:border-ink-800/40"
+        >
           <NuxtLink
             :to="parentPage"
             class="text-sm text-ink-600 dark:text-ink-400 hover:underline"

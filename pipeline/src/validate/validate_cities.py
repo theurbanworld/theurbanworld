@@ -27,7 +27,7 @@ Date: 2025-12-27
 
 import json
 import sys
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -37,7 +37,6 @@ import pandera.ibis as pa
 from pandera.ibis import DataFrameModel, Field
 
 from ..utils.config import get_processed_path
-
 
 # =============================================================================
 # Schema Definitions
@@ -247,9 +246,7 @@ def check_duplicate_keys(tables: dict) -> list[str]:
 
     if len(duplicates) > 0:
         examples = duplicates["city_id"].head(5).tolist()
-        warnings.append(
-            f"cities: {len(duplicates)} duplicate city_ids found (e.g., {examples})"
-        )
+        warnings.append(f"cities: {len(duplicates)} duplicate city_ids found (e.g., {examples})")
 
     return warnings
 
@@ -274,24 +271,17 @@ def check_foreign_keys(tables: dict) -> list[str]:
         if orphaned:
             examples = list(orphaned)[:3]
             warnings.append(
-                f"{name}: {len(orphaned)} city_ids not in cities.parquet "
-                f"(e.g., {examples})"
+                f"{name}: {len(orphaned)} city_ids not in cities.parquet (e.g., {examples})"
             )
 
     # Check peer_city_id in density_peers
     if "peers" in tables:
         peer_ids = set(
-            tables["peers"]
-            .select("peer_city_id")
-            .distinct()
-            .execute()["peer_city_id"]
-            .tolist()
+            tables["peers"].select("peer_city_id").distinct().execute()["peer_city_id"].tolist()
         )
         orphaned_peers = peer_ids - valid_ids
         if orphaned_peers:
-            warnings.append(
-                f"peers: {len(orphaned_peers)} peer_city_ids not in cities.parquet"
-            )
+            warnings.append(f"peers: {len(orphaned_peers)} peer_city_ids not in cities.parquet")
 
     return warnings
 
@@ -446,9 +436,7 @@ def check_extreme_densities(tables: dict, threshold: float = 25000) -> list[dict
         return []
 
     rankings = tables["rankings"]
-    df = rankings.select(
-        ["city_id", "name", "epoch", "density_per_km2"]
-    ).execute()
+    df = rankings.select(["city_id", "name", "epoch", "density_per_km2"]).execute()
 
     # Filter to extreme densities
     extreme = df[df["density_per_km2"] > threshold].copy()
@@ -496,9 +484,7 @@ def check_regional_density_outliers(tables: dict, z_threshold: float = 3.0) -> l
         std_density=("density_per_km2", "std"),
     )
     joined = joined.merge(region_stats, on="region")
-    joined["z_score"] = (
-        (joined["density_per_km2"] - joined["mean_density"]) / joined["std_density"]
-    )
+    joined["z_score"] = (joined["density_per_km2"] - joined["mean_density"]) / joined["std_density"]
 
     # Filter to outliers
     outliers = joined[joined["z_score"].abs() > z_threshold].copy()
@@ -530,9 +516,7 @@ def check_rank_volatility(tables: dict, threshold: int = 5000) -> list[dict]:
         return []
 
     rankings = tables["rankings"]
-    df = rankings.select(
-        ["city_id", "name", "epoch", "global_population_rank"]
-    ).execute()
+    df = rankings.select(["city_id", "name", "epoch", "global_population_rank"]).execute()
 
     # Sort and compute rank changes
     df = df.sort_values(["city_id", "epoch"])
@@ -587,11 +571,13 @@ def check_temporal_gaps(tables: dict) -> list[dict]:
         missing = expected_in_range - row["epochs"]
 
         if missing:
-            gaps.append({
-                "city_id": row["city_id"],
-                "missing_epochs": sorted(missing),
-                "present_epochs": epochs,
-            })
+            gaps.append(
+                {
+                    "city_id": row["city_id"],
+                    "missing_epochs": sorted(missing),
+                    "present_epochs": epochs,
+                }
+            )
 
     return gaps
 
@@ -650,12 +636,22 @@ def check_growth_regime_consistency(tables: dict) -> list[dict]:
 
 
 @click.command()
-@click.option("--source", default="h3-r8", type=click.Choice(VALID_SOURCES), help="Data source to validate")
+@click.option(
+    "--source", default="h3-r8", type=click.Choice(VALID_SOURCES), help="Data source to validate"
+)
 @click.option("--verbose", "-v", is_flag=True, help="Show detailed output")
 @click.option("--json", "output_json", is_flag=True, help="Output results as JSON")
 @click.option("--output", "-o", type=click.Path(), help="Write JSON to file (implies --json)")
-@click.option("--check-outliers/--no-check-outliers", default=True, help="Run statistical outlier detection")
-def main(source: str = "h3-r8", verbose: bool = False, output_json: bool = False, output: str | None = None, check_outliers: bool = True):
+@click.option(
+    "--check-outliers/--no-check-outliers", default=True, help="Run statistical outlier detection"
+)
+def main(
+    source: str = "h3-r8",
+    verbose: bool = False,
+    output_json: bool = False,
+    output: str | None = None,
+    check_outliers: bool = True,
+):
     """Validate city data quality."""
     slug = _source_slug(source)
 
@@ -694,7 +690,7 @@ def main(source: str = "h3-r8", verbose: bool = False, output_json: bool = False
     if radial_path.exists():
         tables["radial_profiles"] = con.read_parquet(str(radial_path))
     elif not output_json:
-        print(f"  SKIP: radial_profiles_h3_r8.parquet (not found)")
+        print("  SKIP: radial_profiles_h3_r8.parquet (not found)")
 
     schemas = {
         "cities": CitySchema,
@@ -784,20 +780,28 @@ def main(source: str = "h3-r8", verbose: bool = False, output_json: bool = False
         if pop_spikes:
             statistical_checks["population_spikes"] = pop_spikes
             if not output_json:
-                print(f"  INFO: {len(pop_spikes)} cities with >100% population growth between epochs")
+                print(
+                    f"  INFO: {len(pop_spikes)} cities with >100% population growth between epochs"
+                )
                 if verbose:
                     for item in pop_spikes[:5]:
-                        print(f"    - {item['city_id']}: +{item['growth_rate']}% at {item['epoch']}")
+                        print(
+                            f"    - {item['city_id']}: +{item['growth_rate']}% at {item['epoch']}"
+                        )
 
         # Population declines
         pop_declines = check_population_decline(tables)
         if pop_declines:
             statistical_checks["population_declines"] = pop_declines
             if not output_json:
-                print(f"  INFO: {len(pop_declines)} cities with >50% population decline between epochs")
+                print(
+                    f"  INFO: {len(pop_declines)} cities with >50% population decline between epochs"
+                )
                 if verbose:
                     for item in pop_declines[:5]:
-                        print(f"    - {item['city_id']}: -{item['decline_rate']}% at {item['epoch']}")
+                        print(
+                            f"    - {item['city_id']}: -{item['decline_rate']}% at {item['epoch']}"
+                        )
 
         # Extreme densities
         extreme_densities = check_extreme_densities(tables)
@@ -807,7 +811,9 @@ def main(source: str = "h3-r8", verbose: bool = False, output_json: bool = False
                 print(f"  INFO: {len(extreme_densities)} city-epochs with density >25,000/km²")
                 if verbose:
                     for item in extreme_densities[:5]:
-                        print(f"    - {item['name']} ({item['city_id']}): {item['density']:,.0f}/km² at {item['epoch']}")
+                        print(
+                            f"    - {item['name']} ({item['city_id']}): {item['density']:,.0f}/km² at {item['epoch']}"
+                        )
 
         # Regional density outliers
         regional_outliers = check_regional_density_outliers(tables)
@@ -847,7 +853,9 @@ def main(source: str = "h3-r8", verbose: bool = False, output_json: bool = False
                 print(f"  INFO: {len(regime_mismatches)} cities with misclassified growth regime")
                 if verbose:
                     for item in regime_mismatches[:5]:
-                        print(f"    - {item['city_id']}: {item['regime']} but CAGR={item['cagr']}% (expected {item['expected_regime']})")
+                        print(
+                            f"    - {item['city_id']}: {item['regime']} but CAGR={item['cagr']}% (expected {item['expected_regime']})"
+                        )
 
         if not output_json and not statistical_checks:
             print("  No outliers detected")

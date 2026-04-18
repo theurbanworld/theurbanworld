@@ -5,7 +5,6 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { ref, readonly } from 'vue'
 import { useCitySelection } from '../../app/composables/useCitySelection'
 
 describe('useCitySelection composable', () => {

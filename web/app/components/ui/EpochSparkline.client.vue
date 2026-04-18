@@ -18,7 +18,7 @@ import {
   Tooltip,
   type ChartOptions,
   type ChartData,
-  type Plugin,
+  type Plugin
 } from 'chart.js'
 import { YEAR_EPOCHS } from '../../../types/h3'
 import { formatCompactNumber } from '../../utils/formatNumber'
@@ -71,22 +71,22 @@ const chartData = computed<ChartData<'line'>>(() => {
   const birthIdx = props.birthYear ? YEAR_EPOCHS.indexOf(props.birthYear as typeof YEAR_EPOCHS[number]) : -1
   const deathIdx = props.deathYear ? YEAR_EPOCHS.indexOf(props.deathYear as typeof YEAR_EPOCHS[number]) : -1
 
-  const segmentStyle = (birthIdx >= 0 || deathIdx >= 0) ? {
-    segment: {
-      borderColor: (ctx: { p0DataIndex: number; p1DataIndex: number }) => {
-        // Pre-birth: segment ends before birth index
-        if (birthIdx >= 0 && ctx.p1DataIndex < birthIdx) return 'rgba(180, 150, 100, 0.5)'
-        // Post-death: segment starts at or after death index
-        if (deathIdx >= 0 && ctx.p0DataIndex >= deathIdx) return 'rgba(140, 140, 140, 0.5)'
-        return undefined
-      },
-      borderDash: (ctx: { p0DataIndex: number; p1DataIndex: number }) => {
-        if (birthIdx >= 0 && ctx.p1DataIndex < birthIdx) return [4, 3]
-        if (deathIdx >= 0 && ctx.p0DataIndex >= deathIdx) return [4, 3]
-        return undefined
-      },
-    },
-  } : {}
+  const segmentStyle = (birthIdx >= 0 || deathIdx >= 0)
+    ? {
+        segment: {
+          borderColor: (ctx: { p0DataIndex: number, p1DataIndex: number }) => {
+            if (birthIdx >= 0 && ctx.p1DataIndex < birthIdx) return 'rgba(180, 150, 100, 0.5)'
+            if (deathIdx >= 0 && ctx.p0DataIndex >= deathIdx) return 'rgba(140, 140, 140, 0.5)'
+            return undefined
+          },
+          borderDash: (ctx: { p0DataIndex: number, p1DataIndex: number }) => {
+            if (birthIdx >= 0 && ctx.p1DataIndex < birthIdx) return [4, 3]
+            if (deathIdx >= 0 && ctx.p0DataIndex >= deathIdx) return [4, 3]
+            return undefined
+          }
+        }
+      }
+    : {}
 
   const datasetA = {
     label: isComparisonMode.value ? (getCityName(props.cityIds![0]!) ?? 'City A') : undefined,
@@ -100,7 +100,7 @@ const chartData = computed<ChartData<'line'>>(() => {
     pointRadius,
     pointHoverRadius,
     tension: 0.3,
-    ...segmentStyle,
+    ...segmentStyle
   }
 
   if (!isComparisonMode.value || !epochsB.value) {
@@ -123,7 +123,7 @@ const chartData = computed<ChartData<'line'>>(() => {
     pointBorderColor: CITY_B_COLOR.primary,
     pointRadius: pointRadiusB,
     pointHoverRadius: pointHoverRadiusB,
-    tension: 0.3,
+    tension: 0.3
   }
 
   return { labels, datasets: [datasetA, datasetB] }
@@ -134,7 +134,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
   maintainAspectRatio: false,
   interaction: {
     mode: 'index',
-    intersect: false,
+    intersect: false
   },
   onClick: (_event, elements) => {
     if (elements.length > 0) {
@@ -151,7 +151,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
   },
   scales: {
     x: { display: false },
-    y: { display: false, beginAtZero: true },
+    y: { display: false, beginAtZero: true }
   },
   plugins: {
     legend: {
@@ -161,9 +161,9 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
         boxHeight: 8,
         font: { family: 'monospace', size: 9 },
         color: '#8B7355',
-        padding: 4,
+        padding: 4
       },
-      position: 'bottom' as const,
+      position: 'bottom' as const
     },
     tooltip: {
       callbacks: {
@@ -171,18 +171,18 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
           if (!items[0]) return ''
           return items[0].label ?? ''
         },
-        label: (item) => formatTooltipValue(item.parsed.y ?? 0),
+        label: item => formatTooltipValue(item.parsed.y ?? 0)
       },
       backgroundColor: 'rgba(92, 74, 61, 0.9)',
       titleFont: { family: 'monospace', size: 10 },
       bodyFont: { family: 'monospace', size: 10 },
       padding: 6,
-      displayColors: isComparisonMode.value,
-    },
+      displayColors: isComparisonMode.value
+    }
   },
   layout: {
-    padding: 0,
-  },
+    padding: 0
+  }
 }))
 
 // Vertical indicator line plugin for selected year
@@ -206,7 +206,7 @@ const selectedYearPlugin = computed<Plugin<'line'>>(() => ({
     ctx.lineTo(point.x, chartArea.bottom)
     ctx.stroke()
     ctx.restore()
-  },
+  }
 }))
 
 // Vertical marker lines at birth/death year transitions
@@ -239,14 +239,21 @@ const lifecycleMarkerPlugin = computed<Plugin<'line'>>(() => ({
       const idx = YEAR_EPOCHS.indexOf(props.deathYear as typeof YEAR_EPOCHS[number])
       drawMarker(idx, 'rgba(140, 140, 140, 0.6)')
     }
-  },
+  }
 }))
 
 const plugins = computed(() => [selectedYearPlugin.value, lifecycleMarkerPlugin.value])
 </script>
 
 <template>
-  <div v-if="epochs" :class="isComparisonMode ? 'h-[65px]' : 'h-[40px]'">
-    <Line :data="chartData" :options="chartOptions" :plugins="plugins" />
+  <div
+    v-if="epochs"
+    :class="isComparisonMode ? 'h-[65px]' : 'h-[40px]'"
+  >
+    <Line
+      :data="chartData"
+      :options="chartOptions"
+      :plugins="plugins"
+    />
   </div>
 </template>

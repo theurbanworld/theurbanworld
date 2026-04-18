@@ -29,17 +29,18 @@ Decision log:
 Date: 2025-12-27
 """
 
-import click
-import h3
-import polars as pl
 from pathlib import Path
+
+import click
+import polars as pl
+
+import h3
 
 from ..utils.config import config, get_processed_path
 from ..utils.h3_utils import (
     assign_cells_to_rings,
     compute_population_weighted_centroid,
     h3_cell_area_km2,
-    h3_cell_to_latlng,
 )
 
 CENTROIDS_PARQUET = Path("data/processed/cities/city_centroids_h3_r8.parquet")
@@ -138,46 +139,52 @@ def compute_radial_profiles_for_epoch(
 
             if len(ring_cells) == 0:
                 # Empty ring
-                all_profiles.append({
-                    "city_id": city_id,
-                    "epoch": epoch,
-                    "ring_index": ring_idx,
-                    "distance_min_km": ring_idx * config.RADIAL_RING_WIDTH_KM,
-                    "distance_max_km": (ring_idx + 1) * config.RADIAL_RING_WIDTH_KM,
-                    "population": 0.0,
-                    "area_km2": 0.0,
-                    "density_per_km2": None,
-                    "cell_count": 0,
-                })
+                all_profiles.append(
+                    {
+                        "city_id": city_id,
+                        "epoch": epoch,
+                        "ring_index": ring_idx,
+                        "distance_min_km": ring_idx * config.RADIAL_RING_WIDTH_KM,
+                        "distance_max_km": (ring_idx + 1) * config.RADIAL_RING_WIDTH_KM,
+                        "population": 0.0,
+                        "area_km2": 0.0,
+                        "density_per_km2": None,
+                        "cell_count": 0,
+                    }
+                )
             else:
                 ring_pop = sum(pop_dict.get(cell, 0) for cell in ring_cells)
                 ring_area = sum(h3_cell_area_km2(cell) for cell in ring_cells)
                 ring_density = ring_pop / ring_area if ring_area > 0 else None
 
-                all_profiles.append({
-                    "city_id": city_id,
-                    "epoch": epoch,
-                    "ring_index": ring_idx,
-                    "distance_min_km": ring_idx * config.RADIAL_RING_WIDTH_KM,
-                    "distance_max_km": (ring_idx + 1) * config.RADIAL_RING_WIDTH_KM,
-                    "population": ring_pop,
-                    "area_km2": ring_area,
-                    "density_per_km2": ring_density,
-                    "cell_count": len(ring_cells),
-                })
+                all_profiles.append(
+                    {
+                        "city_id": city_id,
+                        "epoch": epoch,
+                        "ring_index": ring_idx,
+                        "distance_min_km": ring_idx * config.RADIAL_RING_WIDTH_KM,
+                        "distance_max_km": (ring_idx + 1) * config.RADIAL_RING_WIDTH_KM,
+                        "population": ring_pop,
+                        "area_km2": ring_area,
+                        "density_per_km2": ring_density,
+                        "cell_count": len(ring_cells),
+                    }
+                )
 
     if not all_profiles:
-        return pl.DataFrame(schema={
-            "city_id": pl.Utf8,
-            "epoch": pl.Int64,
-            "ring_index": pl.Int64,
-            "distance_min_km": pl.Float64,
-            "distance_max_km": pl.Float64,
-            "population": pl.Float64,
-            "area_km2": pl.Float64,
-            "density_per_km2": pl.Float64,
-            "cell_count": pl.Int64,
-        })
+        return pl.DataFrame(
+            schema={
+                "city_id": pl.Utf8,
+                "epoch": pl.Int64,
+                "ring_index": pl.Int64,
+                "distance_min_km": pl.Float64,
+                "distance_max_km": pl.Float64,
+                "population": pl.Float64,
+                "area_km2": pl.Float64,
+                "density_per_km2": pl.Float64,
+                "cell_count": pl.Int64,
+            }
+        )
 
     return pl.DataFrame(all_profiles)
 
@@ -199,9 +206,7 @@ def compute_all_radial_profiles(epochs: list[int] | None = None) -> pl.DataFrame
 
     # Load canonical city_ids from UCDB-based cities.parquet
     cities_path = get_processed_path("cities") / "cities.parquet"
-    canonical_city_ids = set(
-        pl.read_parquet(cities_path).select("city_id").to_series().to_list()
-    )
+    canonical_city_ids = set(pl.read_parquet(cities_path).select("city_id").to_series().to_list())
     print(f"  Filtering to {len(canonical_city_ids):,} canonical UCDB city_ids")
 
     # Load pre-computed H3 centroids (from modal_extract_city_h3.py)

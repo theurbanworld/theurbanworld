@@ -150,13 +150,14 @@ def process_tile(lat_start: int, lon_start: int) -> str:
     from pathlib import Path
 
     import geopandas as gpd
-    import h3
     import numpy as np
     import polars as pl
     import rasterio
     from exactextract import exact_extract
     from rasterio.windows import from_bounds
     from shapely import Polygon
+
+    import h3
 
     lat_end = lat_start + TILE_SIZE_DEG
     lon_end = lon_start + TILE_SIZE_DEG
@@ -218,7 +219,9 @@ def process_tile(lat_start: int, lon_start: int) -> str:
         buffered_cells.add(cell)
         buffered_cells.update(h3.grid_ring(cell, 1))
 
-    print(f"[{tile_id}] {len(all_populated_cells):,} populated cells + {len(buffered_cells) - len(all_populated_cells):,} buffer = {len(buffered_cells):,} total")
+    print(
+        f"[{tile_id}] {len(all_populated_cells):,} populated cells + {len(buffered_cells) - len(all_populated_cells):,} buffer = {len(buffered_cells):,} total"
+    )
 
     # ── Build polygon GeoDataFrame (only for populated + buffer cells) ──
     h3_data = []
@@ -256,9 +259,7 @@ def process_tile(lat_start: int, lon_start: int) -> str:
         df = pl.from_pandas(results_df).rename({"sum": "population"})
 
         # Convert h3_index string to int64 for compact storage
-        df = df.with_columns(
-            pl.col("h3_index").map_elements(h3.str_to_int, return_dtype=pl.Int64)
-        )
+        df = df.with_columns(pl.col("h3_index").map_elements(h3.str_to_int, return_dtype=pl.Int64))
 
         # Keep only cells with population > 0
         df = df.filter(pl.col("population") > 0)
@@ -283,10 +284,9 @@ def process_tile(lat_start: int, lon_start: int) -> str:
 )
 def merge_and_build_timeseries() -> str:
     """Merge per-tile results into per-epoch files, then build timeseries."""
-    import duckdb
     from pathlib import Path
 
-    import polars as pl
+    import duckdb
 
     tiles_dir = Path("/results/tiles")
     results_dir = Path("/results")
@@ -333,8 +333,7 @@ def merge_and_build_timeseries() -> str:
 
     union_query = " UNION ALL ".join(union_parts)
     sum_cols = ", ".join(
-        f"SUM(CASE WHEN year = {e} THEN population ELSE 0 END) as pop_{e}"
-        for e in epochs
+        f"SUM(CASE WHEN year = {e} THEN population ELSE 0 END) as pop_{e}" for e in epochs
     )
 
     query = f"""
@@ -396,7 +395,7 @@ def upload_to_r2(prefix: str = "ghsl-global-h3-r8") -> list[str]:
     print(f"Uploading {len(upload_tasks)} files with 8 threads...")
 
     uploaded: list[str] = []
-    lock = Lock()
+    Lock()
 
     def upload_one(item: tuple) -> str:
         path, key = item
@@ -561,10 +560,7 @@ def main(
     tiles = generate_tile_list()
     print(f"Processing {len(tiles)} tiles in parallel...")
 
-    futures_tiles = [
-        process_tile.spawn(lat, lon)
-        for lat, lon in tiles
-    ]
+    futures_tiles = [process_tile.spawn(lat, lon) for lat, lon in tiles]
 
     populated_count = 0
     skipped_count = 0
@@ -577,7 +573,9 @@ def main(
             print(f"  {result}")
 
     tile_time = time.time() - start_time - dl_time
-    print(f"\nProcessed {populated_count} populated tiles, skipped {skipped_count} ({tile_time:.1f}s)")
+    print(
+        f"\nProcessed {populated_count} populated tiles, skipped {skipped_count} ({tile_time:.1f}s)"
+    )
 
     # ── Phase C: Merge + timeseries ──
     print("\n--- Phase C: Merge + build timeseries ---")

@@ -23,7 +23,11 @@ function viewDatasetInfo(contentPath: string) {
 </script>
 
 <template>
-  <UModal v-model:open="isOpen" title="Choose a dataset" description="Each dataset offers a different view of global urbanization.">
+  <UModal
+    v-model:open="isOpen"
+    title="Choose a dataset"
+    description="Each dataset offers a different view of global urbanization."
+  >
     <button
       class="flex flex-col items-start py-1 px-2 rounded-md
              hover:bg-forest-100/50 dark:hover:bg-forest-900/30
@@ -74,7 +78,10 @@ function viewDatasetInfo(contentPath: string) {
             @click.stop="viewDatasetInfo(dataset.contentPath)"
           >
             Learn more
-            <UIcon name="i-lucide-arrow-right" class="w-3 h-3" />
+            <UIcon
+              name="i-lucide-arrow-right"
+              class="w-3 h-3"
+            />
           </span>
         </button>
       </div>

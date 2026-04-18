@@ -70,14 +70,14 @@ export function useDistributionData(
    * Get city info at a given index in the sorted distribution.
    * Used by tooltip callbacks.
    */
-  function getCityAtIndex(index: number): { name: string; value: number } | null {
+  function getCityAtIndex(index: number): { name: string, value: number } | null {
     const sorted = sortedDistribution.value
     const clamped = Math.max(0, Math.min(index, sorted.length - 1))
     const entry = sorted[clamped]
     if (!entry) return null
     return {
       name: getCityName(entry.cityId) ?? entry.cityId,
-      value: entry.value,
+      value: entry.value
     }
   }
 
@@ -86,6 +86,6 @@ export function useDistributionData(
     cityRank,
     cityPercentile,
     rankLabel,
-    getCityAtIndex,
+    getCityAtIndex
   }
 }

@@ -6,9 +6,8 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
-import { defineComponent, h } from 'vue'
 
 // Mock the composables
 const mockSelectedYear = ref(2025)
@@ -47,8 +46,8 @@ vi.mock('../../app/composables/useCityPopulations', () => ({
   useCityPopulations: () => ({
     isLoaded: ref(true),
     getCityPopulationData: (cityId: string, epoch: number) => {
-      const mockData: Record<string, Record<number, { population: number; area_km2: number; density_per_km2: number }>> = {
-        '10933': {
+      const mockData: Record<string, Record<number, { population: number, area_km2: number, density_per_km2: number }>> = {
+        10933: {
           2020: { population: 40760332, area_km2: 6221.69, density_per_km2: 6551.33 },
           2025: { population: 42610674, area_km2: 6420.48, density_per_km2: 6636.68 },
           2030: { population: 43986518, area_km2: 6492.52, density_per_km2: 6774.96 }
@@ -102,7 +101,7 @@ const CityInfoPanelTest = defineComponent({
   props: {
     cityId: { type: String, required: true }
   },
-  setup(props) {
+  setup(_props) {
     // Simulate useCityStats behavior
     const cityName = ref('Guangzhou')
     const countryName = ref('China')

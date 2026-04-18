@@ -77,7 +77,7 @@ export function useDeckGL(options: UseDeckGLOptions) {
                 padding: '4px 8px',
                 borderRadius: '4px',
                 border: 'none',
-                boxShadow: 'none',
+                boxShadow: 'none'
               }
             }
           }
@@ -107,7 +107,6 @@ export function useDeckGL(options: UseDeckGLOptions) {
    */
   function setLayers(layers: Layer[]) {
     if (!overlay.value) {
-
       return
     }
     overlay.value.setProps({ layers })

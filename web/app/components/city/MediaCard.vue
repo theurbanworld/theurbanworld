@@ -56,7 +56,10 @@ const metadata = computed(() => {
 <template>
   <div class="px-4 py-3 rounded-lg border border-ink-200/40 dark:border-ink-800/40 bg-ink-50/30 dark:bg-ink-950/20">
     <div class="flex gap-3">
-      <UIcon :name="icon" class="w-4 h-4 mt-0.5 shrink-0 text-ink-500 dark:text-ink-400" />
+      <UIcon
+        :name="icon"
+        class="w-4 h-4 mt-0.5 shrink-0 text-ink-500 dark:text-ink-400"
+      />
       <div class="min-w-0">
         <component
           :is="url ? 'a' : 'span'"
@@ -68,10 +71,16 @@ const metadata = computed(() => {
         >
           {{ title }}
         </component>
-        <p v-if="metadata" class="text-xs text-body/60 dark:text-cream/60 mt-0.5">
+        <p
+          v-if="metadata"
+          class="text-xs text-body/60 dark:text-cream/60 mt-0.5"
+        >
           {{ metadata }}
         </p>
-        <p v-if="description" class="text-xs text-body/50 dark:text-cream/50 mt-1">
+        <p
+          v-if="description"
+          class="text-xs text-body/50 dark:text-cream/50 mt-1"
+        >
           {{ description }}
         </p>
       </div>

@@ -75,8 +75,13 @@ useSeoMeta({
       :city-id-b="cityB"
     />
     <!-- Loading state while cities index loads -->
-    <div v-else-if="isLoading" class="flex items-center justify-center p-8">
-      <p class="text-body/50 dark:text-cream/50 text-sm">Loading comparison...</p>
+    <div
+      v-else-if="isLoading"
+      class="flex items-center justify-center p-8"
+    >
+      <p class="text-body/50 dark:text-cream/50 text-sm">
+        Loading comparison...
+      </p>
     </div>
   </div>
 </template>

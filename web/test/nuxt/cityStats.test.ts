@@ -9,7 +9,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, nextTick } from 'vue'
 import { useCityStats } from '../../app/composables/useCityStats'
 import { useSelectedYear } from '../../app/composables/useSelectedYear'
-import { humanizeNumber, toAnnualRate } from '../../app/composables/useGlobalStats'
 
 // Mock the useCitiesIndex composable
 vi.mock('../../app/composables/useCitiesIndex', () => ({
@@ -20,8 +19,8 @@ vi.mock('../../app/composables/useCitiesIndex', () => ({
     loadIndex: vi.fn(),
     getCity: (cityId: string) => {
       // Mock city data for testing
-      const mockCities: Record<string, { id: string; name: string; country: string; country_code: string; centroid: [number, number]; bbox: [number, number, number, number]; population: number }> = {
-        '10933': {
+      const mockCities: Record<string, { id: string, name: string, country: string, country_code: string, centroid: [number, number], bbox: [number, number, number, number], population: number }> = {
+        10933: {
           id: '10933',
           name: 'Guangzhou',
           country: 'China',
@@ -30,7 +29,7 @@ vi.mock('../../app/composables/useCitiesIndex', () => ({
           bbox: [112.873929, 22.445939, 114.398154, 23.380635],
           population: 42987704
         },
-        '5929': {
+        5929: {
           id: '5929',
           name: 'Tokyo',
           country: 'Japan',
@@ -43,7 +42,7 @@ vi.mock('../../app/composables/useCitiesIndex', () => ({
       return mockCities[cityId]
     },
     getCityName: (cityId: string) => {
-      const names: Record<string, string> = { '10933': 'Guangzhou', '5929': 'Tokyo' }
+      const names: Record<string, string> = { 10933: 'Guangzhou', 5929: 'Tokyo' }
       return names[cityId]
     },
     hasCity: (cityId: string) => ['10933', '5929'].includes(cityId)
@@ -59,8 +58,8 @@ vi.mock('../../app/composables/useCityPopulations', () => ({
     loadData: vi.fn(),
     getCityPopulationData: (cityId: string, epoch: number) => {
       // Mock population data for testing (based on actual data structure)
-      const mockData: Record<string, Record<number, { population: number; area_km2: number; density_per_km2: number }>> = {
-        '10933': {
+      const mockData: Record<string, Record<number, { population: number, area_km2: number, density_per_km2: number }>> = {
+        10933: {
           1975: { population: 1986150, area_km2: 390.26, density_per_km2: 5089.30 },
           1980: { population: 2737324, area_km2: 587.71, density_per_km2: 4657.60 },
           1985: { population: 3633898, area_km2: 779.96, density_per_km2: 4659.06 },
@@ -74,7 +73,7 @@ vi.mock('../../app/composables/useCityPopulations', () => ({
           2025: { population: 42610674, area_km2: 6420.48, density_per_km2: 6636.68 },
           2030: { population: 43986518, area_km2: 6492.52, density_per_km2: 6774.96 }
         },
-        '5929': {
+        5929: {
           1975: { population: 23909742, area_km2: 4541.90, density_per_km2: 5264.26 },
           1980: { population: 25667611, area_km2: 4649.62, density_per_km2: 5520.37 },
           1985: { population: 27197684, area_km2: 4695.64, density_per_km2: 5792.12 },

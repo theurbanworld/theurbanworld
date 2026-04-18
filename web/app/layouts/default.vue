@@ -50,8 +50,14 @@ function handleCityClose() {
           <RankingFilters v-if="isRankingsRoute" />
         </template>
         <CityRankings v-if="isRankingsRoute" />
-        <div v-else-if="selectedCityId" class="p-5">
-          <CityInfoPanel :city-id="selectedCityId" @close="handleCityClose" />
+        <div
+          v-else-if="selectedCityId"
+          class="p-5"
+        >
+          <CityInfoPanel
+            :city-id="selectedCityId"
+            @close="handleCityClose"
+          />
         </div>
       </AppSidebar>
 
@@ -70,7 +76,10 @@ function handleCityClose() {
                    active:scale-95 transition-transform cursor-pointer"
             @click="openMobileSidebar"
           >
-            <UIcon name="i-lucide-bar-chart-3" class="w-4 h-4" />
+            <UIcon
+              name="i-lucide-bar-chart-3"
+              class="w-4 h-4"
+            />
             <span v-if="isRankingsRoute">Rankings</span>
             <span v-else-if="selectedCityId">City Info</span>
             <span v-else>Rankings</span>

@@ -100,7 +100,7 @@ def sparql_query_page(client: httpx.Client, offset: int) -> list[dict]:
             data = resp.json()
             break
         except (httpx.TimeoutException, httpx.HTTPStatusError) as e:
-            wait = SPARQL_DELAY_SECONDS * (2 ** attempt)
+            wait = SPARQL_DELAY_SECONDS * (2**attempt)
             print(f"    SPARQL error (attempt {attempt + 1}): {e}")
             print(f"    Waiting {wait}s before retry...")
             time.sleep(wait)
@@ -126,13 +126,15 @@ def sparql_query_page(client: httpx.Client, offset: int) -> list[dict]:
         country_code = binding.get("countryCode", {}).get("value", "")
 
         if lat and lon:
-            results.append({
-                "qid": qid,
-                "name": name,
-                "country_code": country_code,
-                "lat": float(lat),
-                "lon": float(lon),
-            })
+            results.append(
+                {
+                    "qid": qid,
+                    "name": name,
+                    "country_code": country_code,
+                    "lat": float(lat),
+                    "lon": float(lon),
+                }
+            )
 
     return results
 
@@ -154,8 +156,10 @@ def fetch_all_wikidata_cities() -> list[dict]:
                 seen_qids.add(c["qid"])
             all_cities.extend(new_cities)
 
-            print(f"  Offset {offset}: {len(page)} results, {len(new_cities)} new "
-                  f"(total: {len(all_cities):,})")
+            print(
+                f"  Offset {offset}: {len(page)} results, {len(new_cities)} new "
+                f"(total: {len(all_cities):,})"
+            )
 
             if len(page) < SPARQL_PAGE_SIZE:
                 break  # Last page
@@ -167,15 +171,16 @@ def fetch_all_wikidata_cities() -> list[dict]:
     return all_cities
 
 
-def match_cities(
-    ucdb_cities: list[dict], wikidata_cities: list[dict]
-) -> dict[str, str]:
+def match_cities(ucdb_cities: list[dict], wikidata_cities: list[dict]) -> dict[str, str]:
     """Match UCDB cities to Wikidata entities using spatial + name similarity."""
-    print(f"\nMatching {len(ucdb_cities):,} UCDB cities against "
-          f"{len(wikidata_cities):,} Wikidata entities...")
+    print(
+        f"\nMatching {len(ucdb_cities):,} UCDB cities against "
+        f"{len(wikidata_cities):,} Wikidata entities..."
+    )
 
     # Build ISO alpha-3 to alpha-2 mapping
     import pycountry
+
     a3_to_a2 = {}
     for country in pycountry.countries:
         if hasattr(country, "alpha_3") and hasattr(country, "alpha_2"):
@@ -302,7 +307,7 @@ def main(local_only: bool = False, dry_run: bool = False) -> None:
         print()
         upload_to_r2(OUTPUT_PATH, R2_KEY, content_type="application/json")
     else:
-        print(f"\nLocal only — skipping R2 upload")
+        print("\nLocal only — skipping R2 upload")
 
     print("\nDone!")
 

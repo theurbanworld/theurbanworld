@@ -46,7 +46,7 @@ FONT_FAMILIES = {
             "Inter Regular": "Inter-Regular.ttf",
             "Inter Medium": "Inter-Medium.ttf",
             "Inter Bold": "Inter-Bold.ttf",
-        }
+        },
     },
     "Crimson Pro": {
         "type": "direct",
@@ -54,7 +54,7 @@ FONT_FAMILIES = {
             "Crimson Pro Regular": "https://cdn.jsdelivr.net/fontsource/fonts/crimson-pro@latest/latin-400-normal.ttf",
             "Crimson Pro SemiBold": "https://cdn.jsdelivr.net/fontsource/fonts/crimson-pro@latest/latin-600-normal.ttf",
             "Crimson Pro Bold": "https://cdn.jsdelivr.net/fontsource/fonts/crimson-pro@latest/latin-700-normal.ttf",
-        }
+        },
     },
     "JetBrains Mono": {
         "type": "direct",
@@ -62,8 +62,8 @@ FONT_FAMILIES = {
             # Full font from GitHub (1372 glyphs) - includes arrows ↗↘→
             # Fontsource latin subset only has 229 glyphs without arrows
             "JetBrains Mono Regular": "https://github.com/JetBrains/JetBrainsMono/raw/master/fonts/ttf/JetBrainsMono-Regular.ttf",
-        }
-    }
+        },
+    },
 }
 
 
@@ -72,11 +72,7 @@ def check_prerequisites() -> None:
     print("Checking prerequisites...")
 
     # Check build_pbf_glyphs
-    result = subprocess.run(
-        ["which", "build_pbf_glyphs"],
-        capture_output=True,
-        text=True
-    )
+    result = subprocess.run(["which", "build_pbf_glyphs"], capture_output=True, text=True)
     if result.returncode != 0:
         raise RuntimeError(
             "build_pbf_glyphs not found. Install with: cargo install build_pbf_glyphs"
@@ -85,9 +81,7 @@ def check_prerequisites() -> None:
 
     # Check FreeType (via pkg-config)
     result = subprocess.run(
-        ["pkg-config", "--modversion", "freetype2"],
-        capture_output=True,
-        text=True
+        ["pkg-config", "--modversion", "freetype2"], capture_output=True, text=True
     )
     if result.returncode != 0:
         print("  Warning: Could not verify FreeType version (pkg-config failed)")
@@ -96,7 +90,9 @@ def check_prerequisites() -> None:
         print(f"  FreeType: {version}")
 
 
-def download_font_family(family_name: str, family_config: dict, output_dir: Path) -> dict[str, Path]:
+def download_font_family(
+    family_name: str, family_config: dict, output_dir: Path
+) -> dict[str, Path]:
     """Download font files for a font family.
 
     Supports two download types:
@@ -160,7 +156,9 @@ def download_font_family(family_name: str, family_config: dict, output_dir: Path
             matches = list(extract_dir.rglob(ttf_filename))
             if not matches:
                 # Try case-insensitive search
-                matches = [p for p in extract_dir.rglob("*.ttf") if p.name.lower() == ttf_filename.lower()]
+                matches = [
+                    p for p in extract_dir.rglob("*.ttf") if p.name.lower() == ttf_filename.lower()
+                ]
             if not matches:
                 # List available files for debugging
                 all_ttf = list(extract_dir.rglob("*.ttf"))
@@ -204,12 +202,7 @@ def generate_pbf_glyphs(font_dir: Path, output_dir: Path) -> None:
     # Run build_pbf_glyphs on the font directory
     # Always use --overwrite to ensure fresh generation (the tool skips
     # existing files by default, which can leave stale/corrupt files)
-    cmd = [
-        "build_pbf_glyphs",
-        "--overwrite",
-        str(font_dir),
-        str(output_dir)
-    ]
+    cmd = ["build_pbf_glyphs", "--overwrite", str(font_dir), str(output_dir)]
 
     print(f"  Running: {' '.join(cmd)}")
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -254,12 +247,15 @@ def upload_fonts_to_r2(fonts_dir: Path) -> None:
     # --transfers=8 for parallel uploads
     # --header-upload for cache headers
     cmd = [
-        "rclone", "sync",
+        "rclone",
+        "sync",
         str(fonts_dir),
         f"r2:{bucket_name}/{R2_PREFIX}",
         "--transfers=8",
-        "--header-upload", "Cache-Control: public, max-age=31536000",
-        "--header-upload", "Content-Type: application/x-protobuf",
+        "--header-upload",
+        "Cache-Control: public, max-age=31536000",
+        "--header-upload",
+        "Content-Type: application/x-protobuf",
         "--progress",
     ]
 
@@ -319,7 +315,7 @@ def main(local_only: bool = False, family: str | None = None) -> None:
     if not local_only:
         upload_fonts_to_r2(OUTPUT_DIR)
     else:
-        print(f"\nLocal only mode - skipping R2 upload")
+        print("\nLocal only mode - skipping R2 upload")
         print(f"Output: {OUTPUT_DIR}")
 
     print("\nDone!")
@@ -330,7 +326,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Generate font glyphs for MapLibre")
     parser.add_argument("--local", action="store_true", help="Skip R2 upload")
-    parser.add_argument("--family", type=str, help="Generate only this font family (e.g., 'JetBrains Mono')")
+    parser.add_argument(
+        "--family", type=str, help="Generate only this font family (e.g., 'JetBrains Mono')"
+    )
     args = parser.parse_args()
 
     main(local_only=args.local, family=args.family)

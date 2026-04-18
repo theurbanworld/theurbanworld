@@ -116,13 +116,13 @@ const densityProfile = computed(() => selectedCityId.value ? getProfile(selected
 const radialMaxDensity = computed(() => selectedCityId.value ? getMaxDensity(selectedCityId.value, selectedYear.value) : 0)
 const { layer: radialLayer, isLoadingCells: isLoadingRadialCells } = useRadialLayer({
   densityProfile,
-  maxDensity: radialMaxDensity,
+  maxDensity: radialMaxDensity
 })
 const { isRadialLayerActive } = useRadialHighlight()
 
 // Population heatmap layer (activated when sidebar toggle is clicked)
 const { layer: populationLayer } = usePopulationLayer({
-  isDarkMode: computed(() => props.isDarkMode ?? false),
+  isDarkMode: computed(() => props.isDarkMode ?? false)
 })
 const { isPopulationLayerActive, isLoadingH3 } = usePopulationHighlight()
 

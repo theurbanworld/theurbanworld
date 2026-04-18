@@ -174,15 +174,17 @@ export function useRadialLayer(options?: UseRadialLayerOptions) {
       stroked: false,
       pickable: !options?.disableHover,
       autoHighlight: false,
-      ...(options?.disableHover ? {} : {
-        onHover: (info: { object?: unknown }) => {
-          if (info.object) {
-            setHighlightedRing((info.object as RadialHexagon).ringIndex)
-          } else {
-            setHighlightedRing(null)
-          }
-        },
-      }),
+      ...(options?.disableHover
+        ? {}
+        : {
+            onHover: (info: { object?: unknown }) => {
+              if (info.object) {
+                setHighlightedRing((info.object as RadialHexagon).ringIndex)
+              } else {
+                setHighlightedRing(null)
+              }
+            }
+          }),
       updateTriggers: {
         getFillColor: [highlighted, profile, maxDen]
       }

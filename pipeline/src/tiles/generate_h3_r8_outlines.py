@@ -24,17 +24,17 @@ import tempfile
 from pathlib import Path
 
 import geopandas as gpd
-import h3
-import numpy as np
 import pandas as pd
 import polars as pl
 from dotenv import load_dotenv
 from shapely import Polygon
 from shapely.ops import unary_union
 
+import h3
+
+from ..tiles.generate_boundaries import compute_density_trends, compute_trend
 from ..utils.config import config, get_processed_path
 from ..utils.r2_upload import upload_to_r2
-from ..tiles.generate_boundaries import compute_trend, compute_density_trends
 
 # Constants
 OUTPUT_PMTILES = Path("data/processed/tiles/h3_r8_outlines.pmtiles")
@@ -56,9 +56,9 @@ def load_outlines() -> gpd.GeoDataFrame:
     print("Loading H3 data and city attributes...")
 
     # Load city names
-    cities = pd.read_parquet(
-        str(get_processed_path("cities") / "cities.parquet")
-    )[["city_id", "name"]]
+    cities = pd.read_parquet(str(get_processed_path("cities") / "cities.parquet"))[
+        ["city_id", "name"]
+    ]
 
     # Load population data
     pop_path = get_processed_path("cities") / "city_populations_h3_r8.parquet"
@@ -103,11 +103,13 @@ def load_outlines() -> gpd.GeoDataFrame:
             hexagons = [h3_cell_to_polygon(idx) for idx in h3_indices]
             dissolved = unary_union(hexagons)
 
-            all_outlines.append({
-                "city_id": city_id,
-                "epoch": epoch,
-                "geometry": dissolved,
-            })
+            all_outlines.append(
+                {
+                    "city_id": city_id,
+                    "epoch": epoch,
+                    "geometry": dissolved,
+                }
+            )
 
         print(f"    Dissolved {df['city_id'].n_unique():,} cities")
 
@@ -131,7 +133,16 @@ def generate_geojson(gdf: gpd.GeoDataFrame, output_path: Path) -> None:
     print("Converting to GeoJSON...")
 
     gdf_export = gdf[
-        ["city_id", "epoch", "name", "population", "density_per_km2", "pop_trend", "density_trend", "geometry"]
+        [
+            "city_id",
+            "epoch",
+            "name",
+            "population",
+            "density_per_km2",
+            "pop_trend",
+            "density_trend",
+            "geometry",
+        ]
     ].copy()
 
     gdf_export["city_id"] = gdf_export["city_id"].astype(str)
@@ -154,7 +165,8 @@ def run_tippecanoe(geojson_path: Path, pmtiles_path: Path) -> None:
 
     cmd = [
         "tippecanoe",
-        "-o", str(pmtiles_path),
+        "-o",
+        str(pmtiles_path),
         "--force",
         "--layer=h3_r8_outlines",
         "--minimum-zoom=0",
@@ -212,10 +224,7 @@ def export_city_outlines(gdf: gpd.GeoDataFrame, local_only: bool = False) -> Non
             continue
 
         # Round coordinates to 4 decimal places (~11m precision, reduces file size)
-        coords = [
-            [[round(lon, 4), round(lat, 4)] for lon, lat in ring]
-            for ring in coords
-        ]
+        coords = [[[round(lon, 4), round(lat, 4)] for lon, lat in ring] for ring in coords]
 
         outline = {"coordinates": coords}
 
@@ -241,12 +250,15 @@ def export_city_outlines(gdf: gpd.GeoDataFrame, local_only: bool = False) -> Non
 
         bucket = os.environ["R2_BUCKET_NAME"]
         cmd = [
-            "rclone", "sync",
+            "rclone",
+            "sync",
             str(OUTPUT_OUTLINES_DIR),
             f"r2:{bucket}/data/outlines",
             "--transfers=16",
-            "--header-upload", "Content-Type: application/json",
-            "--header-upload", "Cache-Control: public, max-age=86400",
+            "--header-upload",
+            "Content-Type: application/json",
+            "--header-upload",
+            "Cache-Control: public, max-age=86400",
             "--progress",
         ]
 
@@ -276,7 +288,7 @@ def main(local_only: bool = False) -> None:
     if not local_only:
         upload_to_r2(OUTPUT_PMTILES, R2_KEY, content_type="application/x-protomaps-tiles+sqlite3")
     else:
-        print(f"\nLocal only mode - skipping R2 upload")
+        print("\nLocal only mode - skipping R2 upload")
         print(f"Output: {OUTPUT_PMTILES}")
 
     print("\nDone!")

@@ -17,7 +17,7 @@ import {
   Tooltip,
   type ChartOptions,
   type ChartData,
-  type Plugin,
+  type Plugin
 } from 'chart.js'
 import { Legend } from 'chart.js'
 import { getDensityColorHex } from '~/utils/densityColors'
@@ -81,9 +81,9 @@ const chartData = computed<ChartData<'line'>>(() => {
         pointHoverRadius: 5,
         tension: 0.3,
         segment: {
-          borderColor: (ctx: { p0DataIndex: number }) => getDensityColorHex(data[ctx.p0DataIndex] ?? 0, maxDen),
-        },
-      }],
+          borderColor: (ctx: { p0DataIndex: number }) => getDensityColorHex(data[ctx.p0DataIndex] ?? 0, maxDen)
+        }
+      }]
     }
   }
 
@@ -99,7 +99,7 @@ const chartData = computed<ChartData<'line'>>(() => {
     pointBorderColor: CITY_A_COLOR.primary,
     pointRadius: 0,
     pointHoverRadius: 4,
-    tension: 0.3,
+    tension: 0.3
   }
 
   const dataB = profileB.value ? profileB.value.map(d => d ?? 0) : []
@@ -114,7 +114,7 @@ const chartData = computed<ChartData<'line'>>(() => {
     pointBorderColor: CITY_B_COLOR.primary,
     pointRadius: 0,
     pointHoverRadius: 4,
-    tension: 0.3,
+    tension: 0.3
   }
 
   return { labels, datasets: [datasetA, datasetB] }
@@ -126,7 +126,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
   maintainAspectRatio: false,
   interaction: {
     mode: 'index',
-    intersect: false,
+    intersect: false
   },
   onHover: (_event, elements) => {
     if (elements.length > 0) {
@@ -141,23 +141,23 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
         display: true,
         text: 'km',
         font: { family: 'monospace', size: 10 },
-        color: '#8B7355',
+        color: '#8B7355'
       },
       ticks: {
         font: { family: 'monospace', size: 9 },
         color: '#8B7355',
-        maxTicksLimit: 10,
+        maxTicksLimit: 10
       },
       grid: {
-        color: 'rgba(139, 115, 85, 0.15)',
-      },
+        color: 'rgba(139, 115, 85, 0.15)'
+      }
     },
     y: {
       title: {
         display: true,
         text: 'density/km²',
         font: { family: 'monospace', size: 10 },
-        color: '#8B7355',
+        color: '#8B7355'
       },
       ticks: {
         font: { family: 'monospace', size: 9 },
@@ -166,13 +166,13 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
           const v = Number(value)
           if (v >= 1000) return `${(v / 1000).toFixed(0)}k`
           return `${v}`
-        },
+        }
       },
       grid: {
-        color: 'rgba(139, 115, 85, 0.15)',
+        color: 'rgba(139, 115, 85, 0.15)'
       },
-      suggestedMax: maxDensity.value * 1.1 || undefined,
-    },
+      suggestedMax: maxDensity.value * 1.1 || undefined
+    }
   },
   plugins: {
     tooltip: {
@@ -188,11 +188,11 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
             return `${prefix}${(density / 1000).toFixed(1)}k people/km²`
           }
           return `${prefix}${density.toFixed(0)} people/km²`
-        },
+        }
       },
       backgroundColor: 'rgba(92, 74, 61, 0.9)',
       titleFont: { family: 'monospace', size: 11 },
-      bodyFont: { family: 'monospace', size: 11 },
+      bodyFont: { family: 'monospace', size: 11 }
     },
     legend: {
       display: false,
@@ -201,11 +201,11 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
         boxHeight: 10,
         font: { family: 'monospace', size: 10 },
         color: '#8B7355',
-        padding: 6,
+        padding: 6
       },
-      position: 'bottom' as const,
-    },
-  },
+      position: 'bottom' as const
+    }
+  }
 }))
 
 // Highlight ring plugin — draws a vertical bar when a ring is highlighted from map hover
@@ -229,7 +229,7 @@ const highlightPlugin = computed<Plugin<'line'>>(() => ({
     const barWidth = chartArea.width / (profile.value?.length ?? 1)
     ctx.fillRect(x - barWidth / 2, chartArea.top, barWidth, chartArea.height)
     ctx.restore()
-  },
+  }
 }))
 
 const plugins = computed(() => [highlightPlugin.value])
@@ -242,8 +242,14 @@ watch(highlightedRing, () => {
 </script>
 
 <template>
-  <div class="w-full h-[200px]" @mouseleave="setHighlightedRing(null)">
-    <div v-if="!profile" class="flex items-center justify-center h-full text-sm text-body/50 dark:text-cream/50">
+  <div
+    class="w-full h-[200px]"
+    @mouseleave="setHighlightedRing(null)"
+  >
+    <div
+      v-if="!profile"
+      class="flex items-center justify-center h-full text-sm text-body/50 dark:text-cream/50"
+    >
       No radial profile data
     </div>
     <Line

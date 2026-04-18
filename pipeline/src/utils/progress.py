@@ -75,9 +75,7 @@ class ProgressTracker:
             self.data["started_at"] = datetime.now(timezone.utc).isoformat()
             self.data["status"] = "in_progress"
             self.data["total_items"] = len(item_ids)
-            self.data["items"] = {
-                item_id: {"status": "pending"} for item_id in item_ids
-            }
+            self.data["items"] = {item_id: {"status": "pending"} for item_id in item_ids}
             self.save()
         else:
             # Add any new items not already tracked
@@ -135,7 +133,9 @@ class ProgressTracker:
         # Check if all done
         pending = statuses.count("pending") + statuses.count("in_progress")
         if pending == 0:
-            self.data["status"] = "complete" if self.data["failed_items"] == 0 else "complete_with_errors"
+            self.data["status"] = (
+                "complete" if self.data["failed_items"] == 0 else "complete_with_errors"
+            )
 
     def get_pending(self) -> list[str]:
         """Get list of items not yet processed."""
@@ -148,17 +148,13 @@ class ProgressTracker:
     def get_completed(self) -> list[str]:
         """Get list of successfully completed items."""
         return [
-            item_id
-            for item_id, info in self.data["items"].items()
-            if info["status"] == "complete"
+            item_id for item_id, info in self.data["items"].items() if info["status"] == "complete"
         ]
 
     def get_failed(self) -> list[str]:
         """Get list of failed items."""
         return [
-            item_id
-            for item_id, info in self.data["items"].items()
-            if info["status"] == "failed"
+            item_id for item_id, info in self.data["items"].items() if info["status"] == "failed"
         ]
 
     def is_complete(self, item_id: str) -> bool:

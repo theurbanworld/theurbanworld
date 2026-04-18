@@ -21,7 +21,7 @@ export const nodes: ProvenanceNode[] = [
     description: '1 km resolution, Mollweide projection. 12 epochs from 1975 to 2030.',
     stage: 0,
     type: 'source',
-    source: 'GHSL-POP R2023A, JRC',
+    source: 'GHSL-POP R2023A, JRC'
   },
   {
     id: 'city-attributes',
@@ -29,7 +29,7 @@ export const nodes: ProvenanceNode[] = [
     description: 'Thematic attributes for ~10,000 urban centres worldwide.',
     stage: 0,
     type: 'source',
-    source: 'GHSL-UCDB R2024A, JRC',
+    source: 'GHSL-UCDB R2024A, JRC'
   },
   {
     id: 'city-boundaries',
@@ -37,7 +37,7 @@ export const nodes: ProvenanceNode[] = [
     description: 'Multi-temporal polygons tracking urban extent per epoch.',
     stage: 0,
     type: 'source',
-    source: 'GHSL-MTUC R2024A, JRC',
+    source: 'GHSL-MTUC R2024A, JRC'
   },
 
   // Column 1 — Spatial Grids
@@ -46,14 +46,14 @@ export const nodes: ProvenanceNode[] = [
     label: 'H3 Hexagonal Grid',
     description: 'Resolution 8 (~0.55\u20130.74 km\u00B2 per cell). Raster pixel centroids assigned to H3 cells.',
     stage: 1,
-    type: 'grid',
+    type: 'grid'
   },
   {
     id: 'regular-grid',
     label: '1 km Regular Grid',
     description: 'Equal-area Mollweide projection. Each pixel = exactly 1 km\u00B2.',
     stage: 1,
-    type: 'grid',
+    type: 'grid'
   },
 
   // Column 2 — Derived Datasets
@@ -62,21 +62,21 @@ export const nodes: ProvenanceNode[] = [
     label: 'City Populations',
     description: 'Sum of cell populations within boundaries at each epoch.',
     stage: 2,
-    type: 'derived',
+    type: 'derived'
   },
   {
     id: 'rankings',
     label: 'Rankings & Growth',
     description: 'Growth rates, density rankings, peer comparisons across epochs.',
     stage: 2,
-    type: 'derived',
+    type: 'derived'
   },
   {
     id: 'radial-profiles',
     label: 'Radial Density Profiles',
     description: 'Bertaud-style: pop-weighted centroid, 1 km concentric rings to 50 km.',
     stage: 2,
-    type: 'derived',
+    type: 'derived'
   },
 
   // Column 3 — What You See
@@ -85,29 +85,29 @@ export const nodes: ProvenanceNode[] = [
     label: 'Population Density Map',
     description: 'Choropleth of H3 or grid cells with 6-step density gradient.',
     stage: 3,
-    type: 'output',
+    type: 'output'
   },
   {
     id: 'city-info',
     label: 'City Information',
     description: 'Population, area, density time series per city.',
     stage: 3,
-    type: 'output',
+    type: 'output'
   },
   {
     id: 'city-rankings',
     label: 'City Rankings',
     description: 'Sortable rankings by population, density, growth.',
     stage: 3,
-    type: 'output',
+    type: 'output'
   },
   {
     id: 'profile-charts',
     label: 'Density Profile Charts',
     description: 'Radial charts showing density gradient from centre.',
     stage: 3,
-    type: 'output',
-  },
+    type: 'output'
+  }
 ]
 
 export const edges: ProvenanceEdge[] = [
@@ -132,5 +132,5 @@ export const edges: ProvenanceEdge[] = [
   { from: 'regular-grid', to: 'density-map', type: 'grid' },
   { from: 'city-populations', to: 'city-info' },
   { from: 'rankings', to: 'city-rankings' },
-  { from: 'radial-profiles', to: 'profile-charts' },
+  { from: 'radial-profiles', to: 'profile-charts' }
 ]

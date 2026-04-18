@@ -91,7 +91,9 @@ def generate_city_index(
 
         # Extract bbox
         bbox = None
-        if all(row.get(k) is not None for k in ["bbox_minx", "bbox_miny", "bbox_maxx", "bbox_maxy"]):
+        if all(
+            row.get(k) is not None for k in ["bbox_minx", "bbox_miny", "bbox_maxx", "bbox_maxy"]
+        ):
             bbox = [
                 round(row["bbox_minx"], 6),
                 round(row["bbox_miny"], 6),
@@ -193,7 +195,7 @@ def main(local_only: bool = False) -> None:
         print()
         upload_to_r2(OUTPUT_JSON, R2_KEY, content_type="application/json")
     else:
-        print(f"\nLocal only mode - skipping R2 upload")
+        print("\nLocal only mode - skipping R2 upload")
         print(f"Output: {OUTPUT_JSON}")
 
     print("\nDone!")

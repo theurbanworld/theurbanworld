@@ -12,9 +12,6 @@ Date: 2025-12-08
 from pathlib import Path
 from typing import NamedTuple
 
-import shapely
-from shapely import box
-
 
 class TileInfo(NamedTuple):
     """Information about a GHSL tile."""

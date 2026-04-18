@@ -64,7 +64,6 @@ export function useCityPopulations() {
       } catch (e: unknown) {
         // Handle 404 gracefully - data may not be deployed
         if (e && typeof e === 'object' && 'statusCode' in e && e.statusCode === 404) {
-
           return []
         }
         throw e

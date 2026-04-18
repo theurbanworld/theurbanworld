@@ -43,7 +43,6 @@ from tqdm import tqdm
 from ..utils.config import get_interim_path, get_processed_path, get_raw_path
 from ..utils.tile_utils import estimate_tiles_for_bbox_wgs84
 
-
 # Column mappings from UCDB to cities.parquet
 UCDB_COLUMNS = {
     "ID_UC_G0": "city_id",
@@ -137,14 +136,10 @@ def extract_cities(force: bool = False) -> gpd.GeoDataFrame:
     cities_pl = cities_pl.with_columns(pl.col("city_id").cast(pl.Utf8))
 
     # Convert population to integer (handling potential floats)
-    cities_pl = cities_pl.with_columns(
-        pl.col("ucdb_population_2025").cast(pl.Int64)
-    )
+    cities_pl = cities_pl.with_columns(pl.col("ucdb_population_2025").cast(pl.Int64))
 
     # Convert area to float
-    cities_pl = cities_pl.with_columns(
-        pl.col("ucdb_area_km2_2025").cast(pl.Float64)
-    )
+    cities_pl = cities_pl.with_columns(pl.col("ucdb_area_km2_2025").cast(pl.Float64))
 
     # Convert to pandas for merging with geodata
     cities_df = cities_pl.to_pandas()
@@ -183,7 +178,9 @@ def extract_cities(force: bool = False) -> gpd.GeoDataFrame:
             mtuc_yob["city_id"] = mtuc_yob["city_id"].astype(str)
             mtuc_yob["ucdb_year_of_birth"] = mtuc_yob["ucdb_year_of_birth"].astype("Int64")
             cities_df = cities_df.merge(mtuc_yob, on="city_id", how="left")
-            print(f"  Added ucdb_year_of_birth for {cities_df['ucdb_year_of_birth'].notna().sum()} cities")
+            print(
+                f"  Added ucdb_year_of_birth for {cities_df['ucdb_year_of_birth'].notna().sum()} cities"
+            )
         else:
             print("  Warning: ucdb_year_of_birth column not found in MTUC")
             cities_df["ucdb_year_of_birth"] = None
@@ -209,24 +206,14 @@ def extract_cities(force: bool = False) -> gpd.GeoDataFrame:
     )
 
     # Merge centroids
-    cities_gdf = cities_gdf.merge(
-        centroids[["city_id", "centroid_2025"]], on="city_id", how="left"
-    )
+    cities_gdf = cities_gdf.merge(centroids[["city_id", "centroid_2025"]], on="city_id", how="left")
 
     # Extract bounding box from geometry
     print("Extracting bounding boxes...")
-    cities_gdf["bbox_minx"] = cities_gdf.geometry.apply(
-        lambda g: g.bounds[0] if g else None
-    )
-    cities_gdf["bbox_miny"] = cities_gdf.geometry.apply(
-        lambda g: g.bounds[1] if g else None
-    )
-    cities_gdf["bbox_maxx"] = cities_gdf.geometry.apply(
-        lambda g: g.bounds[2] if g else None
-    )
-    cities_gdf["bbox_maxy"] = cities_gdf.geometry.apply(
-        lambda g: g.bounds[3] if g else None
-    )
+    cities_gdf["bbox_minx"] = cities_gdf.geometry.apply(lambda g: g.bounds[0] if g else None)
+    cities_gdf["bbox_miny"] = cities_gdf.geometry.apply(lambda g: g.bounds[1] if g else None)
+    cities_gdf["bbox_maxx"] = cities_gdf.geometry.apply(lambda g: g.bounds[2] if g else None)
+    cities_gdf["bbox_maxy"] = cities_gdf.geometry.apply(lambda g: g.bounds[3] if g else None)
 
     # Compute required tiles
     print("Computing tile coverage...")
@@ -265,8 +252,7 @@ def extract_cities(force: bool = False) -> gpd.GeoDataFrame:
 
         # Sort by population (desc) then country_code (asc) and keep first
         cities_gdf = cities_gdf.sort_values(
-            by=["ucdb_population_2025", "country_code"],
-            ascending=[False, True]
+            by=["ucdb_population_2025", "country_code"], ascending=[False, True]
         )
         before_count = len(cities_gdf)
         cities_gdf = cities_gdf.drop_duplicates(subset=["city_id"], keep="first")
@@ -334,7 +320,14 @@ def main(force: bool = False):
 
     # Show sample
     print("\nSample data:")
-    sample_cols = ["city_id", "name", "country_name", "country_code", "region", "ucdb_population_2025"]
+    sample_cols = [
+        "city_id",
+        "name",
+        "country_name",
+        "country_code",
+        "region",
+        "ucdb_population_2025",
+    ]
     print(cities_gdf[sample_cols].head(5).to_string(index=False))
 
 

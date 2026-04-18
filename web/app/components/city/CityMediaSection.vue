@@ -24,7 +24,7 @@ const groupedMedia = computed(() => {
     film: 'Films'
   }
 
-  const groups: { label: string; items: typeof filtered }[] = []
+  const groups: { label: string, items: typeof filtered }[] = []
   for (const type of typeOrder) {
     const items = filtered.filter(item => item.type === type)
     if (items.length > 0) {
@@ -36,8 +36,15 @@ const groupedMedia = computed(() => {
 </script>
 
 <template>
-  <div v-if="groupedMedia" class="border-t border-border/30 dark:border-border/20 pt-4">
-    <div v-for="group in groupedMedia" :key="group.label" class="mb-4 last:mb-0">
+  <div
+    v-if="groupedMedia"
+    class="border-t border-border/30 dark:border-border/20 pt-4"
+  >
+    <div
+      v-for="group in groupedMedia"
+      :key="group.label"
+      class="mb-4 last:mb-0"
+    >
       <h2 class="text-sm font-medium text-ink-700 dark:text-ink-300 mb-2">
         {{ group.label }}
       </h2>

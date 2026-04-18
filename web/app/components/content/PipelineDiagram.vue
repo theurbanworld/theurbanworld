@@ -34,16 +34,16 @@ function rowY(stage: number): number {
 
 // Compute node positions — centered horizontally per row
 const nodePositions = computed(() => {
-  const positions = new Map<string, { x: number; y: number }>()
+  const positions = new Map<string, { x: number, y: number }>()
   for (let stage = 0; stage < 4; stage++) {
-    const stageNodes = nodesByStage.value[stage]
+    const stageNodes = nodesByStage.value[stage] ?? []
     const rowWidth = stageNodes.length * nodeWidth + (stageNodes.length - 1) * nodeGapX
     const offsetX = paddingX + (maxRowWidth - rowWidth) / 2
     const nodesY = rowY(stage) + headerHeight + 4
     for (let i = 0; i < stageNodes.length; i++) {
-      positions.set(stageNodes[i].id, {
+      positions.set(stageNodes[i]!.id, {
         x: offsetX + i * (nodeWidth + nodeGapX),
-        y: nodesY,
+        y: nodesY
       })
     }
   }
@@ -103,8 +103,8 @@ function nodeOpacity(node: ProvenanceNode): number {
   if (node.id === hoveredNode.value) return 1
   const connected = edges.some(
     e =>
-      (e.from === hoveredNode.value && e.to === node.id) ||
-      (e.to === hoveredNode.value && e.from === node.id),
+      (e.from === hoveredNode.value && e.to === node.id)
+      || (e.to === hoveredNode.value && e.from === node.id)
   )
   return connected ? 1 : 0.35
 }
@@ -220,7 +220,14 @@ function wrapText(text: string, maxChars: number): string[] {
 
       <!-- Legend -->
       <g :transform="`translate(${paddingX + maxRowWidth - 170}, ${svgHeight - legendHeight + 6})`">
-        <line x1="0" y1="8" x2="16" y2="8" stroke="var(--color-forest-500)" stroke-width="1.5" />
+        <line
+          x1="0"
+          y1="8"
+          x2="16"
+          y2="8"
+          stroke="var(--color-forest-500)"
+          stroke-width="1.5"
+        />
         <text
           x="22"
           y="11"
@@ -230,7 +237,14 @@ function wrapText(text: string, maxChars: number): string[] {
         >
           H3 hexagonal path
         </text>
-        <line x1="90" y1="8" x2="106" y2="8" stroke="var(--color-density-5)" stroke-width="1.5" />
+        <line
+          x1="90"
+          y1="8"
+          x2="106"
+          y2="8"
+          stroke="var(--color-density-5)"
+          stroke-width="1.5"
+        />
         <text
           x="112"
           y="11"
