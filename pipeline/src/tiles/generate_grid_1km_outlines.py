@@ -22,16 +22,15 @@ import tempfile
 from pathlib import Path
 
 import geopandas as gpd
-import numpy as np
 import pandas as pd
 import polars as pl
 from pyproj import Transformer
 from shapely import box
 from shapely.ops import unary_union
 
+from ..tiles.generate_boundaries import compute_density_trends, compute_trend
 from ..utils.config import config, get_processed_path
 from ..utils.r2_upload import upload_to_r2
-from ..tiles.generate_boundaries import compute_trend, compute_density_trends
 
 # Constants
 MOLLWEIDE_CRS = "ESRI:54009"
@@ -61,9 +60,9 @@ def load_outlines() -> gpd.GeoDataFrame:
     print("Loading grid data and city attributes...")
 
     # Load city names
-    cities = pd.read_parquet(
-        str(get_processed_path("cities") / "cities.parquet")
-    )[["city_id", "name"]]
+    cities = pd.read_parquet(str(get_processed_path("cities") / "cities.parquet"))[
+        ["city_id", "name"]
+    ]
 
     # Load population data for attributes
     pop_path = get_processed_path("cities") / "city_populations_grid_1km.parquet"
@@ -114,13 +113,16 @@ def load_outlines() -> gpd.GeoDataFrame:
 
             # Transform to WGS84
             from shapely.ops import transform as shapely_transform
+
             dissolved_wgs84 = shapely_transform(transformer.transform, dissolved)
 
-            all_outlines.append({
-                "city_id": city_id,
-                "epoch": epoch,
-                "geometry": dissolved_wgs84,
-            })
+            all_outlines.append(
+                {
+                    "city_id": city_id,
+                    "epoch": epoch,
+                    "geometry": dissolved_wgs84,
+                }
+            )
 
         print(f"    Dissolved {df['city_id'].n_unique():,} cities")
 
@@ -144,7 +146,16 @@ def generate_geojson(gdf: gpd.GeoDataFrame, output_path: Path) -> None:
     print("Converting to GeoJSON...")
 
     gdf_export = gdf[
-        ["city_id", "epoch", "name", "population", "density_per_km2", "pop_trend", "density_trend", "geometry"]
+        [
+            "city_id",
+            "epoch",
+            "name",
+            "population",
+            "density_per_km2",
+            "pop_trend",
+            "density_trend",
+            "geometry",
+        ]
     ].copy()
 
     gdf_export["city_id"] = gdf_export["city_id"].astype(str)
@@ -167,7 +178,8 @@ def run_tippecanoe(geojson_path: Path, pmtiles_path: Path) -> None:
 
     cmd = [
         "tippecanoe",
-        "-o", str(pmtiles_path),
+        "-o",
+        str(pmtiles_path),
         "--force",
         "--layer=grid_1km_outlines",
         "--minimum-zoom=0",
@@ -206,7 +218,7 @@ def main(local_only: bool = False) -> None:
     if not local_only:
         upload_to_r2(OUTPUT_PMTILES, R2_KEY, content_type="application/x-protomaps-tiles+sqlite3")
     else:
-        print(f"\nLocal only mode - skipping R2 upload")
+        print("\nLocal only mode - skipping R2 upload")
         print(f"Output: {OUTPUT_PMTILES}")
 
     print("\nDone!")

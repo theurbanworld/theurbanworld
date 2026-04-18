@@ -38,7 +38,7 @@ const sliderValue = computed({
                bg-ink-200 dark:bg-ink-700
                accent-ink-600 dark:accent-ink-400"
         data-testid="epoch-slider"
-      />
+      >
       <span class="font-mono text-[10px] text-body/40 dark:text-cream/40 shrink-0">{{ MAX_YEAR }}</span>
     </div>
   </div>

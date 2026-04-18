@@ -60,15 +60,25 @@ function isLarger(rawA: number, rawB: number, side: 'A' | 'B'): boolean {
 <template>
   <div data-testid="comparison-metric-table">
     <!-- Loading skeleton -->
-    <div v-if="isLoading" class="space-y-3">
-      <div v-for="i in 3" :key="i" class="flex gap-3">
+    <div
+      v-if="isLoading"
+      class="space-y-3"
+    >
+      <div
+        v-for="i in 3"
+        :key="i"
+        class="flex gap-3"
+      >
         <div class="flex-1 h-12 bg-muted rounded animate-pulse" />
         <div class="flex-1 h-12 bg-muted rounded animate-pulse" />
       </div>
     </div>
 
     <!-- Metric rows -->
-    <div v-else class="space-y-2">
+    <div
+      v-else
+      class="space-y-2"
+    >
       <div
         v-for="metric in metrics"
         :key="metric.label"

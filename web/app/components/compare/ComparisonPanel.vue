@@ -60,7 +60,10 @@ watch([() => props.cityIdA, () => props.cityIdB], () => setComparisonRadialActiv
           class="w-2 h-2 rounded-full shrink-0"
           :class="CITY_A_COLOR.dotClass"
         />
-        <span class="text-sm font-medium" :class="CITY_A_COLOR.textClass">
+        <span
+          class="text-sm font-medium"
+          :class="CITY_A_COLOR.textClass"
+        >
           {{ cityA?.name ?? 'A' }}
         </span>
       </button>
@@ -74,7 +77,10 @@ watch([() => props.cityIdA, () => props.cityIdB], () => setComparisonRadialActiv
           class="w-2 h-2 rounded-full shrink-0"
           :class="CITY_B_COLOR.dotClass"
         />
-        <span class="text-sm font-medium" :class="CITY_B_COLOR.textClass">
+        <span
+          class="text-sm font-medium"
+          :class="CITY_B_COLOR.textClass"
+        >
           {{ cityB?.name ?? 'B' }}
         </span>
       </button>
@@ -152,7 +158,10 @@ watch([() => props.cityIdA, () => props.cityIdB], () => setComparisonRadialActiv
             aria-label="About radial profiles"
             @click="openInfoModal('/methodology/bertaud-radial')"
           >
-            <UIcon name="i-lucide-info" class="w-3.5 h-3.5" />
+            <UIcon
+              name="i-lucide-info"
+              class="w-3.5 h-3.5"
+            />
           </button>
         </div>
         <button
@@ -163,7 +172,10 @@ watch([() => props.cityIdA, () => props.cityIdB], () => setComparisonRadialActiv
             : 'text-body/60 dark:text-cream/60 hover:bg-forest-100/50 dark:hover:bg-forest-900/30'"
           @click="toggleRadialLayer"
         >
-          <UIcon name="i-lucide-map" class="w-3.5 h-3.5" />
+          <UIcon
+            name="i-lucide-map"
+            class="w-3.5 h-3.5"
+          />
           <span>{{ isComparisonRadialActive ? 'On map' : 'Show on map' }}</span>
         </button>
       </div>

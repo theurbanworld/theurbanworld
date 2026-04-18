@@ -5,7 +5,6 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { ref, readonly } from 'vue'
 import { useCitySelection } from '../../app/composables/useCitySelection'
 
 // Mock navigateTo
@@ -35,15 +34,15 @@ describe('Map city click selection', () => {
 
   it('click on city boundary triggers navigation to /city/[city_id]', () => {
     // Simulate click event with city feature
-    const cityId = 'tokyo-12345'
-    const mockFeature = {
+    const _cityId = 'tokyo-12345'
+    const _mockFeature = {
       id: 12345,
-      properties: { city_id: cityId, name: 'Tokyo' }
+      properties: { city_id: _cityId, name: 'Tokyo' }
     }
 
     // When a city is clicked, navigation should be triggered
     // This simulates what the click handler should do
-    const expectedUrl = `/city/${cityId}`
+    const expectedUrl = `/city/${_cityId}`
     mockNavigateTo(expectedUrl)
 
     expect(mockNavigateTo).toHaveBeenCalledWith('/city/tokyo-12345')
@@ -91,7 +90,7 @@ describe('Selected city feature-state', () => {
   })
 
   it('selected city gets feature-state selected: true', () => {
-    const cityId = 'london-456'
+    const _cityId = 'london-456'
     const featureId = 456
 
     // Simulate setting feature state for selected city
@@ -171,7 +170,7 @@ describe('fitBounds animation', () => {
     // Convert to LngLatBounds format [[sw], [ne]]
     const bounds: [[number, number], [number, number]] = [
       [cityBbox[0], cityBbox[1]], // SW corner: [minx, miny]
-      [cityBbox[2], cityBbox[3]]  // NE corner: [maxx, maxy]
+      [cityBbox[2], cityBbox[3]] // NE corner: [maxx, maxy]
     ]
 
     mockMap.fitBounds(bounds, { padding })

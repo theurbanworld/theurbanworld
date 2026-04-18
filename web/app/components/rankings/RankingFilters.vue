@@ -47,7 +47,11 @@ const cityCount = computed(() => {
       <option value="">
         All countries
       </option>
-      <option v-for="c in countries" :key="c" :value="c">
+      <option
+        v-for="c in countries"
+        :key="c"
+        :value="c"
+      >
         {{ c }}
       </option>
     </select>

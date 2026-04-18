@@ -16,11 +16,11 @@ const SPECTRAL: readonly RGBAColor[] = [
   [199, 213, 192, 255], // #C7D5C0 - Pale sage (very low)
   [161, 194, 152, 255], // #A1C298 - Soft green (low)
   [120, 185, 145, 255], // #78B991 - Teal green
-  [218, 165, 32, 255],  // #DAA520 - Goldenrod
-  [210, 120, 26, 255],  // #D2781A - Orange
-  [184, 69, 10, 255],   // #B8450A - Burnt orange
-  [139, 37, 0, 255],    // #8B2500 - Deep rust
-  [106, 90, 205, 255],  // #6A5ACD - Slate purple (peak)
+  [218, 165, 32, 255], // #DAA520 - Goldenrod
+  [210, 120, 26, 255], // #D2781A - Orange
+  [184, 69, 10, 255], // #B8450A - Burnt orange
+  [139, 37, 0, 255], // #8B2500 - Deep rust
+  [106, 90, 205, 255] // #6A5ACD - Slate purple (peak)
 ]
 
 /**
@@ -31,7 +31,7 @@ function lerpRGBA(a: RGBAColor, b: RGBAColor, t: number): RGBAColor {
     Math.round(a[0] + (b[0] - a[0]) * t),
     Math.round(a[1] + (b[1] - a[1]) * t),
     Math.round(a[2] + (b[2] - a[2]) * t),
-    Math.round(a[3] + (b[3] - a[3]) * t),
+    Math.round(a[3] + (b[3] - a[3]) * t)
   ]
 }
 
@@ -47,7 +47,7 @@ export function getDensityColorRGBA(
   density: number | null,
   maxDensity: number,
   _isDarkMode: boolean = false,
-  alpha: number = 220,
+  alpha: number = 220
 ): RGBAColor {
   if (density == null || density <= 0 || maxDensity <= 0) {
     const c = SPECTRAL[0]!
@@ -69,7 +69,7 @@ export function getDensityColorRGBA(
  */
 export function getDensityColorHex(
   density: number | null,
-  maxDensity: number,
+  maxDensity: number
 ): string {
   const rgba = getDensityColorRGBA(density, maxDensity, false, 255)
   return rgbaToHex(rgba)

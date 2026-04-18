@@ -11,38 +11,6 @@ export default defineNuxtConfig({
     '@nuxt/fonts'
   ],
 
-  site: {
-    url: 'https://theurban.world',
-    name: 'The Urban World',
-    description: 'An observatory of urban complexity — telling the story of global urbanization through data.'
-  },
-
-  robots: {
-    blockAiBots: true
-  },
-
-  sitemap: {
-    sitemaps: {
-      pages: {
-        includeAppSources: true
-      },
-      cities: {
-        sources: ['/api/__sitemap__/cities'],
-        chunks: true
-      }
-    },
-    defaultSitemapsChunkSize: 1000,
-    cacheMaxAgeSeconds: 3600
-  },
-
-  schemaOrg: {
-    identity: {
-      type: 'Person',
-      name: 'Jonathan Pichot',
-      url: 'https://pichot.us'
-    }
-  },
-
   components: [
     {
       path: '~/components',
@@ -58,6 +26,24 @@ export default defineNuxtConfig({
     '~/assets/css/main.css',
     'maplibre-gl/dist/maplibre-gl.css'
   ],
+
+  site: {
+    url: 'https://theurban.world',
+    name: 'The Urban World',
+    description: 'An observatory of urban complexity — telling the story of global urbanization through data.'
+  },
+
+  content: {
+    build: {
+      markdown: {
+        highlight: false
+      }
+    },
+    database: {
+      type: 'd1',
+      bindingName: 'DB'
+    }
+  },
 
   // Runtime configuration for environment variables
   runtimeConfig: {
@@ -75,24 +61,6 @@ export default defineNuxtConfig({
   },
 
   routeRules: {},
-
-  vite: {
-    optimizeDeps: {
-      include: ['fuse.js']
-    }
-  },
-
-  content: {
-    build: {
-      markdown: {
-        highlight: false
-      }
-    },
-    database: {
-      type: 'd1',
-      bindingName: 'DB'
-    }
-  },
 
   compatibilityDate: '2025-01-15',
 
@@ -123,6 +91,12 @@ export default defineNuxtConfig({
     }
   },
 
+  vite: {
+    optimizeDeps: {
+      include: ['fuse.js']
+    }
+  },
+
   eslint: {
     config: {
       stylistic: {
@@ -139,5 +113,31 @@ export default defineNuxtConfig({
       { name: 'Inter', weights: [300, 400, 500, 600, 700], global: true },
       { name: 'JetBrains Mono', weights: [400, 500, 600, 700], global: true }
     ]
+  },
+
+  robots: {
+    blockAiBots: true
+  },
+
+  schemaOrg: {
+    identity: {
+      type: 'Person',
+      name: 'Jonathan Pichot',
+      url: 'https://pichot.us'
+    }
+  },
+
+  sitemap: {
+    sitemaps: {
+      pages: {
+        includeAppSources: true
+      },
+      cities: {
+        sources: ['/api/__sitemap__/cities'],
+        chunks: true
+      }
+    },
+    defaultSitemapsChunkSize: 1000,
+    cacheMaxAgeSeconds: 3600
   }
 })

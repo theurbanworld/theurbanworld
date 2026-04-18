@@ -74,7 +74,7 @@ def render_summary():
             if pop is not None:
                 pop_2025 = pop[pop["epoch"] == 2025]
                 total_pop = pop_2025["population"].sum()
-                st.metric("Total Urban Pop (2025)", f"{total_pop/1e9:.2f}B")
+                st.metric("Total Urban Pop (2025)", f"{total_pop / 1e9:.2f}B")
 
     # Validation status
     st.subheader("Validation Status")
@@ -87,7 +87,9 @@ def render_summary():
         cols[3].metric("Passed", "Yes" if report["summary"]["passed"] else "No")
         st.caption(f"Report timestamp: {report['timestamp']}")
     else:
-        st.info("No validation report found. Run: `uv run python -m src.validate.validate_cities -o data/processed/cities/validation_report.json`")
+        st.info(
+            "No validation report found. Run: `uv run python -m src.validate.validate_cities -o data/processed/cities/validation_report.json`"
+        )
 
 
 def render_cities():
@@ -124,8 +126,12 @@ def render_cities():
 
     # Display columns
     display_cols = [
-        "city_id", "name", "country_code", "region",
-        "ucdb_population_2025", "ucdb_area_km2_2025"
+        "city_id",
+        "name",
+        "country_code",
+        "region",
+        "ucdb_population_2025",
+        "ucdb_area_km2_2025",
     ]
     display_cols = [c for c in display_cols if c in filtered.columns]
 
@@ -143,7 +149,9 @@ def render_outliers():
 
     report = load_validation_report()
     if not report:
-        st.info("No validation report found. Run: `uv run python -m src.validate.validate_cities -o data/processed/cities/validation_report.json`")
+        st.info(
+            "No validation report found. Run: `uv run python -m src.validate.validate_cities -o data/processed/cities/validation_report.json`"
+        )
         return
 
     statistical_checks = report.get("statistical_checks", {})
@@ -168,6 +176,7 @@ def render_outliers():
 
         # Convert to dataframe for display
         import pandas as pd
+
         df = pd.DataFrame(items)
         st.dataframe(df, use_container_width=True, height=400)
 

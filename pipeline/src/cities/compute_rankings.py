@@ -295,30 +295,35 @@ def compute_per_epoch_growth(df: pl.DataFrame) -> pl.DataFrame:
     # growth_from_prev: (population / prev_population)^(1/years) - 1
     # growth_to_next: (next_population / population)^(1/years) - 1
 
-    with_growth = with_neighbors.with_columns([
-        # Growth from previous epoch
-        pl.when(pl.col("prev_population").is_not_null() & (pl.col("prev_population") > 0))
-        .then(
-            (pl.col("population") / pl.col("prev_population")).pow(
-                1.0 / (pl.col("epoch") - pl.col("prev_epoch"))
-            ) - 1
-        )
-        .otherwise(None)
-        .alias("growth_from_prev"),
-
-        # Growth to next epoch
-        pl.when(pl.col("next_population").is_not_null() & (pl.col("population") > 0))
-        .then(
-            (pl.col("next_population") / pl.col("population")).pow(
-                1.0 / (pl.col("next_epoch") - pl.col("epoch"))
-            ) - 1
-        )
-        .otherwise(None)
-        .alias("growth_to_next"),
-    ])
+    with_growth = with_neighbors.with_columns(
+        [
+            # Growth from previous epoch
+            pl.when(pl.col("prev_population").is_not_null() & (pl.col("prev_population") > 0))
+            .then(
+                (pl.col("population") / pl.col("prev_population")).pow(
+                    1.0 / (pl.col("epoch") - pl.col("prev_epoch"))
+                )
+                - 1
+            )
+            .otherwise(None)
+            .alias("growth_from_prev"),
+            # Growth to next epoch
+            pl.when(pl.col("next_population").is_not_null() & (pl.col("population") > 0))
+            .then(
+                (pl.col("next_population") / pl.col("population")).pow(
+                    1.0 / (pl.col("next_epoch") - pl.col("epoch"))
+                )
+                - 1
+            )
+            .otherwise(None)
+            .alias("growth_to_next"),
+        ]
+    )
 
     # Drop helper columns
-    with_growth = with_growth.drop(["prev_population", "next_population", "prev_epoch", "next_epoch"])
+    with_growth = with_growth.drop(
+        ["prev_population", "next_population", "prev_epoch", "next_epoch"]
+    )
 
     return with_growth
 
@@ -361,16 +366,17 @@ def compute_full_period_growth(df: pl.DataFrame) -> pl.DataFrame:
     world_baseline = calculate_cagr(WORLD_POPULATION[1975], WORLD_POPULATION[2030], 55)
 
     # Calculate CAGR for each city
-    growth = pivoted.with_columns([
-        # 55-year CAGR
-        pl.when((pl.col("pop_1975") > 0) & (pl.col("pop_2030") > 0))
-        .then((pl.col("pop_2030") / pl.col("pop_1975")).pow(1.0 / 55) - 1)
-        .otherwise(None)
-        .alias("cagr_1975_2030"),
-
-        # World baseline as constant
-        pl.lit(world_baseline).alias("world_baseline_cagr"),
-    ])
+    growth = pivoted.with_columns(
+        [
+            # 55-year CAGR
+            pl.when((pl.col("pop_1975") > 0) & (pl.col("pop_2030") > 0))
+            .then((pl.col("pop_2030") / pl.col("pop_1975")).pow(1.0 / 55) - 1)
+            .otherwise(None)
+            .alias("cagr_1975_2030"),
+            # World baseline as constant
+            pl.lit(world_baseline).alias("world_baseline_cagr"),
+        ]
+    )
 
     # Add growth regime classification
     growth = growth.with_columns(
@@ -388,13 +394,15 @@ def compute_full_period_growth(df: pl.DataFrame) -> pl.DataFrame:
     )
 
     # Select final columns
-    return growth.select([
-        "city_id",
-        "cagr_1975_2030",
-        "growth_regime",
-        "relative_acceleration",
-        "world_baseline_cagr",
-    ])
+    return growth.select(
+        [
+            "city_id",
+            "cagr_1975_2030",
+            "growth_regime",
+            "relative_acceleration",
+            "world_baseline_cagr",
+        ]
+    )
 
 
 # =============================================================================
@@ -402,7 +410,9 @@ def compute_full_period_growth(df: pl.DataFrame) -> pl.DataFrame:
 # =============================================================================
 
 
-def compute_density_peers(df: pl.DataFrame, max_peers: int = 5, population_tolerance: float = 0.20) -> pl.DataFrame:
+def compute_density_peers(
+    df: pl.DataFrame, max_peers: int = 5, population_tolerance: float = 0.20
+) -> pl.DataFrame:
     """
     Find density peers for each city at 2030.
 
@@ -426,15 +436,15 @@ def compute_density_peers(df: pl.DataFrame, max_peers: int = 5, population_toler
         DataFrame with peer relationships
     """
     # Filter to 2030 data only
-    data_2030 = df.filter(pl.col("epoch") == 2030).select([
-        "city_id", "name", "population", "density_per_km2"
-    ])
+    data_2030 = df.filter(pl.col("epoch") == 2030).select(
+        ["city_id", "name", "population", "density_per_km2"]
+    )
 
     # Convert to list for processing
     cities = data_2030.to_dicts()
 
     # Build index for efficient lookup
-    city_lookup = {c["city_id"]: c for c in cities}
+    {c["city_id"]: c for c in cities}
 
     peer_records = []
 
@@ -481,14 +491,16 @@ def compute_density_peers(df: pl.DataFrame, max_peers: int = 5, population_toler
 
         # Create peer records
         for peer in selected:
-            peer_records.append({
-                "city_id": target_id,
-                "peer_city_id": peer["city_id"],
-                "peer_name": peer["name"],
-                "peer_population": int(peer["population"]),
-                "peer_density": round(peer["density_per_km2"], 1),
-                "density_ratio": round(peer["density_per_km2"] / target_density, 2),
-            })
+            peer_records.append(
+                {
+                    "city_id": target_id,
+                    "peer_city_id": peer["city_id"],
+                    "peer_name": peer["name"],
+                    "peer_population": int(peer["population"]),
+                    "peer_density": round(peer["density_per_km2"], 1),
+                    "density_ratio": round(peer["density_per_km2"] / target_density, 2),
+                }
+            )
 
     return pl.DataFrame(peer_records)
 
@@ -569,24 +581,20 @@ def main(source: str, force: bool = False):
     print("=" * 60)
 
     # Top 10 by population at 2030
-    top_2030 = (
-        with_growth.filter(pl.col("epoch") == 2030)
-        .sort("global_population_rank")
-        .head(10)
-    )
+    top_2030 = with_growth.filter(pl.col("epoch") == 2030).sort("global_population_rank").head(10)
     print("\nTop 10 cities by population (2030):")
     for row in top_2030.to_dicts():
-        print(f"  {row['global_population_rank']:3d}. {row['name']} ({row['country_code']}): {row['population']:,.0f}")
+        print(
+            f"  {row['global_population_rank']:3d}. {row['name']} ({row['country_code']}): {row['population']:,.0f}"
+        )
 
     # Top 10 by density at 2030
-    top_density = (
-        with_growth.filter(pl.col("epoch") == 2030)
-        .sort("global_density_rank")
-        .head(10)
-    )
+    top_density = with_growth.filter(pl.col("epoch") == 2030).sort("global_density_rank").head(10)
     print("\nTop 10 cities by density (2030):")
     for row in top_density.to_dicts():
-        print(f"  {row['global_density_rank']:3d}. {row['name']} ({row['country_code']}): {row['density_per_km2']:,.0f}/km²")
+        print(
+            f"  {row['global_density_rank']:3d}. {row['name']} ({row['country_code']}): {row['density_per_km2']:,.0f}/km²"
+        )
 
     # Growth regimes
     regime_counts = growth.group_by("growth_regime").len().sort("len", descending=True)
@@ -599,7 +607,7 @@ def main(source: str, force: bool = False):
     epochs = sorted(with_growth["epoch"].unique().to_list())
     print(f"\nEpochs covered: {epochs}")
 
-    print(f"\nOutputs:")
+    print("\nOutputs:")
     print(f"  Rankings: {rankings_path}")
     print(f"  Growth: {growth_path}")
     print(f"  Peers: {peers_path}")

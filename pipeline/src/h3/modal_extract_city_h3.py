@@ -134,9 +134,10 @@ def process_city_batch(
     from pathlib import Path
 
     import geopandas as gpd
-    import h3
     import polars as pl
     from shapely import unary_union
+
+    import h3
 
     # ── Load data from volumes ──
     print(f"Processing batch of {len(city_ids)} cities...")
@@ -225,9 +226,7 @@ def process_city_batch(
         if cell_data:
             output = {"cells": cell_data}
             json_path = json_dir / f"{city_id}.json"
-            json_path.write_bytes(
-                __import__("orjson").dumps(output)
-            )
+            json_path.write_bytes(__import__("orjson").dumps(output))
 
         # ── 2. Proto-city / post-city populations ──
         if birth_year and birth_year > 1975:
@@ -252,15 +251,19 @@ def process_city_batch(
                             cell_count += 1
 
                     area_km2 = cell_count * h3.average_hexagon_area(H3_RESOLUTION, unit="km^2")
-                    proto_rows.append({
-                        "city_id": city_id,
-                        "epoch": epoch,
-                        "population": round(total_pop, 1),
-                        "area_km2": round(area_km2, 2),
-                        "density_per_km2": round(total_pop / area_km2, 1) if area_km2 > 0 else 0.0,
-                        "cell_count": cell_count,
-                        "state": "proto",
-                    })
+                    proto_rows.append(
+                        {
+                            "city_id": city_id,
+                            "epoch": epoch,
+                            "population": round(total_pop, 1),
+                            "area_km2": round(area_km2, 2),
+                            "density_per_km2": round(total_pop / area_km2, 1)
+                            if area_km2 > 0
+                            else 0.0,
+                            "cell_count": cell_count,
+                            "state": "proto",
+                        }
+                    )
 
         if death_year and death_year <= 2030:
             last_geom_row = city_geoms[city_geoms["epoch"] == max_alive_epoch]
@@ -284,15 +287,19 @@ def process_city_batch(
                             cell_count += 1
 
                     area_km2 = cell_count * h3.average_hexagon_area(H3_RESOLUTION, unit="km^2")
-                    proto_rows.append({
-                        "city_id": city_id,
-                        "epoch": epoch,
-                        "population": round(total_pop, 1),
-                        "area_km2": round(area_km2, 2),
-                        "density_per_km2": round(total_pop / area_km2, 1) if area_km2 > 0 else 0.0,
-                        "cell_count": cell_count,
-                        "state": "post",
-                    })
+                    proto_rows.append(
+                        {
+                            "city_id": city_id,
+                            "epoch": epoch,
+                            "population": round(total_pop, 1),
+                            "area_km2": round(area_km2, 2),
+                            "density_per_km2": round(total_pop / area_km2, 1)
+                            if area_km2 > 0
+                            else 0.0,
+                            "cell_count": cell_count,
+                            "state": "post",
+                        }
+                    )
 
         # ── 3. Per-epoch centroids ──
         for epoch in city_epochs:
@@ -345,13 +352,15 @@ def process_city_batch(
             centroid_h3 = h3.latlng_to_cell(lat_center, lng_center, H3_RESOLUTION)
             snap_lat, snap_lng = h3.cell_to_latlng(centroid_h3)
 
-            centroid_rows.append({
-                "city_id": city_id,
-                "epoch": epoch,
-                "centroid_h3": centroid_h3,
-                "centroid_lat": round(snap_lat, 6),
-                "centroid_lng": round(snap_lng, 6),
-            })
+            centroid_rows.append(
+                {
+                    "city_id": city_id,
+                    "epoch": epoch,
+                    "centroid_h3": centroid_h3,
+                    "centroid_lat": round(snap_lat, 6),
+                    "centroid_lng": round(snap_lng, 6),
+                }
+            )
 
     # ── Save batch results ──
     batch_id = city_ids[0] if city_ids else "unknown"
@@ -485,7 +494,6 @@ def upload_to_r2() -> list[str]:
 
     done_count = 0
     total = len(upload_tasks)
-    from threading import Lock
     lock = Lock()
 
     def upload_one(item: tuple[Path, str]) -> str:
@@ -565,8 +573,16 @@ def list_volume_status() -> str:
             lines.append(f"{name}: NOT FOUND")
 
     # Batch files
-    proto_batches = len(list(results_dir.glob("proto/batch_*.parquet"))) if (results_dir / "proto").exists() else 0
-    centroid_batches = len(list(results_dir.glob("centroids/batch_*.parquet"))) if (results_dir / "centroids").exists() else 0
+    proto_batches = (
+        len(list(results_dir.glob("proto/batch_*.parquet")))
+        if (results_dir / "proto").exists()
+        else 0
+    )
+    centroid_batches = (
+        len(list(results_dir.glob("centroids/batch_*.parquet")))
+        if (results_dir / "centroids").exists()
+        else 0
+    )
     lines.append(f"\nProto batch files: {proto_batches}")
     lines.append(f"Centroid batch files: {centroid_batches}")
 
@@ -623,7 +639,7 @@ def main(
                 "Run 'uv run python -m src.cities.extract_geometries' first."
             )
 
-        print(f"\nUploading city data to Modal volume...")
+        print("\nUploading city data to Modal volume...")
         result = upload_city_data.remote(
             cities_path.read_bytes(),
             geom_path.read_bytes(),
@@ -646,8 +662,8 @@ def main(
         else:
             print(f"  {name}: NOT FOUND")
             raise RuntimeError(
-                f"City data not found on volume. Run --prepare first:\n"
-                f"  cd pipeline && uv run modal run src/h3/modal_extract_city_h3.py --prepare"
+                "City data not found on volume. Run --prepare first:\n"
+                "  cd pipeline && uv run modal run src/h3/modal_extract_city_h3.py --prepare"
             )
 
     # ── Get city IDs from volume ──
@@ -656,18 +672,12 @@ def main(
     print(f"  {len(all_city_ids):,} cities")
 
     # Split into batches
-    batches = [
-        all_city_ids[i : i + batch_size]
-        for i in range(0, len(all_city_ids), batch_size)
-    ]
+    batches = [all_city_ids[i : i + batch_size] for i in range(0, len(all_city_ids), batch_size)]
     print(f"  {len(batches)} batches of {batch_size}")
 
     # Process batches in parallel
     print("\nProcessing...")
-    futures = [
-        process_city_batch.spawn(batch, buffer_km)
-        for batch in batches
-    ]
+    futures = [process_city_batch.spawn(batch, buffer_km) for batch in batches]
 
     for i, future in enumerate(futures):
         result = future.get()

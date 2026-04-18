@@ -88,9 +88,7 @@ def main(local_only: bool = False) -> None:
 
         with ThreadPoolExecutor(max_workers=20) as pool:
             futures = {
-                pool.submit(
-                    _upload_file, s3, bucket, f, f"{r2_prefix}/{f.stem}.json"
-                ): f
+                pool.submit(_upload_file, s3, bucket, f, f"{r2_prefix}/{f.stem}.json"): f
                 for f in json_files
             }
             for future in as_completed(futures):
@@ -101,7 +99,7 @@ def main(local_only: bool = False) -> None:
 
         print(f"  Done — {uploaded:,} files uploaded")
     else:
-        print(f"\nLocal only mode - skipping R2 upload")
+        print("\nLocal only mode - skipping R2 upload")
 
     print("\nDone!")
 

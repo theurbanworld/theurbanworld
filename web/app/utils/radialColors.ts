@@ -21,7 +21,7 @@ export const RING_COLORS: string[] = [
   '#3A7CA5', // 6km
   '#4169E1', // 7km — royal blue
   '#6A5ACD', // 8km — slate purple
-  '#9B8EC0', // 9km+ — light purple
+  '#9B8EC0' // 9km+ — light purple
 ]
 
 /** Pale neutral for outer rings beyond the gradient */
@@ -65,7 +65,7 @@ function parseHex(hex: string): [number, number, number] {
   return [
     parseInt(h.substring(0, 2), 16),
     parseInt(h.substring(2, 4), 16),
-    parseInt(h.substring(4, 6), 16),
+    parseInt(h.substring(4, 6), 16)
   ]
 }
 

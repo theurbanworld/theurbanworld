@@ -92,8 +92,8 @@ const schemaOrgNodes = computed(() => {
   if (city.centroid) {
     node.geo = {
       '@type': 'GeoCoordinates',
-      latitude: city.centroid[1],
-      longitude: city.centroid[0]
+      'latitude': city.centroid[1],
+      'longitude': city.centroid[0]
     }
   }
 

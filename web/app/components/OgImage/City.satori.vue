@@ -36,7 +36,9 @@ async function loadOutline() {
     // Compute bounding box across all rings
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
     for (const ring of data.coordinates) {
-      for (const [lon, lat] of ring) {
+      for (const coord of ring) {
+        const lon = coord[0]!
+        const lat = coord[1]!
         if (lon < minX) minX = lon
         if (lon > maxX) maxX = lon
         if (lat < minY) minY = lat
@@ -73,11 +75,12 @@ async function loadOutline() {
     // Build SVG path string for all rings
     const paths: string[] = []
     for (const ring of data.coordinates) {
-      const points = ring.map(([lon, lat]) => project(lon, lat))
+      const points = ring.map(coord => project(coord[0]!, coord[1]!))
       if (points.length < 3) continue
-      const d = `M${points[0][0]},${points[0][1]}` +
-        points.slice(1).map(([x, y]) => `L${x},${y}`).join('') +
-        'Z'
+      const first = points[0]!
+      const d = `M${first[0]},${first[1]}`
+        + points.slice(1).map(([x, y]) => `L${x},${y}`).join('')
+        + 'Z'
       paths.push(d)
     }
 
@@ -197,7 +200,10 @@ await loadOutline()
           marginTop: '8px'
         }"
       >
-        <div v-if="population" :style="{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }">
+        <div
+          v-if="population"
+          :style="{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }"
+        >
           <div :style="{ fontFamily: 'Crimson Pro, serif', fontSize: '26px', color: '#5C4A3D', fontWeight: 600 }">
             {{ population }}
           </div>
@@ -211,7 +217,10 @@ await loadOutline()
           :style="{ width: '1px', height: '32px', backgroundColor: 'rgba(74, 66, 56, 0.2)' }"
         />
 
-        <div v-if="density" :style="{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }">
+        <div
+          v-if="density"
+          :style="{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }"
+        >
           <div :style="{ fontFamily: 'Crimson Pro, serif', fontSize: '26px', color: '#5C4A3D', fontWeight: 600 }">
             {{ density }}
           </div>
@@ -225,7 +234,10 @@ await loadOutline()
           :style="{ width: '1px', height: '32px', backgroundColor: 'rgba(74, 66, 56, 0.2)' }"
         />
 
-        <div v-if="area" :style="{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }">
+        <div
+          v-if="area"
+          :style="{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }"
+        >
           <div :style="{ fontFamily: 'Crimson Pro, serif', fontSize: '26px', color: '#5C4A3D', fontWeight: 600 }">
             {{ area }}
           </div>

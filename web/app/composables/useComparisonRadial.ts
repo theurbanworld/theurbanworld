@@ -13,6 +13,6 @@ export function useComparisonRadial() {
 
   return {
     isComparisonRadialActive: readonly(isActive),
-    setComparisonRadialActive: setActive,
+    setComparisonRadialActive: setActive
   }
 }

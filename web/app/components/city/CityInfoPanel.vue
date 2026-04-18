@@ -47,20 +47,24 @@ const {
   densityTrendNext,
   area,
   areaFormatted,
-  isAvailable,
   birthYear,
   deathYear,
   isPreCity,
-  isPostCity,
   isActiveCity,
   cityStateMessage
 } = useCityStats(cityIdRef)
 </script>
 
 <template>
-  <div data-testid="city-info-panel" class="flex flex-col">
+  <div
+    data-testid="city-info-panel"
+    class="flex flex-col"
+  >
     <!-- Loading skeleton -->
-    <div v-if="isLoading" class="animate-pulse">
+    <div
+      v-if="isLoading"
+      class="animate-pulse"
+    >
       <div class="h-8 bg-muted rounded w-3/4 mb-2" />
       <div class="h-4 bg-muted rounded w-1/2 mb-6" />
       <div class="grid grid-cols-2 gap-4">
@@ -72,9 +76,16 @@ const {
     </div>
 
     <!-- Error state -->
-    <div v-else-if="error" class="text-red-500 dark:text-red-400">
-      <p class="font-medium">Failed to load city data</p>
-      <p class="text-sm mt-1">{{ error.message }}</p>
+    <div
+      v-else-if="error"
+      class="text-red-500 dark:text-red-400"
+    >
+      <p class="font-medium">
+        Failed to load city data
+      </p>
+      <p class="text-sm mt-1">
+        {{ error.message }}
+      </p>
     </div>
 
     <!-- Content -->
@@ -98,7 +109,10 @@ const {
             aria-label="Close sidebar"
             @click="emit('close')"
           >
-            <UIcon name="i-lucide-x" class="w-4 h-4 block" />
+            <UIcon
+              name="i-lucide-x"
+              class="w-4 h-4 block"
+            />
           </button>
         </div>
         <p
@@ -122,7 +136,10 @@ const {
                  transition-colors"
           @click="compareModalOpen = true"
         >
-          <UIcon name="i-lucide-columns-2" class="w-3.5 h-3.5" />
+          <UIcon
+            name="i-lucide-columns-2"
+            class="w-3.5 h-3.5"
+          />
           Compare
         </button>
       </div>
@@ -171,12 +188,18 @@ const {
               />
             </template>
             <template #chart-b>
-              <DistributionStrip :city-id="cityId" metric="population" />
+              <DistributionStrip
+                :city-id="cityId"
+                metric="population"
+              />
             </template>
           </DataPoint>
         </div>
 
-        <div v-if="isActiveCity" data-testid="density-datapoint">
+        <div
+          v-if="isActiveCity"
+          data-testid="density-datapoint"
+        >
           <DataPoint
             id="city-density"
             label="Density"
@@ -198,12 +221,18 @@ const {
               />
             </template>
             <template #chart-b>
-              <DistributionStrip :city-id="cityId" metric="density_per_km2" />
+              <DistributionStrip
+                :city-id="cityId"
+                metric="density_per_km2"
+              />
             </template>
           </DataPoint>
         </div>
 
-        <div v-if="isActiveCity" data-testid="area-datapoint">
+        <div
+          v-if="isActiveCity"
+          data-testid="area-datapoint"
+        >
           <DataPoint
             id="city-area"
             label="Area"
@@ -223,17 +252,28 @@ const {
               />
             </template>
             <template #chart-b>
-              <DistributionStrip :city-id="cityId" metric="area_km2" />
+              <DistributionStrip
+                :city-id="cityId"
+                metric="area_km2"
+              />
             </template>
           </DataPoint>
         </div>
       </div>
 
       <!-- Population Heatmap (H3 datasets only) -->
-      <PopulationHeatmapSection v-if="showH3Overlay" :city-id="cityId" class="mt-4" />
+      <PopulationHeatmapSection
+        v-if="showH3Overlay"
+        :city-id="cityId"
+        class="mt-4"
+      />
 
       <!-- Radial Profile Section (Urban World only) -->
-      <RadialProfileSection v-if="showRadialProfiles" :city-id="cityId" class="mt-4" />
+      <RadialProfileSection
+        v-if="showRadialProfiles"
+        :city-id="cityId"
+        class="mt-4"
+      />
 
       <!-- Media Resources (deferred — CityMediaSection component exists but content not yet populated) -->
     </template>

@@ -24,8 +24,6 @@ export function useSelectedYear() {
     // Validate that the year is a valid epoch
     if (YEAR_EPOCHS.includes(year as YearEpoch)) {
       selectedYear.value = year as YearEpoch
-    } else {
-
     }
   }
 

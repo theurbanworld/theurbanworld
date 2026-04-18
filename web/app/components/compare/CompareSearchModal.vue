@@ -78,7 +78,11 @@ watch(searchTerm, () => {
 </script>
 
 <template>
-  <UModal v-model:open="open" title="Compare with..." description="Search for a city to compare">
+  <UModal
+    v-model:open="open"
+    title="Compare with..."
+    description="Search for a city to compare"
+  >
     <template #body>
       <div class="relative">
         <div class="relative">
@@ -99,7 +103,7 @@ watch(searchTerm, () => {
                    focus:outline-none focus:ring-2 focus:ring-ink-400/40 dark:focus:ring-ink-500/40
                    transition"
             @keydown="onKeydown"
-          />
+          >
         </div>
 
         <ul
@@ -118,8 +122,12 @@ watch(searchTerm, () => {
             @mousedown.prevent="onSelect(item)"
             @mouseenter="highlightedIndex = i"
           >
-            <div class="text-sm font-medium text-ink-700 dark:text-ink-200">{{ item.label }}</div>
-            <div class="text-xs text-ink-400 dark:text-ink-500">{{ item.description }}</div>
+            <div class="text-sm font-medium text-ink-700 dark:text-ink-200">
+              {{ item.label }}
+            </div>
+            <div class="text-xs text-ink-400 dark:text-ink-500">
+              {{ item.description }}
+            </div>
           </li>
         </ul>
       </div>

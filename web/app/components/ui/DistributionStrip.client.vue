@@ -19,7 +19,7 @@ import {
   Tooltip,
   type ChartOptions,
   type ChartData,
-  type Plugin,
+  type Plugin
 } from 'chart.js'
 import type { DistributionMetric } from '../../composables/useDistributionData'
 import { formatCompactNumber, formatDensity, formatArea } from '../../utils/formatNumber'
@@ -35,7 +35,7 @@ const {
   sortedDistribution,
   cityRank,
   rankLabel,
-  getCityAtIndex,
+  getCityAtIndex
 } = useDistributionData(
   computed(() => props.cityId),
   computed(() => props.metric)
@@ -68,8 +68,8 @@ const chartData = computed<ChartData<'line'>>(() => {
       pointRadius: 0,
       pointHoverRadius: 0,
       tension: 0,
-      normalized: true,
-    }],
+      normalized: true
+    }]
   }
 })
 
@@ -79,19 +79,19 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
   interaction: {
     mode: 'nearest',
     axis: 'x',
-    intersect: false,
+    intersect: false
   },
   scales: {
     x: {
       display: false,
       type: 'linear',
       offset: false,
-      bounds: 'data',
+      bounds: 'data'
     },
     y: {
       display: false,
-      type: 'logarithmic',
-    },
+      type: 'logarithmic'
+    }
   },
   plugins: {
     legend: { display: false },
@@ -108,18 +108,18 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
           const city = getCityAtIndex(index)
           if (!city) return ''
           return formatTooltipValue(city.value)
-        },
+        }
       },
       backgroundColor: 'rgba(92, 74, 61, 0.9)',
       titleFont: { family: 'monospace', size: 10 },
       bodyFont: { family: 'monospace', size: 10 },
       padding: 6,
-      displayColors: false,
-    },
+      displayColors: false
+    }
   },
   layout: {
-    padding: 0,
-  },
+    padding: 0
+  }
 }))
 
 // Plugin to draw a vertical marker at the current city's position
@@ -164,7 +164,7 @@ const cityMarkerPlugin = computed<Plugin<'line'>>(() => ({
     }
 
     ctx.restore()
-  },
+  }
 }))
 
 const plugins = computed(() => [cityMarkerPlugin.value])
@@ -178,7 +178,11 @@ const plugins = computed(() => [cityMarkerPlugin.value])
       </span>
     </div>
     <div class="h-[40px]">
-      <Line :data="chartData" :options="chartOptions" :plugins="plugins" />
+      <Line
+        :data="chartData"
+        :options="chartOptions"
+        :plugins="plugins"
+      />
     </div>
   </div>
 </template>

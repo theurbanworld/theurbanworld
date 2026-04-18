@@ -74,8 +74,8 @@ def main(dry_run: bool = False):
 
     # Build bbox filter clause
     bbox_filter = f"""
-        h3_cell_to_lat(h3_index) BETWEEN {BBOX['min_lat']} AND {BBOX['max_lat']}
-        AND h3_cell_to_lng(h3_index) BETWEEN {BBOX['min_lng']} AND {BBOX['max_lng']}
+        h3_cell_to_lat(h3_index) BETWEEN {BBOX["min_lat"]} AND {BBOX["max_lat"]}
+        AND h3_cell_to_lng(h3_index) BETWEEN {BBOX["min_lng"]} AND {BBOX["max_lng"]}
     """
 
     if INPUT_FILE.exists():
@@ -84,25 +84,21 @@ def main(dry_run: bool = False):
         print(f"  Size: {file_size_mb:.1f} MB")
 
         # Get schema to determine available epochs
-        schema = conn.execute(
-            f"DESCRIBE SELECT * FROM read_parquet('{INPUT_FILE}')"
-        ).fetchall()
+        schema = conn.execute(f"DESCRIBE SELECT * FROM read_parquet('{INPUT_FILE}')").fetchall()
         columns = [row[0] for row in schema]
-        available_epochs = [
-            int(c.replace("pop_", "")) for c in columns if c.startswith("pop_")
-        ]
+        available_epochs = [int(c.replace("pop_", "")) for c in columns if c.startswith("pop_")]
         print(f"  Epochs: {available_epochs}")
 
-        total_count = conn.execute(
-            f"SELECT COUNT(*) FROM read_parquet('{INPUT_FILE}')"
-        ).fetchone()[0]
+        total_count = conn.execute(f"SELECT COUNT(*) FROM read_parquet('{INPUT_FILE}')").fetchone()[
+            0
+        ]
         print(f"  Total rows: {total_count:,}")
 
         epoch_columns = [f"pop_{e}" for e in available_epochs]
         select_cols = ["h3_index"] + epoch_columns
 
         source_query = f"""
-            SELECT {', '.join(select_cols)}
+            SELECT {", ".join(select_cols)}
             FROM read_parquet('{INPUT_FILE}')
             WHERE {bbox_filter}
         """
@@ -150,13 +146,11 @@ def main(dry_run: bool = False):
         print(f"  Total unique H3 cells: {total_count:,}")
 
     # Get filtered count
-    print(f"\nFiltering to Greater Paris bbox:")
+    print("\nFiltering to Greater Paris bbox:")
     print(f"  Lat: {BBOX['min_lat']} to {BBOX['max_lat']}")
     print(f"  Lng: {BBOX['min_lng']} to {BBOX['max_lng']}")
 
-    filtered_count = conn.execute(
-        f"SELECT COUNT(*) FROM ({source_query})"
-    ).fetchone()[0]
+    filtered_count = conn.execute(f"SELECT COUNT(*) FROM ({source_query})").fetchone()[0]
     print(f"  Filtered rows: {filtered_count:,}")
 
     if dry_run:
@@ -199,7 +193,7 @@ def main(dry_run: bool = False):
 
     insert_cols = ["h3_index"] + epoch_columns
     conn.execute(f"""
-        INSERT INTO pg.{TABLE_NAME} ({', '.join(insert_cols)})
+        INSERT INTO pg.{TABLE_NAME} ({", ".join(insert_cols)})
         {source_query}
     """)
 

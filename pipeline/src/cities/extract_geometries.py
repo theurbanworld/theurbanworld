@@ -40,7 +40,7 @@ import geopandas as gpd
 import pandas as pd
 from tqdm import tqdm
 
-from ..utils.config import config, get_interim_path, get_raw_path
+from ..utils.config import get_interim_path, get_raw_path
 from ..utils.geometry_utils import fix_invalid_geometry
 
 # MTUC epoch layer template
@@ -193,7 +193,7 @@ def main(force: bool = False, epochs: str | None = None):
 
     # Check if outputs exist
     if geom_path.exists() and centroid_path.exists() and not force:
-        print(f"Outputs already exist:")
+        print("Outputs already exist:")
         print(f"  {geom_path}")
         print(f"  {centroid_path}")
         print("Use --force to overwrite")

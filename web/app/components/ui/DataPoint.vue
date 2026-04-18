@@ -13,7 +13,10 @@
       >
         {{ label }}
       </span>
-      <div v-if="toggleLabelA" class="flex gap-2">
+      <div
+        v-if="toggleLabelA"
+        class="flex gap-2"
+      >
         <button
           class="text-[10px] font-mono transition-colors cursor-pointer"
           :class="chartMode === 'a'
@@ -38,7 +41,11 @@
     <!-- Value row with optional trend indicator -->
     <div class="flex items-center gap-2">
       <!-- Trend indicator (if trend data provided) -->
-      <UTooltip v-if="showTrend" :text="trendTooltip" :delay-duration="0">
+      <UTooltip
+        v-if="showTrend"
+        :text="trendTooltip"
+        :delay-duration="0"
+      >
         <UIcon
           data-testid="datapoint-trend-icon"
           :name="trendInfo.icon"
@@ -48,7 +55,10 @@
       </UTooltip>
 
       <!-- Value with tooltip -->
-      <UTooltip :text="formattedRawValue" :delay-duration="0">
+      <UTooltip
+        :text="formattedRawValue"
+        :delay-duration="0"
+      >
         <div
           data-testid="datapoint-value-wrapper"
           class="cursor-help"
@@ -64,7 +74,10 @@
     </div>
 
     <!-- Percentage row (if percentage data provided) -->
-    <div v-if="percentageValue !== undefined" class="flex items-center gap-1">
+    <div
+      v-if="percentageValue !== undefined"
+      class="flex items-center gap-1"
+    >
       <span
         data-testid="datapoint-percentage"
         class="font-mono text-sm font-medium text-ink-600 dark:text-ink-400"
@@ -93,8 +106,14 @@
 
     <!-- Chart slots (toggled) or default slot -->
     <template v-if="toggleLabelA">
-      <slot v-if="chartMode === 'a'" name="chart-a" />
-      <slot v-if="chartMode === 'b'" name="chart-b" />
+      <slot
+        v-if="chartMode === 'a'"
+        name="chart-a"
+      />
+      <slot
+        v-if="chartMode === 'b'"
+        name="chart-b"
+      />
     </template>
     <slot v-else />
 

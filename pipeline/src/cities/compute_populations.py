@@ -26,13 +26,14 @@ Decision log:
 Date: 2025-12-26
 """
 
-import click
-import h3
-import polars as pl
 from pathlib import Path
 
-from ..utils.config import config, get_processed_path
+import click
+import polars as pl
 
+import h3
+
+from ..utils.config import config, get_processed_path
 
 VALID_SOURCES = ("h3-r8", "grid-1km")
 
@@ -65,20 +66,24 @@ def compute_h3_population_for_epoch(
         .alias("area_km2")
     )
 
-    city_pop = h3_pop.group_by("city_id").agg([
-        pl.col("population").sum().alias("population"),
-        pl.col("area_km2").sum().alias("area_km2"),
-        pl.len().alias("cell_count"),
-    ])
+    city_pop = h3_pop.group_by("city_id").agg(
+        [
+            pl.col("population").sum().alias("population"),
+            pl.col("area_km2").sum().alias("area_km2"),
+            pl.len().alias("cell_count"),
+        ]
+    )
 
-    city_pop = city_pop.with_columns([
-        pl.lit(epoch).alias("epoch"),
-        (pl.col("population") / pl.col("area_km2")).alias("density_per_km2"),
-    ])
+    city_pop = city_pop.with_columns(
+        [
+            pl.lit(epoch).alias("epoch"),
+            (pl.col("population") / pl.col("area_km2")).alias("density_per_km2"),
+        ]
+    )
 
-    return city_pop.select([
-        "city_id", "epoch", "population", "area_km2", "density_per_km2", "cell_count"
-    ])
+    return city_pop.select(
+        ["city_id", "epoch", "population", "area_km2", "density_per_km2", "cell_count"]
+    )
 
 
 def compute_grid_population_for_epoch(
@@ -95,25 +100,27 @@ def compute_grid_population_for_epoch(
         grid_pop = grid_pop.filter(pl.col("city_id").is_in(canonical_city_ids))
 
     # Each Mollweide 1km pixel = exactly 1.0 km²
-    city_pop = grid_pop.group_by("city_id").agg([
-        pl.col("population").sum().alias("population"),
-        pl.len().alias("cell_count"),
-    ])
+    city_pop = grid_pop.group_by("city_id").agg(
+        [
+            pl.col("population").sum().alias("population"),
+            pl.len().alias("cell_count"),
+        ]
+    )
 
-    city_pop = city_pop.with_columns([
-        pl.lit(epoch).alias("epoch"),
-        pl.col("cell_count").cast(pl.Float64).alias("area_km2"),
-        (pl.col("population") / pl.col("cell_count")).alias("density_per_km2"),
-    ])
+    city_pop = city_pop.with_columns(
+        [
+            pl.lit(epoch).alias("epoch"),
+            pl.col("cell_count").cast(pl.Float64).alias("area_km2"),
+            (pl.col("population") / pl.col("cell_count")).alias("density_per_km2"),
+        ]
+    )
 
-    return city_pop.select([
-        "city_id", "epoch", "population", "area_km2", "density_per_km2", "cell_count"
-    ])
+    return city_pop.select(
+        ["city_id", "epoch", "population", "area_km2", "density_per_km2", "cell_count"]
+    )
 
 
-def compute_all_city_populations(
-    source: str, epochs: list[int] | None = None
-) -> pl.DataFrame:
+def compute_all_city_populations(source: str, epochs: list[int] | None = None) -> pl.DataFrame:
     """
     Compute city populations for all epochs from specified source.
 
@@ -132,9 +139,7 @@ def compute_all_city_populations(
 
     # Load canonical city_ids from UCDB-based cities.parquet
     cities_path = get_processed_path("cities") / "cities.parquet"
-    canonical_city_ids = set(
-        pl.read_parquet(cities_path).select("city_id").to_series().to_list()
-    )
+    canonical_city_ids = set(pl.read_parquet(cities_path).select("city_id").to_series().to_list())
     print(f"  Filtering to {len(canonical_city_ids):,} canonical UCDB city_ids")
 
     all_pops = []

@@ -7,7 +7,7 @@
  */
 
 const isMobile = useIsMobile()
-const { isOpen: mobileOpen, close: closeMobile } = useMobileSidebar()
+const { isOpen: mobileOpen } = useMobileSidebar()
 </script>
 
 <template>
@@ -20,7 +20,10 @@ const { isOpen: mobileOpen, close: closeMobile } = useMobileSidebar()
   >
     <div class="w-96 min-w-96 h-full flex flex-col">
       <slot name="header" />
-      <div data-testid="sidebar-content" class="flex-1 overflow-y-auto">
+      <div
+        data-testid="sidebar-content"
+        class="flex-1 overflow-y-auto"
+      >
         <slot />
       </div>
     </div>

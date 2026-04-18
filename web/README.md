@@ -1,10 +1,6 @@
-# The Urban World
+# The Urban World — Web
 
-An "Our World in Data" for cities — explore global urban population density, growth patterns, and urban form.
-
-## Status
-
-Under Development — See [TASKS.md](./TASKS.md) for progress.
+Nuxt 4 frontend for [theurban.world](https://theurban.world). Interactive observatory of global urban population density, growth, and form.
 
 ## Tech Stack
 
@@ -31,8 +27,8 @@ pnpm dev
 ## Environment Variables
 
 See `.env.example` for required environment variables:
-- `NUXT_PUBLIC_R2_BASE_URL` - Base URL for R2 bucket containing data
-- `NUXT_PUBLIC_PROTOMAPS_KEY` - Protomaps API key (development only)
+- `NUXT_PUBLIC_R2_BASE_URL` — Base URL for R2 bucket containing data
+- `NUXT_PUBLIC_PROTOMAPS_KEY` — Protomaps API key (development only)
 
 ## Project Structure
 
@@ -59,4 +55,4 @@ app/
 
 ## License
 
-TODO: Add license
+Code is [MIT](../LICENSE); content and derived data are [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). See the root [`LICENSE`](../LICENSE) for details.

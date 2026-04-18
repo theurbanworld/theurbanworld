@@ -73,7 +73,10 @@ const legendColors = computed(() => {
     </div>
 
     <!-- Compact legend -->
-    <div v-if="isPopulationLayerActive" class="flex items-center gap-1">
+    <div
+      v-if="isPopulationLayerActive"
+      class="flex items-center gap-1"
+    >
       <span class="text-[10px] text-body/50 dark:text-cream/50 shrink-0">Low</span>
       <div class="flex flex-1 h-2 rounded-sm overflow-hidden">
         <div

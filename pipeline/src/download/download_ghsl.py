@@ -18,7 +18,6 @@ Date: 2025-12-08 (updated 2025-12-26)
 """
 
 import hashlib
-import json
 import shutil
 import time
 import zipfile
@@ -39,8 +38,6 @@ from ..utils.progress import ProgressTracker
 
 # GHSL tile grid shapefile URL (contains metadata about all available tiles)
 GHSL_TILE_GRID_URL = "https://ghsl.jrc.ec.europa.eu/download/GHSL_data_54009_shapefile.zip"
-
-
 
 
 def download_file(

@@ -12,8 +12,9 @@ Date: 2025-12-08 (updated 2025-12-26)
 import math
 from typing import Iterable
 
-import h3
 import numpy as np
+
+import h3
 
 from .geometry_utils import haversine_distance_km
 
@@ -114,7 +115,6 @@ def polygon_to_h3_cells(polygon, resolution: int) -> set[str]:
 
 def _polygon_to_h3_sampling(polygon, resolution: int, samples_per_km2: int = 100) -> set[str]:
     """Fallback polygon conversion using point sampling."""
-    from shapely.ops import unary_union
 
     minx, miny, maxx, maxy = polygon.bounds
     area_deg2 = (maxx - minx) * (maxy - miny)

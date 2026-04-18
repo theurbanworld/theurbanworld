@@ -19,15 +19,15 @@ vi.mock('../../app/composables/useCitiesIndex', () => ({
   useCitiesIndex: () => ({
     isLoaded: ref(true),
     getCity: (cityId: string) => {
-      const cities: Record<string, { id: string; name: string; country: string; bbox: [number, number, number, number]; population: number }> = {
-        '10933': {
+      const cities: Record<string, { id: string, name: string, country: string, bbox: [number, number, number, number], population: number }> = {
+        10933: {
           id: '10933',
           name: 'Guangzhou',
           country: 'China',
           bbox: [112.873929, 22.445939, 114.398154, 23.380635],
           population: 42987704
         },
-        '5929': {
+        5929: {
           id: '5929',
           name: 'Tokyo',
           country: 'Japan',
@@ -45,12 +45,12 @@ vi.mock('../../app/composables/useCityPopulations', () => ({
   useCityPopulations: () => ({
     isLoaded: ref(true),
     getCityPopulationData: (cityId: string, epoch: number) => {
-      const mockData: Record<string, Record<number, { population: number; area_km2: number; density_per_km2: number }>> = {
-        '10933': {
+      const mockData: Record<string, Record<number, { population: number, area_km2: number, density_per_km2: number }>> = {
+        10933: {
           2020: { population: 40760332, area_km2: 6221.69, density_per_km2: 6551.33 },
           2025: { population: 42610674, area_km2: 6420.48, density_per_km2: 6636.68 }
         },
-        '5929': {
+        5929: {
           2020: { population: 33374564, area_km2: 5181.77, density_per_km2: 6440.77 },
           2025: { population: 33034214, area_km2: 5153.33, density_per_km2: 6410.27 }
         }

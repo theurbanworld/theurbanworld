@@ -107,11 +107,12 @@ def process_epoch_full(epoch_geom_bytes: bytes, epoch: int) -> str:
     from pathlib import Path
 
     import geopandas as gpd
-    import h3
     import httpx
     import polars as pl
     from exactextract import exact_extract
     from shapely import Polygon
+
+    import h3
 
     print(f"[{epoch}] Starting full processing...")
 
@@ -157,7 +158,9 @@ def process_epoch_full(epoch_geom_bytes: bytes, epoch: int) -> str:
             continue
 
         if (idx + 1) % 1000 == 0:
-            print(f"[{epoch}] Processed {idx + 1:,} cities, {len(cell_city_overlaps):,} unique cells")
+            print(
+                f"[{epoch}] Processed {idx + 1:,} cities, {len(cell_city_overlaps):,} unique cells"
+            )
 
     print(f"[{epoch}] Total unique H3 cells: {len(cell_city_overlaps):,}")
 
@@ -171,11 +174,13 @@ def process_epoch_full(epoch_geom_bytes: bytes, epoch: int) -> str:
         boundary = h3.cell_to_boundary(cell)
         coords = [(lng, lat) for lat, lng in boundary]
         coords.append(coords[0])
-        h3_cells.append({
-            "h3_index": cell,
-            "city_id": primary_city_id,
-            "geometry": Polygon(coords),
-        })
+        h3_cells.append(
+            {
+                "h3_index": cell,
+                "city_id": primary_city_id,
+                "geometry": Polygon(coords),
+            }
+        )
 
         if (i + 1) % 100000 == 0:
             print(f"[{epoch}] Assigned {i + 1:,} cells")
@@ -226,9 +231,7 @@ def process_epoch_full(epoch_geom_bytes: bytes, epoch: int) -> str:
         df = pl.from_pandas(results_df).rename({"sum": "population"})
 
         # Convert h3_index from string back to int64
-        df = df.with_columns(
-            pl.col("h3_index").map_elements(h3.str_to_int, return_dtype=pl.Int64)
-        )
+        df = df.with_columns(pl.col("h3_index").map_elements(h3.str_to_int, return_dtype=pl.Int64))
 
         # Filter to positive population
         df = df.filter(pl.col("population") > 0)
@@ -255,8 +258,9 @@ def process_epoch_full(epoch_geom_bytes: bytes, epoch: int) -> str:
 )
 def build_pop_timeseries() -> str:
     """Build wide-format population time series from volume files."""
-    import duckdb
     from pathlib import Path
+
+    import duckdb
 
     print("Building population time series table...")
 
@@ -283,7 +287,10 @@ def build_pop_timeseries() -> str:
     union_query = " UNION ALL ".join(union_parts)
 
     sum_cols = ", ".join(
-        [f"SUM(CASE WHEN year = {epoch} THEN population ELSE 0 END) as pop_{epoch}" for epoch in epochs]
+        [
+            f"SUM(CASE WHEN year = {epoch} THEN population ELSE 0 END) as pop_{epoch}"
+            for epoch in epochs
+        ]
     )
 
     query = f"""
@@ -497,7 +504,7 @@ def main(
 
     total_time = time.time() - start_time
     print(f"\n{'=' * 60}")
-    print(f"Complete! Total time: {total_time:.1f}s ({total_time/60:.1f} min)")
+    print(f"Complete! Total time: {total_time:.1f}s ({total_time / 60:.1f} min)")
     print("=" * 60)
 
 

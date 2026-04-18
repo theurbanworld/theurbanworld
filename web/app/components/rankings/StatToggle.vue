@@ -11,14 +11,14 @@ import type { RankingStat, GrowthMode } from '~/composables/useRankingFilters'
 
 const { activeStat, growthMode } = useRankingFilters()
 
-const stats: { key: RankingStat; label: string }[] = [
+const stats: { key: RankingStat, label: string }[] = [
   { key: 'population', label: 'Population' },
   { key: 'density', label: 'Density' },
   { key: 'area', label: 'Area' },
   { key: 'growth', label: 'Growth' }
 ]
 
-const growthModes: { key: GrowthMode; label: string }[] = [
+const growthModes: { key: GrowthMode, label: string }[] = [
   { key: 'rate', label: '%/yr' },
   { key: 'abs', label: 'Abs' }
 ]
@@ -26,7 +26,10 @@ const growthModes: { key: GrowthMode; label: string }[] = [
 
 <template>
   <div class="flex items-center gap-1 px-4 py-3 border-b border-ink-200/40 dark:border-ink-800/40">
-    <template v-for="stat in stats" :key="stat.key">
+    <template
+      v-for="stat in stats"
+      :key="stat.key"
+    >
       <button
         v-if="stat.key !== 'growth'"
         class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer"

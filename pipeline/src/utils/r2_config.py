@@ -19,14 +19,12 @@ Decision log:
 Date: 2025-12-09
 """
 
-import os
 import sys
 from functools import cached_property
 from pathlib import Path
 from typing import ClassVar, Optional
 
 from dotenv import load_dotenv
-from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 # Load .env file
@@ -100,7 +98,7 @@ class R2Config(BaseSettings):
 
         if missing:
             print(f"Error: Missing required environment variables: {', '.join(missing)}")
-            print(f"Create a .env file based on .env.example in {_PROJECT_ROOT}")
+            print("Create a .env file based on .env.example in the pipeline/ directory")
             sys.exit(1)
 
     def get_content_type(self, filename: str) -> str:

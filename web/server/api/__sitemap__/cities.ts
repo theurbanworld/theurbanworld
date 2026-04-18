@@ -4,8 +4,6 @@
  * Returns all city routes for the sitemap module.
  * Uses the shared citiesIndex utility for cached R2 data.
  */
-import { defineSitemapEventHandler } from '#imports'
-
 export default defineSitemapEventHandler(async () => {
   const cities = await getAllCities()
 

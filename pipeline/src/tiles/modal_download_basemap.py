@@ -70,12 +70,9 @@ import modal
 app = modal.App("pmtiles-download")
 
 # Lightweight image for streaming download/upload
-image = (
-    modal.Image.debian_slim(python_version="3.11")
-    .pip_install(
-        "httpx>=0.27.0",
-        "boto3>=1.35.0",
-    )
+image = modal.Image.debian_slim(python_version="3.11").pip_install(
+    "httpx>=0.27.0",
+    "boto3>=1.35.0",
 )
 
 # Constants
@@ -205,7 +202,9 @@ def download_and_upload_pmtiles(date: str, verify: bool = False) -> dict:
 
                         if total_size:
                             pct = total_bytes / total_size * 100
-                            print(f"  Part {part_number}: {total_bytes / 1e9:.1f} / {total_size / 1e9:.1f} GB ({pct:.1f}%)")
+                            print(
+                                f"  Part {part_number}: {total_bytes / 1e9:.1f} / {total_size / 1e9:.1f} GB ({pct:.1f}%)"
+                            )
                         else:
                             print(f"  Part {part_number}: {total_bytes / 1e9:.1f} GB uploaded")
 
@@ -280,11 +279,13 @@ def list_pmtiles() -> list[dict]:
 
     files = []
     for obj in response.get("Contents", []):
-        files.append({
-            "key": obj["Key"],
-            "size_gb": obj["Size"] / 1e9,
-            "last_modified": obj["LastModified"].isoformat(),
-        })
+        files.append(
+            {
+                "key": obj["Key"],
+                "size_gb": obj["Size"] / 1e9,
+                "last_modified": obj["LastModified"].isoformat(),
+            }
+        )
 
     return files
 
