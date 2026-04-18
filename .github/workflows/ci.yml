@@ -1,0 +1,64 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  web:
+    name: web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Test
+        run: pnpm run test:run
+
+  pipeline:
+    name: pipeline
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Format check
+        run: uv run ruff format --check .
