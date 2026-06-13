@@ -978,10 +978,10 @@ export function useMap(options: UseMapOptions) {
 
       const mapInstance = new maplibregl.Map(mapOptions)
 
-      // Add zoom +/- controls (bottom-right)
+      // Add zoom +/- controls (top-right)
       mapInstance.addControl(
         new maplibregl.NavigationControl({ showCompass: false }),
-        'top-left'
+        'top-right'
       )
 
       // Handle map load
