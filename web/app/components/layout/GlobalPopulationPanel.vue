@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /**
- * GlobalPopulationPanel - Right-anchored panel with world/urban population stats
+ * GlobalPopulationPanel - Left-anchored panel with world/urban population stats
  *
- * Positioned at top-right of the map area, hugging the right edge.
- * Visibility controlled by useGlobalPopulationPanel (toggle in the controls strip).
+ * Positioned at top-left of the map area, hugging the sidebar edge and
+ * the controls strip. Visibility controlled by useGlobalPopulationPanel
+ * (toggle in the controls strip).
  */
 
 const {
@@ -25,10 +26,10 @@ const { isExpanded } = useGlobalPopulationPanel()
 <template>
   <div
     v-if="isExpanded"
-    class="absolute z-100 right-0 top-0 w-72
+    class="absolute z-100 left-0 top-0 w-72
            bg-parchment/95 dark:bg-ink-950/95 backdrop-blur-sm
-           border-l border-b border-ink-200/40 dark:border-ink-800/40
-           rounded-bl-xl shadow-lg px-4 py-5
+           border-r border-b border-ink-200/40 dark:border-ink-800/40
+           rounded-br-xl shadow-lg px-4 py-5
            max-sm:w-auto max-sm:min-w-40"
   >
     <DataPoint

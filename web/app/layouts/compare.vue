@@ -40,23 +40,16 @@ function goToRankings() {
 
 <template>
   <div class="flex flex-col h-full">
-    <!-- Search strip: toggle left, search centered on page -->
-    <div class="relative bg-parchment border-b border-forest-200/40 dark:border-forest-800/40">
-      <!-- Cities toggle — sidebar width, left-aligned with border -->
-      <div class="absolute inset-y-0 left-0 w-96 flex items-center px-4 border-r border-forest-200/40 dark:border-forest-800/40">
-        <UButton
-          variant="ghost"
-          color="neutral"
-          size="sm"
-          class="cursor-pointer"
-          @click="goToRankings"
-        >
-          Cities
-        </UButton>
+    <!-- Controls strip: epoch box (aligned with sidebar) left, world pop next, dataset right -->
+    <div class="flex items-stretch bg-parchment border-b border-ink-200/40 dark:border-ink-800/40">
+      <div class="w-96 shrink-0 flex items-center px-4 py-2 border-r border-ink-200/40 dark:border-ink-800/40">
+        <EpochStrip />
       </div>
-      <!-- Search — centered on full page width -->
-      <div class="flex justify-center px-5 py-2.5">
-        <CitySearch class="w-full max-w-sm" />
+      <div class="flex items-center px-4 py-2">
+        <GlobalPopulationDropdown />
+      </div>
+      <div class="flex-1 flex items-center justify-end gap-3 px-4 py-2">
+        <DatasetPicker />
       </div>
     </div>
 
@@ -161,8 +154,8 @@ function goToRankings() {
           </p>
         </div>
 
-        <!-- Epoch controls — positioned between the two maps on desktop -->
-        <GlobalContextPanel />
+        <!-- Global population panel — hugs sidebar edge + controls strip -->
+        <GlobalPopulationPanel />
       </UMain>
     </div>
   </div>
