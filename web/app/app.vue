@@ -8,6 +8,10 @@
 
 useHead({
   title: 'The Urban World — an observatory of urban complexity',
+  // Pages set self-contained titles (e.g. "Paris, France — The Urban World"),
+  // so render them verbatim instead of letting @nuxtjs/seo append the site
+  // name a second time.
+  titleTemplate: '%s',
   link: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }]
 })
 

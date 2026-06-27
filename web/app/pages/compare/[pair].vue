@@ -7,6 +7,7 @@
  * Parses city IDs from URL, handles redirects (canonical ordering,
  * same-city), loads data, and renders the comparison layout.
  */
+import { humanizeNumber } from '~/composables/useGlobalStats'
 
 definePageMeta({
   layout: 'compare'
@@ -61,6 +62,42 @@ useSeoMeta({
     }
     return 'Compare cities by population, density, area, and growth patterns.'
   }
+})
+
+// OG image — City A stats (left), City B stats (right), outlines overlaid in
+// the center. Mirrors the city-page formatting; data is awaited above so these
+// resolve during SSR.
+const { getCityPopulationData } = useCityPopulations()
+
+function ogStatsFor(cityId: string | null | undefined) {
+  const pop = cityId ? getCityPopulationData(cityId, 2025) : undefined
+  return {
+    population: pop ? humanizeNumber(pop.population) : '',
+    density: pop
+      ? (pop.density_per_km2 >= 1000
+          ? `${Math.round(pop.density_per_km2 / 100) / 10} K/km2`
+          : `${Math.round(pop.density_per_km2)}/km2`)
+      : '',
+    area: pop ? `${Math.round(pop.area_km2).toLocaleString()} km2` : ''
+  }
+}
+
+const ogA = ogStatsFor(cityA.value)
+const ogB = ogStatsFor(cityB.value)
+
+defineOgImage('Comparison', {
+  cityAName: cityAData.value?.name ?? '',
+  cityACountry: cityAData.value?.country ?? '',
+  cityAPopulation: ogA.population,
+  cityADensity: ogA.density,
+  cityAArea: ogA.area,
+  cityAOutlineUrl: cityA.value ? `https://data.theurban.world/data/outlines/${cityA.value}.json` : '',
+  cityBName: cityBData.value?.name ?? '',
+  cityBCountry: cityBData.value?.country ?? '',
+  cityBPopulation: ogB.population,
+  cityBDensity: ogB.density,
+  cityBArea: ogB.area,
+  cityBOutlineUrl: cityB.value ? `https://data.theurban.world/data/outlines/${cityB.value}.json` : ''
 })
 
 // Layout reads useComparisonState() directly (layout is parent, can't inject from child)

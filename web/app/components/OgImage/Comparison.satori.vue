@@ -1,39 +1,56 @@
 <script setup lang="ts">
 /**
- * OG image template for city pages.
+ * OG image template for comparison pages.
  *
- * Renders city outline shape, name, country, and key stats
- * for social media previews. Uses Satori renderer (edge-compatible).
+ * City A (name + stats) is left-aligned, City B is right-aligned, and the two
+ * city outlines are overlaid in the center in distinct colors so the relative
+ * shape/scale reads at a glance. Uses Satori renderer (edge-compatible).
  */
 
 const props = withDefaults(defineProps<{
-  cityName?: string
-  countryName?: string
-  population?: string
-  density?: string
-  area?: string
-  outlineUrl?: string
+  cityAName?: string
+  cityACountry?: string
+  cityAPopulation?: string
+  cityADensity?: string
+  cityAArea?: string
+  cityAOutlineUrl?: string
+  cityBName?: string
+  cityBCountry?: string
+  cityBPopulation?: string
+  cityBDensity?: string
+  cityBArea?: string
+  cityBOutlineUrl?: string
 }>(), {
-  cityName: 'City',
-  countryName: '',
-  population: '',
-  density: '',
-  area: '',
-  outlineUrl: ''
+  cityAName: 'City A',
+  cityACountry: '',
+  cityAPopulation: '',
+  cityADensity: '',
+  cityAArea: '',
+  cityAOutlineUrl: '',
+  cityBName: 'City B',
+  cityBCountry: '',
+  cityBPopulation: '',
+  cityBDensity: '',
+  cityBArea: '',
+  cityBOutlineUrl: ''
 })
 
-// Fetch and process outline data
-const svgPath = ref('')
-const viewBox = ref('0 0 400 280')
+// Distinct colors for the two cities (ink slate vs. brass/rust)
+const COLOR_A = '#3A4856'
+const COLOR_B = '#B5651D'
 
-async function loadOutline() {
-  if (!props.outlineUrl) return
+// Shared canvas so both outlines overlay centered at the same scale reference
+const CANVAS_W = 480
+const CANVAS_H = 460
+
+// Project an outline GeoJSON ring set into an SVG path on the shared canvas.
+async function loadOutline(url: string): Promise<string> {
+  if (!url) return ''
 
   try {
-    const data = await $fetch<{ coordinates: number[][][] }>(props.outlineUrl)
-    if (!data?.coordinates?.length) return
+    const data = await $fetch<{ coordinates: number[][][] }>(url)
+    if (!data?.coordinates?.length) return ''
 
-    // Compute bounding box across all rings
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
     for (const ring of data.coordinates) {
       for (const coord of ring) {
@@ -46,33 +63,26 @@ async function loadOutline() {
       }
     }
 
-    // SVG canvas for the outline area
-    const svgW = 400
-    const svgH = 280
-    const padding = 20
-
+    const padding = 24
     const bboxW = maxX - minX || 1
     const bboxH = maxY - minY || 1
 
-    // Fit within padded area, preserving aspect ratio
     const scale = Math.min(
-      (svgW - padding * 2) / bboxW,
-      (svgH - padding * 2) / bboxH
+      (CANVAS_W - padding * 2) / bboxW,
+      (CANVAS_H - padding * 2) / bboxH
     )
 
     const projW = bboxW * scale
     const projH = bboxH * scale
-    const offsetX = (svgW - projW) / 2
-    const offsetY = (svgH - projH) / 2
+    const offsetX = (CANVAS_W - projW) / 2
+    const offsetY = (CANVAS_H - projH) / 2
 
-    // Project coordinates to SVG space (flip Y since lat increases upward)
     function project(lon: number, lat: number): [number, number] {
       const x = (lon - minX) * scale + offsetX
       const y = (maxY - lat) * scale + offsetY
       return [Math.round(x * 10) / 10, Math.round(y * 10) / 10]
     }
 
-    // Build SVG path string for all rings
     const paths: string[] = []
     for (const ring of data.coordinates) {
       const points = ring.map(coord => project(coord[0]!, coord[1]!))
@@ -84,14 +94,17 @@ async function loadOutline() {
       paths.push(d)
     }
 
-    svgPath.value = paths.join(' ')
-    viewBox.value = `0 0 ${svgW} ${svgH}`
+    return paths.join(' ')
   } catch {
-    // Outline unavailable — render without it
+    return ''
   }
 }
 
-await loadOutline()
+const svgPathA = ref('')
+const svgPathB = ref('')
+
+svgPathA.value = await loadOutline(props.cityAOutlineUrl)
+svgPathB.value = await loadOutline(props.cityBOutlineUrl)
 
 // Small-caps emulation for the footer wordmark (Satori doesn't render
 // `font-variant: small-caps`), matching the web app header (AppLogo.vue).
@@ -113,10 +126,10 @@ const WORDMARK = [
       fontFamily: 'Inter, sans-serif',
       position: 'relative',
       overflow: 'hidden',
-      padding: '28px 72px 104px'
+      padding: '28px 64px 104px'
     }"
   >
-    <!-- Content row: city name + stats (left), outline map (right) -->
+    <!-- Content row: city A (left), overlaid maps (center), city B (right) -->
     <div
       :style="{
         display: 'flex',
@@ -124,137 +137,191 @@ const WORDMARK = [
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '48px'
+        gap: '20px'
       }"
     >
-      <!-- Left column: name, country, stacked stats -->
+      <!-- City A — left aligned -->
       <div
         :style="{
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          width: '520px',
+          alignItems: 'flex-start',
+          width: '320px',
           flexShrink: 0,
-          gap: '8px'
+          gap: '6px'
         }"
       >
-        <!-- City name -->
         <div
           :style="{
             fontFamily: 'Crimson Pro, serif',
-            fontSize: '64px',
+            fontSize: '48px',
             fontWeight: 600,
-            color: '#3A4856',
+            color: COLOR_A,
             lineHeight: '1.05'
           }"
         >
-          {{ cityName }}
+          {{ cityAName }}
         </div>
-
-        <!-- Country -->
         <div
-          v-if="countryName"
-          :style="{
-            fontSize: '26px',
-            color: '#4A4238',
-            lineHeight: '1.2'
-          }"
+          v-if="cityACountry"
+          :style="{ fontSize: '22px', color: '#4A4238', lineHeight: '1.2' }"
         >
-          {{ countryName }}
+          {{ cityACountry }}
         </div>
 
-        <!-- Stats stack -->
         <div
-          v-if="population || density || area"
-          :style="{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '18px',
-            marginTop: '28px'
-          }"
+          v-if="cityAPopulation || cityADensity || cityAArea"
+          :style="{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '14px', marginTop: '22px' }"
         >
           <div
-            v-if="population"
-            :style="{ display: 'flex', flexDirection: 'column', gap: '2px' }"
+            v-if="cityAPopulation"
+            :style="{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }"
           >
-            <div :style="{ fontSize: '13px', color: 'rgba(74, 66, 56, 0.6)', textTransform: 'uppercase', letterSpacing: '0.08em' }">
+            <div :style="{ fontSize: '12px', color: 'rgba(74, 66, 56, 0.6)', textTransform: 'uppercase', letterSpacing: '0.08em' }">
               Population
             </div>
-            <div :style="{ fontFamily: 'Crimson Pro, serif', fontSize: '34px', fontWeight: 600, color: '#5C4A3D', lineHeight: '1.1' }">
-              {{ population }}
+            <div :style="{ fontFamily: 'Crimson Pro, serif', fontSize: '28px', fontWeight: 600, color: '#5C4A3D', lineHeight: '1.1' }">
+              {{ cityAPopulation }}
             </div>
           </div>
-
           <div
-            v-if="density"
-            :style="{ display: 'flex', flexDirection: 'column', gap: '2px' }"
+            v-if="cityADensity"
+            :style="{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }"
           >
-            <div :style="{ fontSize: '13px', color: 'rgba(74, 66, 56, 0.6)', textTransform: 'uppercase', letterSpacing: '0.08em' }">
+            <div :style="{ fontSize: '12px', color: 'rgba(74, 66, 56, 0.6)', textTransform: 'uppercase', letterSpacing: '0.08em' }">
               Density
             </div>
-            <div :style="{ fontFamily: 'Crimson Pro, serif', fontSize: '34px', fontWeight: 600, color: '#5C4A3D', lineHeight: '1.1' }">
-              {{ density }}
+            <div :style="{ fontFamily: 'Crimson Pro, serif', fontSize: '28px', fontWeight: 600, color: '#5C4A3D', lineHeight: '1.1' }">
+              {{ cityADensity }}
             </div>
           </div>
-
           <div
-            v-if="area"
-            :style="{ display: 'flex', flexDirection: 'column', gap: '2px' }"
+            v-if="cityAArea"
+            :style="{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }"
           >
-            <div :style="{ fontSize: '13px', color: 'rgba(74, 66, 56, 0.6)', textTransform: 'uppercase', letterSpacing: '0.08em' }">
+            <div :style="{ fontSize: '12px', color: 'rgba(74, 66, 56, 0.6)', textTransform: 'uppercase', letterSpacing: '0.08em' }">
               Area
             </div>
-            <div :style="{ fontFamily: 'Crimson Pro, serif', fontSize: '34px', fontWeight: 600, color: '#5C4A3D', lineHeight: '1.1' }">
-              {{ area }}
+            <div :style="{ fontFamily: 'Crimson Pro, serif', fontSize: '28px', fontWeight: 600, color: '#5C4A3D', lineHeight: '1.1' }">
+              {{ cityAArea }}
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Right: city outline "map" -->
+      <!-- Center: two outlines overlaid -->
       <div
         :style="{
           display: 'flex',
+          flex: '1',
           alignItems: 'center',
-          justifyContent: 'center',
-          flex: '1'
+          justifyContent: 'center'
         }"
       >
-        <svg
-          v-if="svgPath"
-          :viewBox="viewBox"
+        <div
           :style="{
-            width: '480px',
-            height: '420px'
+            display: 'flex',
+            position: 'relative',
+            width: `${CANVAS_W}px`,
+            height: `${CANVAS_H}px`
           }"
         >
-          <path
-            :d="svgPath"
-            fill="rgba(58, 72, 86, 0.25)"
-            stroke="#3A4856"
-            stroke-width="1.5"
-          />
-        </svg>
-        <!-- Fallback when no outline available -->
+          <svg
+            v-if="svgPathA"
+            :viewBox="`0 0 ${CANVAS_W} ${CANVAS_H}`"
+            :style="{ position: 'absolute', top: '0px', left: '0px', width: `${CANVAS_W}px`, height: `${CANVAS_H}px` }"
+          >
+            <path
+              :d="svgPathA"
+              fill="rgba(58, 72, 86, 0.30)"
+              :stroke="COLOR_A"
+              stroke-width="2"
+            />
+          </svg>
+          <svg
+            v-if="svgPathB"
+            :viewBox="`0 0 ${CANVAS_W} ${CANVAS_H}`"
+            :style="{ position: 'absolute', top: '0px', left: '0px', width: `${CANVAS_W}px`, height: `${CANVAS_H}px` }"
+          >
+            <path
+              :d="svgPathB"
+              fill="rgba(181, 101, 29, 0.30)"
+              :stroke="COLOR_B"
+              stroke-width="2"
+            />
+          </svg>
+        </div>
+      </div>
+
+      <!-- City B — right aligned -->
+      <div
+        :style="{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'flex-end',
+          width: '320px',
+          flexShrink: 0,
+          gap: '6px'
+        }"
+      >
         <div
-          v-else
           :style="{
-            width: '480px',
-            height: '420px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
+            fontFamily: 'Crimson Pro, serif',
+            fontSize: '48px',
+            fontWeight: 600,
+            color: COLOR_B,
+            lineHeight: '1.05',
+            textAlign: 'right'
           }"
+        >
+          {{ cityBName }}
+        </div>
+        <div
+          v-if="cityBCountry"
+          :style="{ fontSize: '22px', color: '#4A4238', lineHeight: '1.2', textAlign: 'right' }"
+        >
+          {{ cityBCountry }}
+        </div>
+
+        <div
+          v-if="cityBPopulation || cityBDensity || cityBArea"
+          :style="{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '14px', marginTop: '22px' }"
         >
           <div
-            :style="{
-              width: '140px',
-              height: '140px',
-              borderRadius: '50%',
-              backgroundColor: 'rgba(58, 72, 86, 0.15)',
-              border: '2px solid rgba(58, 72, 86, 0.3)'
-            }"
-          />
+            v-if="cityBPopulation"
+            :style="{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }"
+          >
+            <div :style="{ fontSize: '12px', color: 'rgba(74, 66, 56, 0.6)', textTransform: 'uppercase', letterSpacing: '0.08em' }">
+              Population
+            </div>
+            <div :style="{ fontFamily: 'Crimson Pro, serif', fontSize: '28px', fontWeight: 600, color: '#5C4A3D', lineHeight: '1.1' }">
+              {{ cityBPopulation }}
+            </div>
+          </div>
+          <div
+            v-if="cityBDensity"
+            :style="{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }"
+          >
+            <div :style="{ fontSize: '12px', color: 'rgba(74, 66, 56, 0.6)', textTransform: 'uppercase', letterSpacing: '0.08em' }">
+              Density
+            </div>
+            <div :style="{ fontFamily: 'Crimson Pro, serif', fontSize: '28px', fontWeight: 600, color: '#5C4A3D', lineHeight: '1.1' }">
+              {{ cityBDensity }}
+            </div>
+          </div>
+          <div
+            v-if="cityBArea"
+            :style="{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }"
+          >
+            <div :style="{ fontSize: '12px', color: 'rgba(74, 66, 56, 0.6)', textTransform: 'uppercase', letterSpacing: '0.08em' }">
+              Area
+            </div>
+            <div :style="{ fontFamily: 'Crimson Pro, serif', fontSize: '28px', fontWeight: 600, color: '#5C4A3D', lineHeight: '1.1' }">
+              {{ cityBArea }}
+            </div>
+          </div>
         </div>
       </div>
     </div>
