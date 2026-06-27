@@ -152,7 +152,8 @@ const maxValue = computed(() => {
     }
     return max || 1
   }
-  const stat = activeStat.value
+  // Only population/density/area reach here (fit + growth handled above).
+  const stat = activeStat.value as 'population' | 'density' | 'area'
   let max = 0
   for (const city of rankedCities.value) {
     if (city[stat] > max) max = city[stat]
