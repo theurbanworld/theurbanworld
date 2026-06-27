@@ -27,6 +27,8 @@ export default defineEventHandler(async (event) => {
         try {
           await $fetch('https://api.resend.com/emails', {
             method: 'POST',
+            // Bound the wait so a slow Resend can't tie up the Worker.
+            timeout: 10000,
             headers: {
               // Never logged — keeps the API key out of error output.
               'authorization': `Bearer ${config.resendApiKey}`,

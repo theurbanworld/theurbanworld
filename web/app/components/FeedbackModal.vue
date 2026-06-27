@@ -10,22 +10,35 @@
  */
 
 const { isOpen, close } = useFeedback()
-const form = useFeedbackForm()
+const {
+  category,
+  message,
+  email,
+  token,
+  status,
+  categories,
+  canSubmit,
+  showEmailError,
+  showMessageError,
+  setCategory,
+  reset,
+  submit
+} = useFeedbackForm()
 
-// Force the Turnstile widget to re-mount after a submit so a retry re-solves
-// (tokens are single-use). Bumped whenever a submission settles.
+// Re-mount the Turnstile widget after a submit settles so a retry re-solves
+// (tokens are single-use) and on each fresh open.
 const turnstileKey = ref(0)
-watch(() => form.status.value, (status) => {
-  if (status === 'success' || status === 'error') turnstileKey.value++
+watch(status, (value) => {
+  if (value === 'success' || value === 'error') turnstileKey.value++
 })
 
 // Reset to a clean form each time the modal opens.
 watch(isOpen, (open) => {
-  if (open) form.reset()
+  if (open) reset()
 })
 
 function sendAnother() {
-  form.reset()
+  reset()
   turnstileKey.value++
 }
 </script>
@@ -41,9 +54,9 @@ function sendAnother() {
         />
 
         <div class="p-6 max-h-[80vh] overflow-y-auto">
-          <!-- Success state (R12) -->
+          <!-- Success state -->
           <div
-            v-if="form.status.value === 'success'"
+            v-if="status === 'success'"
             class="flex flex-col items-center text-center gap-3 py-6"
           >
             <UIcon
@@ -77,7 +90,7 @@ function sendAnother() {
           <form
             v-else
             class="flex flex-col gap-4"
-            @submit.prevent="form.submit()"
+            @submit.prevent="submit()"
           >
             <div>
               <h2 class="text-lg font-semibold text-ink-700 dark:text-ink-200">
@@ -88,50 +101,47 @@ function sendAnother() {
               </p>
             </div>
 
-            <!-- Category pills (R4) -->
             <div>
               <span class="block text-xs font-semibold uppercase tracking-wider text-body/60 dark:text-cream/60 mb-1.5">
                 Category
               </span>
               <div class="flex flex-wrap gap-2">
                 <button
-                  v-for="cat in form.categories"
+                  v-for="cat in categories"
                   :key="cat"
                   type="button"
                   class="px-3 py-1.5 rounded-full text-sm font-medium border transition-colors cursor-pointer"
-                  :class="form.category.value === cat
+                  :class="category === cat
                     ? 'border-forest-500 dark:border-forest-400 bg-forest-50/60 dark:bg-forest-950/40 text-forest-700 dark:text-forest-300 ring-1 ring-forest-500/30'
                     : 'border-ink-200/50 dark:border-ink-800/50 text-body/70 dark:text-cream/70 hover:border-forest-300 dark:hover:border-forest-700 hover:bg-forest-50/30 dark:hover:bg-forest-950/20'"
-                  :aria-pressed="form.category.value === cat"
-                  @click="form.setCategory(cat)"
+                  :aria-pressed="category === cat"
+                  @click="setCategory(cat)"
                 >
                   {{ cat }}
                 </button>
               </div>
             </div>
 
-            <!-- Message (R5) -->
             <UFormField
               label="Message"
-              :error="form.showMessageError.value ? 'Please enter a message' : undefined"
+              :error="showMessageError ? 'Please enter a message' : undefined"
               required
             >
               <UTextarea
-                v-model="form.message.value"
+                v-model="message"
                 :rows="4"
                 class="w-full"
                 placeholder="What's on your mind?"
               />
             </UFormField>
 
-            <!-- Email (R6) -->
             <UFormField
               label="Your email"
-              :error="form.showEmailError.value ? 'A valid email is required so we can reply' : undefined"
+              :error="showEmailError ? 'A valid email is required so we can reply' : undefined"
               required
             >
               <UInput
-                v-model="form.email.value"
+                v-model="email"
                 type="email"
                 autocomplete="email"
                 class="w-full"
@@ -139,15 +149,16 @@ function sendAnother() {
               />
             </UFormField>
 
-            <!-- Turnstile (R13) -->
+            <!-- Mounted only while the modal is open so the Cloudflare script
+                 isn't loaded on pages where feedback is never opened. -->
             <NuxtTurnstile
+              v-if="isOpen"
               :key="turnstileKey"
-              v-model="form.token.value"
+              v-model="token"
             />
 
-            <!-- Error state (R12) -->
             <p
-              v-if="form.status.value === 'error'"
+              v-if="status === 'error'"
               class="text-sm text-red-600 dark:text-red-400"
             >
               Something went wrong sending your feedback. Please try again.
@@ -157,8 +168,8 @@ function sendAnother() {
               type="submit"
               block
               color="primary"
-              :loading="form.status.value === 'submitting'"
-              :disabled="!form.canSubmit.value"
+              :loading="status === 'submitting'"
+              :disabled="!canSubmit"
             >
               Send feedback
             </UButton>

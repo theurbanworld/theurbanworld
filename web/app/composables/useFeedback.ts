@@ -5,22 +5,17 @@
  * item) can open the same feedback modal. Mirrors useInfoModal's shape.
  */
 
-const isOpenState = ref(false)
+// Module-level singleton — a plain writable ref is enough for `v-model:open`
+// and shared open/close from either entry point.
+const isOpen = ref(false)
 
 export function useFeedback() {
-  const isOpen = computed({
-    get: () => isOpenState.value,
-    set: (val: boolean) => {
-      isOpenState.value = val
-    }
-  })
-
   function open() {
-    isOpenState.value = true
+    isOpen.value = true
   }
 
   function close() {
-    isOpenState.value = false
+    isOpen.value = false
   }
 
   return {
