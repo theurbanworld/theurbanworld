@@ -21,6 +21,7 @@ const { selectCity } = useCitySelection()
 const { execute: loadCitiesIndex } = useCitiesIndex()
 const { execute: loadPopulations } = useCityPopulations()
 const { execute: loadRadialProfiles } = useRadialProfiles()
+const { execute: loadUrbanModelFit } = useUrbanModelFit()
 
 // Extract city_id from route params
 const cityId = computed(() => {
@@ -36,14 +37,15 @@ const { data: cityMeta } = await useAsyncData(
 )
 
 // Load the large interactive datasets (populations ~14 MB, radial ~5 MB,
-// index ~2 MB) on the CLIENT only. The map and sidebar are client-only
-// components, so they don't need this data during SSR. Fetching it server-side
-// would serialize every dataset into the hydration payload and push the HTML
-// past the 5 MB limit that crawlers and OG scrapers enforce.
+// index ~2 MB, urban-model fit ~17 MB) on the CLIENT only. The map and sidebar
+// are client-only components, so they don't need this data during SSR. Fetching
+// it server-side would serialize every dataset into the hydration payload and
+// push the HTML past the 5 MB limit that crawlers and OG scrapers enforce.
 if (import.meta.client) {
   loadCitiesIndex()
   loadPopulations()
   loadRadialProfiles()
+  loadUrbanModelFit()
 }
 
 // SEO meta tags — use SSR-compatible cityMeta
