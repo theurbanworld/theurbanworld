@@ -8,6 +8,7 @@
 
 import { useCityStats } from '~/composables/useCityStats'
 import { CITY_A_COLOR, CITY_B_COLOR } from '~/utils/comparisonColors'
+import { compactnessLabel, structureLabel } from '~/utils/urbanModelLabels'
 
 const props = defineProps<{
   cityIdA: string
@@ -17,17 +18,31 @@ const props = defineProps<{
 const statsA = useCityStats(computed(() => props.cityIdA))
 const statsB = useCityStats(computed(() => props.cityIdB))
 
+const { selectedYear } = useSelectedYear()
+const { getFit } = useUrbanModelFit()
+const fitA = computed(() => getFit(props.cityIdA, selectedYear.value))
+const fitB = computed(() => getFit(props.cityIdB, selectedYear.value))
+const reliableA = computed(() => !!fitA.value?.reliable)
+const reliableB = computed(() => !!fitB.value?.reliable)
+
 const isLoading = computed(() => statsA.isLoading.value || statsB.isLoading.value)
 
 interface MetricRow {
   label: string
   valueA: string
   valueB: string
-  rawA: number
-  rawB: number
+  /** null when that city's fit is unreliable — shown as a dash, never highlighted. */
+  rawA: number | null
+  rawB: number | null
 }
 
-const metrics = computed<MetricRow[]>(() => [
+interface CategoricalRow {
+  label: string
+  labelA: string | null
+  labelB: string | null
+}
+
+const baseMetrics = computed<MetricRow[]>(() => [
   {
     label: 'Population',
     valueA: statsA.populationHumanized.value,
@@ -51,9 +66,52 @@ const metrics = computed<MetricRow[]>(() => [
   }
 ])
 
-function isLarger(rawA: number, rawB: number, side: 'A' | 'B'): boolean {
-  if (rawA === rawB) return false
+// β and R² as numeric rows — keep the larger-value highlighting; dash + no highlight
+// for a city whose fit is unreliable at this epoch.
+const fitMetrics = computed<MetricRow[]>(() => [
+  {
+    label: 'Compactness (β)',
+    valueA: reliableA.value ? fitA.value!.beta!.toFixed(3) : '—',
+    valueB: reliableB.value ? fitB.value!.beta!.toFixed(3) : '—',
+    rawA: reliableA.value ? fitA.value!.beta! : null,
+    rawB: reliableB.value ? fitB.value!.beta! : null
+  },
+  {
+    label: 'Model fit (R²)',
+    valueA: reliableA.value ? fitA.value!.r2!.toFixed(2) : '—',
+    valueB: reliableB.value ? fitB.value!.r2!.toFixed(2) : '—',
+    rawA: reliableA.value ? fitA.value!.r2! : null,
+    rawB: reliableB.value ? fitB.value!.r2! : null
+  }
+])
+
+const numericRows = computed<MetricRow[]>(() => [...baseMetrics.value, ...fitMetrics.value])
+
+// Derived labels are categorical: no larger-value highlighting, dash when unreliable.
+const fitLabels = computed<CategoricalRow[]>(() => [
+  {
+    label: 'Compactness',
+    labelA: reliableA.value ? compactnessLabel(fitA.value!.beta) : null,
+    labelB: reliableB.value ? compactnessLabel(fitB.value!.beta) : null
+  },
+  {
+    label: 'Structure',
+    labelA: reliableA.value ? structureLabel(fitA.value!.r2) : null,
+    labelB: reliableB.value ? structureLabel(fitB.value!.r2) : null
+  }
+])
+
+function isLarger(rawA: number | null, rawB: number | null, side: 'A' | 'B'): boolean {
+  if (rawA == null || rawB == null || rawA === rawB) return false
   return side === 'A' ? rawA > rawB : rawB > rawA
+}
+
+/** Categorical rows are never "larger"; both-equal gets a subtle muted treatment. */
+function labelClass(row: CategoricalRow, side: 'A' | 'B'): string {
+  const value = side === 'A' ? row.labelA : row.labelB
+  if (value == null) return 'text-body/40 dark:text-cream/40'
+  const same = row.labelA != null && row.labelA === row.labelB
+  return same ? 'text-body/50 dark:text-cream/50' : 'text-body/70 dark:text-cream/70'
 }
 </script>
 
@@ -79,8 +137,9 @@ function isLarger(rawA: number, rawB: number, side: 'A' | 'B'): boolean {
       v-else
       class="divide-y divide-border/30 dark:divide-border/20"
     >
+      <!-- Numeric rows (population/density/area + β/R²): larger value highlighted -->
       <div
-        v-for="metric in metrics"
+        v-for="metric in numericRows"
         :key="metric.label"
         class="grid grid-cols-[auto_1fr_1fr] gap-x-3 items-baseline py-2"
       >
@@ -110,6 +169,34 @@ function isLarger(rawA: number, rawB: number, side: 'A' | 'B'): boolean {
               : 'text-body/70 dark:text-cream/70'"
           >
             {{ metric.valueB }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Categorical label rows (compactness/structure): no larger-value highlight -->
+      <div
+        v-for="row in fitLabels"
+        :key="row.label"
+        data-testid="comparison-label-row"
+        class="grid grid-cols-[auto_1fr_1fr] gap-x-3 items-baseline"
+      >
+        <span class="text-xs text-body/60 dark:text-cream/60 w-16">
+          {{ row.label }}
+        </span>
+        <div class="text-right">
+          <span
+            class="text-sm"
+            :class="labelClass(row, 'A')"
+          >
+            {{ row.labelA ?? '—' }}
+          </span>
+        </div>
+        <div class="text-right">
+          <span
+            class="text-sm"
+            :class="labelClass(row, 'B')"
+          >
+            {{ row.labelB ?? '—' }}
           </span>
         </div>
       </div>

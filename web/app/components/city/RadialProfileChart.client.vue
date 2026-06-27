@@ -68,6 +68,7 @@ const fitA = computed(() => getFit(props.cityId, selectedYear.value))
 const fitB = computed(() => isComparisonMode.value ? getFit(props.cityIds![1]!, selectedYear.value) : null)
 /** Fitted curve renders only when the fit is reliable (fitted is null otherwise). */
 const fittedA = computed(() => (fitA.value?.reliable ? fitA.value.fitted : null))
+const fittedB = computed(() => (fitB.value?.reliable ? fitB.value.fitted : null))
 
 // Current profile data
 const profile = computed(() => getProfile(props.cityId, selectedYear.value))
@@ -161,7 +162,19 @@ const chartData = computed<ChartData<'line'>>(() => {
     tension: 0.3
   }
 
-  return { labels, datasets: [datasetA, datasetB] }
+  // Overlay each city's dashed model curve, color-matched to its A/B identity, only
+  // when that city's fit is reliable (≤ 4 lines total).
+  const datasets: ChartData<'line'>['datasets'] = [datasetA, datasetB]
+  if (fittedA.value && fittedA.value.length > 0) {
+    const nameA = getCityName(props.cityIds![0]!) ?? 'City A'
+    datasets.push(buildFittedDataset(fittedA.value, labels.length, CITY_A_COLOR.primary, `${nameA} model`))
+  }
+  if (fittedB.value && fittedB.value.length > 0) {
+    const nameB = getCityName(props.cityIds![1]!) ?? 'City B'
+    datasets.push(buildFittedDataset(fittedB.value, labels.length, CITY_B_COLOR.primary, `${nameB} model`))
+  }
+
+  return { labels, datasets }
 })
 
 // Chart options
