@@ -41,6 +41,7 @@ Date: 2026-06-27
 import click
 import numpy as np
 import polars as pl
+from scipy.optimize import curve_fit
 
 from ..utils.config import config, get_processed_path
 
@@ -104,7 +105,13 @@ def fit_exponential(
     d = np.asarray(densities, dtype=float)
     r = np.asarray(distances, dtype=float)
 
-    # Use only populated rings: finite, positive density.
+    # Fit the positive-density envelope. We deliberately drop both null rings
+    # (no H3 cells) and exact-zero rings (cells but no population — water, parks,
+    # airfields): the exponential model is strictly positive, so a zero observation
+    # is something it structurally cannot represent, and the log-linear seed needs
+    # d > 0. n_rings therefore counts populated rings, which also feeds the
+    # reliability gate — undercounting coastal/clipped cities toward "unreliable"
+    # is the intended honest-null behaviour.
     mask = np.isfinite(d) & (d > 0)
     r = r[mask]
     d = d[mask]
@@ -128,8 +135,6 @@ def fit_exponential(
 
     # Nonlinear least squares on the original scale, seeded by the log-linear guess.
     try:
-        from scipy.optimize import curve_fit
-
         popt, _ = curve_fit(
             exponential_model,
             r,
@@ -138,8 +143,15 @@ def fit_exponential(
             maxfev=10000,
         )
         d0, beta = float(popt[0]), float(popt[1])
-    except Exception:
-        # curve_fit failed to converge (or scipy unavailable) -> use the log-linear estimate.
+    except (RuntimeError, ValueError):
+        # curve_fit did not converge -> use the log-linear estimate.
+        d0, beta = d0_guess, beta_guess
+
+    # The model is a strictly-positive central density; an unbounded optimum can
+    # land on D0 <= 0 (or non-finite) for noisy/non-monocentric profiles, which would
+    # both fail the D0 > 0 output schema and draw a curve below zero. Fall back to the
+    # log-linear estimate (D0 = exp(intercept) > 0 by construction) in that case.
+    if not np.isfinite(d0) or d0 <= 0 or not np.isfinite(beta):
         d0, beta = d0_guess, beta_guess
 
     # R^2 on the original scale, against the mean.
@@ -149,8 +161,10 @@ def fit_exponential(
     if ss_tot > 0:
         r2: float | None = 1.0 - ss_res / ss_tot
     else:
-        # Flat profile: a constant model fits perfectly.
-        r2 = 1.0 if ss_res < 1e-9 else None
+        # Flat profile (all populated densities equal): a constant model fits perfectly.
+        # Use a relative tolerance — an absolute floor is unreachable for densities in
+        # the thousands.
+        r2 = 1.0 if np.allclose(pred, d, rtol=1e-3, atol=1e-6) else None
 
     if r2 is not None and not np.isfinite(r2):
         r2 = None

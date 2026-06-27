@@ -70,7 +70,23 @@ def test_flat_profile_yields_near_zero_beta():
 
     assert abs(beta) < 1e-3
     assert math.isclose(d0, 3000.0, rel_tol=1e-2)
+    # A constant model fitting constant data is a perfect fit (relative-tolerance
+    # flat-profile branch); R^2 must not collapse to None for densities in the thousands.
+    assert r2 is not None and r2 > 0.99
     assert n_rings == 15
+
+
+def test_fit_never_returns_nonpositive_d0():
+    """A noisy / non-monotonic profile still yields D0 > 0 (D0 > 0 output schema)."""
+    # An irregular, non-monocentric profile where an unbounded optimum could wander.
+    distances = RING_DISTANCES[:12]
+    densities = [100.0, 5000.0, 200.0, 8000.0, 150.0, 6000.0, 300.0, 50.0, 4000.0, 120.0, 30.0, 9000.0]
+
+    d0, beta, r2, n_rings = fit_exponential(distances, densities)
+
+    assert d0 is not None and d0 > 0  # never <= 0 (would break the D0 > 0 schema)
+    assert beta is not None and math.isfinite(beta)
+    assert n_rings == 12
 
 
 def test_zero_or_one_populated_ring_does_not_raise():

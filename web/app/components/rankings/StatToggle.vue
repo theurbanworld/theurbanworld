@@ -29,6 +29,14 @@ const stats = computed<{ key: RankingStat, label: string }[]>(() => [
     : [])
 ])
 
+// If the dataset loses the fit feature while a fit stat is active, fall back to
+// population so the list can't get stuck on a sort with no pill to leave it.
+watch(showFitStats, (canShow) => {
+  if (!canShow && (activeStat.value === 'beta' || activeStat.value === 'r2')) {
+    activeStat.value = 'population'
+  }
+})
+
 const growthModes: { key: GrowthMode, label: string }[] = [
   { key: 'rate', label: '%/yr' },
   { key: 'abs', label: 'Abs' }
