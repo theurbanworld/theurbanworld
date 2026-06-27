@@ -146,16 +146,15 @@ const M_HAZARD = '/data/source-hazard'
 
 export const CLIMATE_METRICS: ClimateMetricDescriptor[] = [
   // Heat
-  { key: HEAT_HEADLINE_KEY, label: 'Warm days (TX90p)', lens: 'heat', temporalClass: 'projection', unit: 'days/year', source: 'C3S / CMIP6 (TX90p index)', methodologyPath: M_C3S, modeled: true, headline: true, futureLabel: 'end-century, SSP5-8.5' },
+  { key: HEAT_HEADLINE_KEY, label: 'Warm days (TX90p)', lens: 'heat', temporalClass: 'projection', unit: 'days/year', source: 'C3S / CMIP6 (TX90p index)', methodologyPath: M_C3S, modeled: true, headline: true, futureLabel: '2030, SSP5-8.5' },
   { key: 'heat_utci_t32', label: 'Days UTCI > 32 °C', lens: 'heat', temporalClass: 'series', unit: 'days/year', source: 'C3S thermal-comfort (UTCI)', methodologyPath: M_C3S, modeled: true, headline: false },
-  { key: 'heat_mean_temp', label: 'Annual mean temperature', lens: 'heat', temporalClass: 'projection', unit: '°C', source: 'C3S / CMIP6 (bioclimatic BIO1)', methodologyPath: M_C3S, modeled: true, headline: false, futureLabel: 'end-century, RCP8.5' },
+  { key: 'heat_mean_temp', label: 'Annual mean temperature', lens: 'heat', temporalClass: 'projection', unit: '°C', source: 'C3S / CMIP6 (bioclimatic BIO1)', methodologyPath: M_C3S, modeled: true, headline: false, futureLabel: '2030, RCP8.5' },
   // Flood & water
   { key: FLOOD_HEADLINE_KEY, label: 'Population in 100-yr flood zone', lens: 'flood', temporalClass: 'series', unit: 'share', source: 'GHS-UCDB exposure (100-yr return-period flood model)', methodologyPath: M_EXPOSURE, modeled: true, headline: true },
   { key: 'flood_coastal_lec', label: 'Population ≤10 m coastal elevation', lens: 'flood', temporalClass: 'series', unit: 'share', source: 'GHS-UCDB exposure (low-elevation coastal zone)', methodologyPath: M_EXPOSURE, modeled: true, headline: false },
-  { key: 'flood_cyclone_wind', label: 'Population exposed to cyclone wind', lens: 'flood', temporalClass: 'series', unit: 'share', source: 'GHS-UCDB exposure (tropical-cyclone wind return periods)', methodologyPath: M_EXPOSURE, modeled: true, headline: false },
   { key: 'sea_level_rise', label: 'Local sea-level-rise rate', lens: 'flood', temporalClass: 'snapshot', unit: 'mm/year', source: 'GHS-UCDB water (marine trend)', methodologyPath: M_EXPOSURE, modeled: true, headline: false },
   // Climate type & morphology
-  { key: 'koppen_class', label: 'Köppen climate type', lens: 'climate_type', temporalClass: 'projection', unit: null, source: 'Köppen-Geiger (Beck et al. 2018)', methodologyPath: M_KOPPEN, modeled: true, headline: false, futureLabel: '2071-2099, SSP5-8.5', categorical: true },
+  { key: 'koppen_class', label: 'Köppen climate type', lens: 'climate_type', temporalClass: 'projection', unit: null, source: 'Köppen-Geiger (Beck et al. 2018)', methodologyPath: M_KOPPEN, modeled: true, headline: false, futureLabel: '2070, SSP5-8.5', categorical: true },
   { key: 'lcz_composition', label: 'Local Climate Zone composition', lens: 'climate_type', temporalClass: 'snapshot', unit: 'share', source: 'Local Climate Zones (Demuzere et al. 2022)', methodologyPath: M_LCZ, modeled: false, headline: false },
   // Energy resource
   { key: SOLAR_HEADLINE_KEY, label: 'Solar PV potential', lens: 'energy', temporalClass: 'snapshot', unit: 'kWh/kWp', source: 'Global Solar Atlas 2.0 (ESMAP 2020)', methodologyPath: M_SOLAR, modeled: false, headline: true },
@@ -168,7 +167,6 @@ export const CLIMATE_METRICS: ClimateMetricDescriptor[] = [
   { key: 'pm25_emissions', label: 'PM₂.₅ emissions', lens: 'footprint', temporalClass: 'series', unit: 't/year', source: 'EDGAR v8.0 (Crippa et al. 2024)', methodologyPath: M_EDGAR, modeled: true, headline: false },
   // Urban form
   { key: 'land_use_efficiency', label: 'Land-use efficiency (SDG 11.3.1)', lens: 'urban_form', temporalClass: 'series', unit: 'ratio', source: 'UN-Habitat SDG 11.3.1 (land-consumption / population rate)', methodologyPath: M_SDG, modeled: false, headline: false },
-  { key: 'land_cover_built', label: 'Built-up land cover', lens: 'urban_form', temporalClass: 'series', unit: 'ha', source: 'GHS-UCDB land use / land cover', methodologyPath: M_SDG, modeled: false, headline: false },
   // Greenness & livability
   { key: 'greenness_built', label: 'High-greenness built-up share', lens: 'greenness', temporalClass: 'series', unit: 'share', source: 'GHS-UCDB greenness (Landsat NDVI)', methodologyPath: M_GREENNESS, modeled: false, headline: false },
   { key: 'greenness_mean', label: 'Mean greenness in built-up', lens: 'greenness', temporalClass: 'series', unit: 'index', source: 'GHS-UCDB greenness (Landsat NDVI)', methodologyPath: M_GREENNESS, modeled: false, headline: false },

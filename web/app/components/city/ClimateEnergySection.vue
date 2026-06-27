@@ -28,15 +28,18 @@ const props = defineProps<{
 }>()
 
 const { open: openInfoModal } = useInfoModal()
-const { loadProfile, getClimate, hasCityClimate } = useCityClimate()
+const { loadCityProfile, getClimate, isCityLoaded } = useCityClimate()
 
-// Load the full per-city profile on mount and whenever the city changes.
-onMounted(() => {
-  loadProfile()
-})
+// Fetch the city's full profile on mount and whenever the city changes.
+watch(
+  () => props.cityId,
+  id => loadCityProfile(id),
+  { immediate: true }
+)
 
 const record = computed(() => getClimate(props.cityId))
-const covered = computed(() => hasCityClimate(props.cityId) || record.value != null)
+const loaded = computed(() => isCityLoaded(props.cityId))
+const covered = computed(() => record.value != null)
 
 const headlines = headlineMetrics()
 const carbonKey = CARBON_HEADLINE_KEY
@@ -75,16 +78,16 @@ const lensGroups = computed(() =>
       </button>
     </div>
 
-    <!-- Whole-section unavailable (R13) -->
+    <!-- Whole-section unavailable (R13) — only once the fetch has resolved -->
     <p
-      v-if="!covered"
+      v-if="loaded && !covered"
       data-testid="climate-section-unavailable"
       class="text-xs italic text-body/40 dark:text-cream/40"
     >
       Climate &amp; Energy data is not available for this city.
     </p>
 
-    <template v-else>
+    <template v-else-if="covered">
       <!-- Headline four -->
       <div
         data-testid="climate-headlines"

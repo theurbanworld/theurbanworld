@@ -54,14 +54,14 @@ export function normalizeSectors(sectors: [string, number][]): SectorShare[] {
 
 /**
  * Format a climate value for display by unit.
- * - 'share' renders as a percentage (values are 0–1 fractions)
+ * - 'share' renders as a percentage (UCDB stores these as 0–100 already)
  * - 'count' renders as an integer
  * - otherwise a compact number with the unit appended
  */
 export function formatClimateValue(value: number | string | null, unit: string | null): string {
   if (value === null) return '—'
   if (typeof value === 'string') return value
-  if (unit === 'share') return `${(value * 100).toFixed(1)}%`
+  if (unit === 'share') return `${value.toFixed(1)}%`
   if (unit === 'count') return Math.round(value).toLocaleString()
 
   const abs = Math.abs(value)

@@ -111,7 +111,7 @@ const showModeledQualifier = computed(
         :key="part[0]"
         class="text-xs text-body/70 dark:text-cream/70"
       >
-        {{ part[0] }} · {{ (part[1] * 100).toFixed(0) }}%
+        {{ part[0] }} · {{ part[1].toFixed(0) }}%
       </span>
     </div>
 

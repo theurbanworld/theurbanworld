@@ -41,7 +41,7 @@ describe('climateFormat helpers', () => {
   })
 
   it('formats shares as percent and counts as integers', () => {
-    expect(formatClimateValue(0.123, 'share')).toBe('12.3%')
+    expect(formatClimateValue(12.3, 'share')).toBe('12.3%')
     expect(formatClimateValue(3, 'count')).toBe('3')
     expect(formatClimateValue(1500, 'kWh/kWp')).toBe('1,500 kWh/kWp')
     expect(formatClimateValue(null, 'share')).toBe('—')

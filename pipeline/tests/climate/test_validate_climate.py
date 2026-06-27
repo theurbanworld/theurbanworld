@@ -90,10 +90,10 @@ def test_negative_pv_potential_is_flagged(tmp_path):
         CityClimateSchema.validate(table, lazy=True)
 
 
-def test_flood_share_above_one_is_flagged(tmp_path):
-    # Error path: shares are bounded to [0, 1]
+def test_flood_share_above_hundred_is_flagged(tmp_path):
+    # Error path: shares are percentages bounded to [0, 100]
     rows = _valid_rows()
-    rows[0]["flood_100yr_share_latest"] = 1.5
+    rows[0]["flood_100yr_share_latest"] = 150.0
     table = _climate_table(rows, tmp_path)
     with pytest.raises(pa.errors.SchemaErrors):
         CityClimateSchema.validate(table, lazy=True)

@@ -70,14 +70,14 @@ def test_all_null_city_is_excluded():
 
 def test_inland_city_drops_marine_metric_keeps_others():
     row = _full_row("200")
-    # null out marine + cyclone columns (coastal-only)
-    for key in ("sea_level_rise", "flood_cyclone_wind", "flood_coastal_lec"):
+    # null out marine + coastal columns (coastal-only)
+    for key in ("sea_level_rise", "flood_coastal_lec"):
         for col in catalog.by_key(key).ucdb_attribute_ids:
             row[col] = None
     df = bcc.build_city_climate(_ucdb([row]))
     record = json.loads(df["climate_json"][0])
     assert "sea_level_rise" not in record
-    assert "flood_cyclone_wind" not in record
+    assert "flood_coastal_lec" not in record
     # other metrics retained
     assert catalog.CARBON_HEADLINE_KEY in record
     assert catalog.SOLAR_HEADLINE_KEY in record

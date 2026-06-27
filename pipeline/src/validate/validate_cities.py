@@ -148,7 +148,8 @@ class CityClimateSchema(DataFrameModel):
 
     city_id: str = Field(nullable=False)
     heat_warm_days_now: float = Field(ge=0, nullable=True)
-    flood_100yr_share_latest: float = Field(ge=0, le=1, nullable=True)
+    # UCDB exposure shares are stored as percentages (0–100), not fractions.
+    flood_100yr_share_latest: float = Field(ge=0, le=100, nullable=True)
     solar_pv_potential: float = Field(ge=0, nullable=True)
     co2_per_capita_latest: float = Field(ge=0, nullable=True)
     wind_speed_100m: float = Field(ge=0, nullable=True)

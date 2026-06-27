@@ -9,24 +9,27 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import ClimateEnergySection from '../../app/components/city/ClimateEnergySection.vue'
 import { useInfoModal } from '../../app/composables/useInfoModal'
+import { __clearClimateProfileCache } from '../../app/composables/useCityClimate'
 
-const profile = {
-  100: {
-    heat_warm_days: { now: 30, future: 60 },
-    flood_100yr_share: { points: [[1975, 0.05], [2030, 0.12]] },
-    solar_pv_potential: { value: 1500 },
-    co2_per_capita: { points: [[1975, 1], [2020, 4.2]] },
-    co2_sector_fingerprint: {
-      sectors: [['Energy', 4], ['Transport', 3], ['Industry', 2], ['Residential', 1]]
-    },
-    flood_coastal_lec: { points: [[1975, 0.1], [2030, 0.2]] }, // makes the flood group render
-    greenness_built: { points: [[1985, 0.3], [2025, 0.5]] }
-    // sea_level_rise intentionally absent -> marine metric unavailable
-  }
+const record100 = {
+  heat_warm_days: { now: 30, future: 60 },
+  flood_100yr_share: { points: [[1975, 0.05], [2030, 0.12]] },
+  solar_pv_potential: { value: 1500 },
+  co2_per_capita: { points: [[1975, 1], [2020, 4.2]] },
+  co2_sector_fingerprint: {
+    sectors: [['Energy', 4], ['Transport', 3], ['Industry', 2], ['Residential', 1]]
+  },
+  flood_coastal_lec: { points: [[1975, 0.1], [2030, 0.2]] }, // makes the flood group render
+  greenness_built: { points: [[1985, 0.3], [2025, 0.5]] }
+  // sea_level_rise intentionally absent -> marine metric unavailable
 }
 
 function stubFetch() {
-  vi.stubGlobal('$fetch', vi.fn(() => Promise.resolve(profile)))
+  // Per-city profile fetch: climate/100.json -> record100; everything else 404.
+  vi.stubGlobal('$fetch', vi.fn((url: string) => {
+    if (url.includes('climate/100.json')) return Promise.resolve(record100)
+    return Promise.reject({ statusCode: 404 })
+  }))
 }
 
 async function mountSection(cityId: string) {
@@ -38,8 +41,8 @@ async function mountSection(cityId: string) {
 
 describe('ClimateEnergySection', () => {
   beforeEach(() => {
-    clearNuxtData('climate-profile')
     clearNuxtData('climate-summary')
+    __clearClimateProfileCache()
     vi.unstubAllGlobals()
     useInfoModal().close()
   })

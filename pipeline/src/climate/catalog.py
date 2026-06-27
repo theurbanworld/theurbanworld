@@ -62,18 +62,28 @@ class Lens(str, Enum):
 # Year spines (documented temporal coverage per origin Table A)
 # ---------------------------------------------------------------------------
 
-# Emissions per-capita CO2 is documented 1975-2020; sector/totals run to 2022.
-EMISSION_YEARS = (1975, 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020)
-# Exposure shares ride the population epoch spine 1975-2030.
+# Pinned against ucdb_all.parquet (R2024A). EDGAR per-capita CO2 spine.
+EMISSION_YEARS = (1975, 1990, 2000, 2005, 2010, 2015, 2020)
+# EDGAR totals/sectors extend one epoch further, to 2022.
+EMISSION_TOTAL_YEARS = (1975, 1990, 2000, 2005, 2010, 2015, 2020, 2022)
+# Exposure shares ride the population epoch spine 1975-2030 (all 12 epochs present).
 EXPOSURE_YEARS = (1975, 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020, 2025, 2030)
 # Greenness / green-space access 1985-2025.
 GREENNESS_YEARS = (1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020, 2025)
 # UTCI heat-stress decadal 1970-2020.
 UTCI_YEARS = (1970, 1980, 1990, 2000, 2010, 2020)
-# SDG 11.3.1 land-use efficiency, decadal across the GHSL epoch range.
-LUE_YEARS = (1975, 1985, 1995, 2005, 2015, 2025)
-# Wildfire burnt area, recent annual record.
-WILDFIRE_YEARS = (2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024)
+# SDG 11.3.1 land-use efficiency is stored as period-range columns (start_end);
+# the END year of each period is the series point year.
+LUE_PERIOD_COLUMNS = (
+    "SD_LUE_LPR_1975_1980",
+    "SD_LUE_LPR_1980_1990",
+    "SD_LUE_LPR_1990_2000",
+    "SD_LUE_LPR_2000_2010",
+    "SD_LUE_LPR_2010_2020",
+    "SD_LUE_LPR_2020_2030",
+)
+# Wildfire burnt area is a sparse 3-epoch record.
+WILDFIRE_COLUMNS = ("HZ_WLF_BHA_2015", "HZ_WLF_BHA_2020", "HZ_WLF_BHA_2024")
 
 
 def _year_cols(base: str, years: Iterable[int]) -> tuple[str, ...]:
@@ -167,13 +177,13 @@ CATALOG: tuple[Metric, ...] = (
         label="Warm days (TX90p)",
         lens=Lens.HEAT,
         temporal_class=TemporalClass.PROJECTION,
-        ucdb_attribute_ids=("CL_WDS_CUR", "CL_WDS_585"),
+        ucdb_attribute_ids=("CL_WDS_CUR_2010", "CL_WDS_585_2030"),
         unit="days/year",
         source="C3S / CMIP6 (TX90p index)",
         methodology_path=_M_C3S,
         modeled=True,
         headline=True,
-        future_label="end-century, SSP5-8.5",
+        future_label="2030, SSP5-8.5",
     ),
     Metric(
         key="heat_utci_t32",
@@ -191,12 +201,12 @@ CATALOG: tuple[Metric, ...] = (
         label="Annual mean temperature",
         lens=Lens.HEAT,
         temporal_class=TemporalClass.PROJECTION,
-        ucdb_attribute_ids=("CL_B01_CUR", "CL_B01_P85"),
+        ucdb_attribute_ids=("CL_B01_CUR_2010", "CL_B01_P85_2030"),
         unit="°C",
         source="C3S / CMIP6 (bioclimatic BIO1)",
         methodology_path=_M_C3S,
         modeled=True,
-        future_label="end-century, RCP8.5",
+        future_label="2030, RCP8.5",
     ),
     # --- Flood & water (Climate risk) -----------------------------------
     Metric(
@@ -223,22 +233,11 @@ CATALOG: tuple[Metric, ...] = (
         modeled=True,
     ),
     Metric(
-        key="flood_cyclone_wind",
-        label="Population exposed to cyclone wind",
-        lens=Lens.FLOOD,
-        temporal_class=TemporalClass.SERIES,
-        ucdb_attribute_ids=_year_cols("EX_TCD_S1P", EXPOSURE_YEARS),
-        unit="share",
-        source="GHS-UCDB exposure (tropical-cyclone wind return periods)",
-        methodology_path=_M_EXPOSURE,
-        modeled=True,
-    ),
-    Metric(
         key="sea_level_rise",
         label="Local sea-level-rise rate",
         lens=Lens.FLOOD,
         temporal_class=TemporalClass.SNAPSHOT,
-        ucdb_attribute_ids=("WA_MAR_SHT",),
+        ucdb_attribute_ids=("WA_MAR_SHT_2023",),
         unit="mm/year",
         source="GHS-UCDB water (marine trend)",
         methodology_path=_M_EXPOSURE,
@@ -250,12 +249,12 @@ CATALOG: tuple[Metric, ...] = (
         label="Köppen climate type",
         lens=Lens.CLIMATE_TYPE,
         temporal_class=TemporalClass.PROJECTION,
-        ucdb_attribute_ids=("CL_KOP_CUR", "CL_KOP_585"),
+        ucdb_attribute_ids=("CL_KOP_CUR_2025", "CL_KOP_585_2070"),
         unit=None,
         source="Köppen-Geiger (Beck et al. 2018)",
         methodology_path=_M_KOPPEN,
         modeled=True,
-        future_label="2071-2099, SSP5-8.5",
+        future_label="2070, SSP5-8.5",
         categorical=True,
     ),
     Metric(
@@ -263,7 +262,7 @@ CATALOG: tuple[Metric, ...] = (
         label="Local Climate Zone composition",
         lens=Lens.CLIMATE_TYPE,
         temporal_class=TemporalClass.SNAPSHOT,
-        ucdb_attribute_ids=tuple(f"CL_LCZ_A{n:02d}" for n in range(1, 18)),
+        ucdb_attribute_ids=tuple(f"CL_LCZ_A{n:02d}_2025" for n in range(1, 18)),
         unit="share",
         source="Local Climate Zones (Demuzere et al. 2022)",
         methodology_path=_M_LCZ,
@@ -275,7 +274,7 @@ CATALOG: tuple[Metric, ...] = (
         label="Solar PV potential",
         lens=Lens.ENERGY,
         temporal_class=TemporalClass.SNAPSHOT,
-        ucdb_attribute_ids=("CL_REN_PVO",),
+        ucdb_attribute_ids=("CL_REN_PVO_2020",),
         unit="kWh/kWp",
         source="Global Solar Atlas 2.0 (ESMAP 2020)",
         methodology_path=_M_SOLAR,
@@ -287,7 +286,7 @@ CATALOG: tuple[Metric, ...] = (
         label="Wind speed @100 m",
         lens=Lens.ENERGY,
         temporal_class=TemporalClass.SNAPSHOT,
-        ucdb_attribute_ids=("CL_REN_W10",),
+        ucdb_attribute_ids=("CL_REN_W10_2020",),
         unit="m/s",
         source="Global Wind Atlas (Davis et al. 2023)",
         methodology_path=_M_WIND,
@@ -312,10 +311,10 @@ CATALOG: tuple[Metric, ...] = (
         lens=Lens.FOOTPRINT,
         temporal_class=TemporalClass.SNAPSHOT,
         ucdb_attribute_ids=(
-            "EM_CO2_SEN_2020",
-            "EM_CO2_STR_2020",
-            "EM_CO2_SIN_2020",
-            "EM_CO2_SRE_2020",
+            "EM_CO2_SEN_2022",
+            "EM_CO2_STR_2022",
+            "EM_CO2_SIN_2022",
+            "EM_CO2_SRE_2022",
         ),
         unit="share",
         source="EDGAR v8.0 (Crippa et al. 2024)",
@@ -329,7 +328,7 @@ CATALOG: tuple[Metric, ...] = (
         label="Total CO₂ emissions",
         lens=Lens.FOOTPRINT,
         temporal_class=TemporalClass.SERIES,
-        ucdb_attribute_ids=_year_cols("EM_CO2_TOT", EMISSION_YEARS),
+        ucdb_attribute_ids=_year_cols("EM_CO2_TOT", EMISSION_TOTAL_YEARS),
         unit="t CO₂/year",
         source="EDGAR v8.0 (Crippa et al. 2024)",
         methodology_path=_M_EDGAR,
@@ -340,7 +339,7 @@ CATALOG: tuple[Metric, ...] = (
         label="Total GHG emissions",
         lens=Lens.FOOTPRINT,
         temporal_class=TemporalClass.SERIES,
-        ucdb_attribute_ids=_year_cols("EM_GHG_TOT", EMISSION_YEARS),
+        ucdb_attribute_ids=_year_cols("EM_GHG_TOT", EMISSION_TOTAL_YEARS),
         unit="t CO₂-eq/year",
         source="EDGAR v8.0 (Crippa et al. 2024)",
         methodology_path=_M_EDGAR,
@@ -351,7 +350,7 @@ CATALOG: tuple[Metric, ...] = (
         label="PM₂.₅ emissions",
         lens=Lens.FOOTPRINT,
         temporal_class=TemporalClass.SERIES,
-        ucdb_attribute_ids=_year_cols("EM_PM2_TOT", EMISSION_YEARS),
+        ucdb_attribute_ids=_year_cols("EM_PM2_TOT", EMISSION_TOTAL_YEARS),
         unit="t/year",
         source="EDGAR v8.0 (Crippa et al. 2024)",
         methodology_path=_M_EDGAR,
@@ -363,20 +362,9 @@ CATALOG: tuple[Metric, ...] = (
         label="Land-use efficiency (SDG 11.3.1)",
         lens=Lens.URBAN_FORM,
         temporal_class=TemporalClass.SERIES,
-        ucdb_attribute_ids=_year_cols("SD_LUE_LPR", LUE_YEARS),
+        ucdb_attribute_ids=LUE_PERIOD_COLUMNS,
         unit="ratio",
         source="UN-Habitat SDG 11.3.1 (land-consumption / population rate)",
-        methodology_path=_M_SDG,
-        modeled=False,
-    ),
-    Metric(
-        key="land_cover_built",
-        label="Built-up land cover",
-        lens=Lens.URBAN_FORM,
-        temporal_class=TemporalClass.SERIES,
-        ucdb_attribute_ids=("LU_HEC_BLT_2015", "LU_HEC_BLT_2019"),
-        unit="ha",
-        source="GHS-UCDB land use / land cover",
         methodology_path=_M_SDG,
         modeled=False,
     ),
@@ -419,7 +407,7 @@ CATALOG: tuple[Metric, ...] = (
         label="Mean tree-canopy height",
         lens=Lens.GREENNESS,
         temporal_class=TemporalClass.SNAPSHOT,
-        ucdb_attribute_ids=("GR_CTH_AVG",),
+        ucdb_attribute_ids=("GR_CTH_AVG_2020",),
         unit="m",
         source="GHS-UCDB canopy height (Lang et al.)",
         methodology_path=_M_GREENNESS,
@@ -431,7 +419,7 @@ CATALOG: tuple[Metric, ...] = (
         label="Wildfire burnt area",
         lens=Lens.HAZARD,
         temporal_class=TemporalClass.SERIES,
-        ucdb_attribute_ids=_year_cols("HZ_WLF_BHA", WILDFIRE_YEARS),
+        ucdb_attribute_ids=WILDFIRE_COLUMNS,
         unit="ha/year",
         source="GHS-UCDB hazard (burnt-area record)",
         methodology_path=_M_HAZARD,
@@ -442,7 +430,7 @@ CATALOG: tuple[Metric, ...] = (
         label="Heatwave events",
         lens=Lens.HAZARD,
         temporal_class=TemporalClass.SNAPSHOT,
-        ucdb_attribute_ids=("HZ_CEV_HEW",),
+        ucdb_attribute_ids=("HZ_CEV_HEW_2015",),
         unit="count",
         source="GHS-UCDB hazard (climate-event counts)",
         methodology_path=_M_HAZARD,
@@ -453,7 +441,7 @@ CATALOG: tuple[Metric, ...] = (
         label="Drought events",
         lens=Lens.HAZARD,
         temporal_class=TemporalClass.SNAPSHOT,
-        ucdb_attribute_ids=("HZ_CEV_DRO",),
+        ucdb_attribute_ids=("HZ_CEV_DRO_2015",),
         unit="count",
         source="GHS-UCDB hazard (climate-event counts)",
         methodology_path=_M_HAZARD,
