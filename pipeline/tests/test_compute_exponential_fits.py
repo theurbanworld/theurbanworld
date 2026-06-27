@@ -95,12 +95,12 @@ def test_zero_or_one_populated_ring_does_not_raise():
     d0, beta, r2, n_rings = fit_exponential([], [])
     assert n_rings == 0
     assert d0 is None and beta is None and r2 is None
-    assert is_reliable(r2, n_rings) is False
+    assert is_reliable(r2, n_rings, beta) is False
 
     # one populated ring
     d0, beta, r2, n_rings = fit_exponential([0.5], [5000.0])
     assert n_rings == 1
-    assert is_reliable(r2, n_rings) is False
+    assert is_reliable(r2, n_rings, beta) is False
 
 
 def test_nulls_are_ignored_in_fit():
@@ -119,23 +119,30 @@ def test_nulls_are_ignored_in_fit():
 def test_reliability_requires_minimum_populated_rings():
     """Covers AE1. Fewer than the minimum populated rings -> reliable=false."""
     n_rings = MIN_POPULATED_RINGS - 1
-    assert is_reliable(0.99, n_rings) is False
+    assert is_reliable(0.99, n_rings, 0.2) is False
 
 
 def test_strong_fit_above_floor_and_ring_minimum_is_reliable():
     """A strong fit above the R2 floor and ring-count minimum -> reliable=true."""
-    assert is_reliable(0.95, MIN_POPULATED_RINGS) is True
+    assert is_reliable(0.95, MIN_POPULATED_RINGS, 0.2) is True
 
 
 def test_low_r2_below_floor_is_unreliable_even_with_enough_rings():
     """A best fit with R2 below the floor -> reliable=false even with enough rings."""
     below = R2_RELIABILITY_FLOOR - 0.05
-    assert is_reliable(below, MIN_POPULATED_RINGS + 10) is False
+    assert is_reliable(below, MIN_POPULATED_RINGS + 10, 0.2) is False
 
 
 def test_null_r2_is_unreliable():
     """A null R2 (unfittable) is never reliable regardless of ring count."""
-    assert is_reliable(None, 50) is False
+    assert is_reliable(None, 50, 0.2) is False
+
+
+def test_nonpositive_beta_is_unreliable():
+    """A non-positive gradient (density rising outward) is not a monocentric fit."""
+    assert is_reliable(0.95, 30, 0.0) is False
+    assert is_reliable(0.95, 30, -0.3) is False
+    assert is_reliable(0.95, 30, None) is False
 
 
 # ---------------------------------------------------------------------------

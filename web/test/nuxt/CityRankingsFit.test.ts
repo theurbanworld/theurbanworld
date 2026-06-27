@@ -24,12 +24,12 @@ const CITIES = [
 // Fit fixtures by epoch then city. C is unreliable at 2020, reliable at 2025.
 const FITS: Record<number, Record<string, UrbanModelFitEntry | null>> = {
   2020: {
-    A: { D0: 12000, beta: 0.2, r2: 0.95, reliable: true, fitted: [1] },
+    A: { D0: 12000, beta: 0.5, r2: 0.95, reliable: true, fitted: [1] },
     B: { D0: 8000, beta: 0.1, r2: 0.6, reliable: true, fitted: [1] },
     C: { D0: 4000, beta: 0.04, r2: 0.1, reliable: false, fitted: null }
   },
   2025: {
-    A: { D0: 12000, beta: 0.2, r2: 0.95, reliable: true, fitted: [1] },
+    A: { D0: 12000, beta: 0.5, r2: 0.95, reliable: true, fitted: [1] },
     B: { D0: 8000, beta: 0.1, r2: 0.6, reliable: true, fitted: [1] },
     C: { D0: 6000, beta: 0.15, r2: 0.8, reliable: true, fitted: [1] }
   }

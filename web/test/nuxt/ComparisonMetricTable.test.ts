@@ -42,13 +42,13 @@ async function mountTable() {
 describe('ComparisonMetricTable fit rows', () => {
   it('shows β/R² and labels for both reliable cities', async () => {
     fitData = {
-      A: { D0: 12000, beta: 0.2, r2: 0.95, reliable: true, fitted: [1] },
+      A: { D0: 12000, beta: 0.5, r2: 0.95, reliable: true, fitted: [1] },
       B: { D0: 8000, beta: 0.1, r2: 0.5, reliable: true, fitted: [1] }
     }
     const wrapper = await mountTable()
     const text = wrapper.text()
 
-    expect(text).toContain('0.200') // city A β
+    expect(text).toContain('0.500') // city A β
     expect(text).toContain('0.100') // city B β
     expect(text).toContain('0.95') // city A R²
     expect(text).toContain('Compact') // A compactness label
@@ -59,13 +59,13 @@ describe('ComparisonMetricTable fit rows', () => {
 
   it('shows a dash on the unreliable side and keeps the other', async () => {
     fitData = {
-      A: { D0: 12000, beta: 0.2, r2: 0.95, reliable: true, fitted: [1] },
+      A: { D0: 12000, beta: 0.5, r2: 0.95, reliable: true, fitted: [1] },
       B: { D0: 5000, beta: 0.05, r2: 0.15, reliable: false, fitted: null }
     }
     const wrapper = await mountTable()
     const text = wrapper.text()
 
-    expect(text).toContain('0.200') // A still shown
+    expect(text).toContain('0.500') // A still shown
     expect(text).toContain('—') // B dashed
     // B's labels are not rendered as concrete categories.
     expect(text).not.toContain('Spread')
@@ -73,7 +73,7 @@ describe('ComparisonMetricTable fit rows', () => {
 
   it('categorical label rows do not use larger-value highlighting', async () => {
     fitData = {
-      A: { D0: 12000, beta: 0.2, r2: 0.95, reliable: true, fitted: [1] },
+      A: { D0: 12000, beta: 0.5, r2: 0.95, reliable: true, fitted: [1] },
       B: { D0: 8000, beta: 0.1, r2: 0.5, reliable: true, fitted: [1] }
     }
     const wrapper = await mountTable()

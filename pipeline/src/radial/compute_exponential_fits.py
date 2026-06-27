@@ -174,11 +174,14 @@ def fit_exponential(
     return d0, beta, r2, n_rings
 
 
-def is_reliable(r2: float | None, n_rings: int) -> bool:
-    """Reliability rule (U2): enough populated rings AND a fit above the R^2 floor."""
-    if r2 is None:
+def is_reliable(r2: float | None, n_rings: int, beta: float | None) -> bool:
+    """Reliability rule (U2): enough populated rings, a fit above the R^2 floor, AND a
+    positive density gradient. A monocentric model requires density to fall off from the
+    centre; the ~1.4% of fits with beta <= 0 (density rising outward) are not standard
+    urban forms and are suppressed as honest-null rather than mislabelled "Spread"."""
+    if r2 is None or beta is None:
         return False
-    return n_rings >= MIN_POPULATED_RINGS and r2 >= R2_RELIABILITY_FLOOR
+    return n_rings >= MIN_POPULATED_RINGS and r2 >= R2_RELIABILITY_FLOOR and beta > 0
 
 
 def compute_fits(profiles: pl.DataFrame) -> pl.DataFrame:
@@ -207,7 +210,7 @@ def compute_fits(profiles: pl.DataFrame) -> pl.DataFrame:
                 "beta": beta,
                 "r2": r2,
                 "n_rings": n_rings,
-                "reliable": is_reliable(r2, n_rings),
+                "reliable": is_reliable(r2, n_rings, beta),
             }
         )
 

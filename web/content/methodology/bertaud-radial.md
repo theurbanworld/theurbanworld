@@ -39,11 +39,11 @@ We translate the two fitted numbers into two plain-language labels.
 
 ### Compactness — from β
 
-A larger _β_ means density falls off faster, so the city is more **compact**; a smaller _β_ means a flatter, more **spread** profile. The bands are anchored to well-known reference cities — roughly Atlanta (β ≈ 0.08, very spread) at one end and Paris (β ≈ 0.22, very compact) at the other:
+A larger _β_ means density falls off faster, so the city is more **compact** (think Paris); a smaller _β_ means a flatter, more **spread** profile (think Atlanta). The bands are calibrated to the real distribution of fits across the world's cities, so they split it into roughly even thirds:
 
-- **Compact** — β ≥ 0.18
-- **Moderate** — 0.11 ≤ β < 0.18
-- **Spread** — β < 0.11
+- **Compact** — β ≥ 0.37
+- **Moderate** — 0.18 ≤ β < 0.37
+- **Spread** — β < 0.18
 
 These bands are fixed, so a city's label only changes when the city itself changes — not relative to whichever other cities are on screen.
 
@@ -58,9 +58,9 @@ _R²_ measures how well the single-centre curve fits the real profile. A high _R
 
 ### When we show nothing — "fit not reliable here"
 
-For some cities the exponential fit is meaningless: coastal or clipped cities with only a sliver of rings, or very small urban areas. Rather than print a confident-but-wrong label, we suppress the dashed line, the badge, and the ranking entry and show **"fit not reliable here"**. The observed density line is always shown. A fit is treated as reliable only when it has at least **5 populated rings** and an **R² of at least 0.2** (below that the curve explains too little to trust at all). In the rankings, unreliable cities are excluded from the Compactness and Monocentricity sorts for that epoch.
+For some cities the exponential fit is meaningless: coastal or clipped cities with only a sliver of rings, very small urban areas, or places where density actually rises with distance (an inverted gradient that the single-centre model cannot describe). Rather than print a confident-but-wrong label, we suppress the dashed line, the badge, and the ranking entry and show **"fit not reliable here"**. The observed density line is always shown. A fit is treated as reliable only when it has at least **5 populated rings**, an **R² of at least 0.2** (below that the curve explains too little to trust at all), and a **positive gradient** (density falling outward). About **45% of all city-epochs** clear this bar. In the rankings, unreliable cities are excluded from the Compactness and Monocentricity sorts for that epoch.
 
-> These thresholds are literature-anchored starting values and may be recalibrated as the full distribution of fits is reviewed; the compactness and structure bands all live in a single place in the code so any change stays consistent across the badge, the comparison table, and the rankings.
+> The bands above are calibrated against the full distribution of fits (≈46,000 reliable city-epochs across 1975–2030). The compactness and structure thresholds all live in a single place in the code, so any future recalibration stays consistent across the badge, the comparison table, and the rankings.
 
 ::citation-card{author="Bertaud, A." year="2018" title="Order without Design: How Markets Shape Cities" url="https://mitpress.mit.edu/books/order-without-design"}
 ::

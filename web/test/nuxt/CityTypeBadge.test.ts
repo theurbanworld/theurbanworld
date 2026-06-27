@@ -15,7 +15,7 @@ import type { UrbanModelFitEntry } from '../../app/composables/useUrbanModelFit'
 const selectedYear = ref(2020)
 
 const FITS: Record<number, UrbanModelFitEntry | null> = {
-  2020: { D0: 12000, beta: 0.2, r2: 0.95, reliable: true, fitted: [11000, 9000] },
+  2020: { D0: 12000, beta: 0.5, r2: 0.95, reliable: true, fitted: [11000, 9000] },
   2025: { D0: 5000, beta: 0.05, r2: 0.15, reliable: false, fitted: null },
   1975: null // loading / absent
 }

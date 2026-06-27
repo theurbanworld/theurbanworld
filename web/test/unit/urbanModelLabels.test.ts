@@ -23,7 +23,7 @@ describe('compactnessLabel', () => {
   it('returns Compact at and above the compact threshold', () => {
     expect(compactnessLabel(COMPACT_BETA_MIN)).toBe(COMPACTNESS_LABELS.COMPACT)
     expect(compactnessLabel(COMPACT_BETA_MIN + 0.001)).toBe(COMPACTNESS_LABELS.COMPACT)
-    expect(compactnessLabel(0.22)).toBe(COMPACTNESS_LABELS.COMPACT) // Paris-like
+    expect(compactnessLabel(0.5)).toBe(COMPACTNESS_LABELS.COMPACT) // steep gradient
   })
 
   it('returns Moderate between the spread and compact thresholds', () => {
@@ -88,12 +88,12 @@ describe('Covers AE4. label is a pure function of the city own beta', () => {
 
 describe('classifyFit', () => {
   it('returns both axes, each null when its input is missing', () => {
-    expect(classifyFit(0.2, 0.95)).toEqual({
+    expect(classifyFit(0.5, 0.95)).toEqual({
       compactness: COMPACTNESS_LABELS.COMPACT,
       structure: STRUCTURE_LABELS.SINGLE_CENTER
     })
     expect(classifyFit(null, null)).toEqual({ compactness: null, structure: null })
-    expect(classifyFit(0.2, null)).toEqual({
+    expect(classifyFit(0.5, null)).toEqual({
       compactness: COMPACTNESS_LABELS.COMPACT,
       structure: null
     })

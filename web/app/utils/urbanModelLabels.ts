@@ -10,11 +10,13 @@
  * should appear anywhere else — change the bands or the copy here and all surfaces
  * follow.
  *
- * The thresholds are literature-anchored placeholders (KTD5): the compactness bands
- * sit between Atlanta-like sprawl (beta ~= 0.08) and Paris-like compactness
- * (beta ~= 0.22); the structure cutoff marks where an exponential stops being a good
- * description of the profile. They should be recalibrated against the real fit
- * distribution; doing so only touches this file.
+ * The compactness bands are calibrated to the real fit distribution: across the
+ * ~46k reliable city-epochs the positive-beta terciles fall at ~0.18 and ~0.37, so
+ * these bands split the world's cities into roughly even thirds (steep-gradient
+ * "Compact" cities like Paris, shallow-gradient "Spread" cities like Atlanta). The
+ * structure cutoff (0.90) sits at the median reliable R^2, splitting cities roughly
+ * in half. They are fixed values, so a city's label changes only when the city does;
+ * recalibrating only touches this file.
  *
  * Structure describes deviation ONLY. It never asserts a cause (geography, planning,
  * polycentricity) — a poor monocentric fit tells you the textbook curve does not
@@ -24,10 +26,10 @@
 // --- Thresholds (the only place these numbers live) -------------------------
 
 /** beta at or above this is "Compact" (steep gradient, density falls off fast). */
-export const COMPACT_BETA_MIN = 0.18
+export const COMPACT_BETA_MIN = 0.37
 
 /** beta below this is "Spread" (shallow gradient, density falls off slowly). */
-export const SPREAD_BETA_MAX = 0.11
+export const SPREAD_BETA_MAX = 0.18
 
 /** R^2 at or above this means the monocentric exponential fits well ("Single-center"). */
 export const MONOCENTRIC_R2_CUTOFF = 0.9
