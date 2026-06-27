@@ -56,7 +56,7 @@ describe('FeedbackButton (desktop)', () => {
   beforeEach(() => useFeedback().close())
 
   it('opens the feedback modal when clicked', async () => {
-    const wrapper = mount(FeedbackButton, { global: { stubs: { UButton: UButtonStub } } })
+    const wrapper = mount(FeedbackButton, { global: { stubs: { UIcon: true } } })
     expect(useFeedback().isOpen.value).toBe(false)
 
     await wrapper.find('button').trigger('click')
@@ -65,7 +65,7 @@ describe('FeedbackButton (desktop)', () => {
   })
 
   it('is hidden on mobile breakpoints (max-sm:hidden) and fixed-positioned', () => {
-    const wrapper = mount(FeedbackButton, { global: { stubs: { UButton: UButtonStub } } })
+    const wrapper = mount(FeedbackButton, { global: { stubs: { UIcon: true } } })
     const classes = wrapper.find('button').classes()
     expect(classes).toContain('max-sm:hidden')
     expect(classes).toContain('fixed')
