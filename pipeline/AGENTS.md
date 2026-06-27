@@ -31,6 +31,10 @@ uv run python -m src.h3.load_h3_r8_to_psql
 # Radial (H3 only)
 uv run python -m src.radial.generate_radial_profiles
 
+# Climate & Energy (zero-download: reshapes already-extracted UCDB attributes)
+uv run python -m src.climate.build_city_climate          # ucdb_all.parquet -> city_climate.parquet
+uv run python -m src.web_export.generate_climate --local # -> climate_summary.json + climate_profile.json
+
 # Tiles
 uv run python -m src.tiles.generate_boundaries --local
 uv run python -m src.tiles.generate_grid_1km_outlines --local
@@ -44,6 +48,7 @@ uv run python -m src.web_export.generate_city_populations --source h3-r8 --local
 uv run python -m src.web_export.generate_city_populations --source grid-1km --local
 uv run python -m src.web_export.generate_radial_profiles --local
 uv run python -m src.web_export.generate_city_cells --local
+uv run python -m src.web_export.generate_climate --local
 
 # Analyze density outliers
 uv run python -m src.cities.density_outliers --source h3-r8
