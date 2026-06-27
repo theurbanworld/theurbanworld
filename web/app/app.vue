@@ -46,6 +46,9 @@ onMounted(() => {
       </NuxtLayout>
     </div>
 
+    <!-- Persistent desktop feedback entry point (hidden on mobile) -->
+    <FeedbackButton />
+
     <!-- Global modals — outside layouts so they're always available -->
     <InfoModal />
     <FeedbackModal />
