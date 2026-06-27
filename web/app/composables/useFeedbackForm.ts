@@ -73,8 +73,12 @@ export function useFeedbackForm() {
         }
       })
       status.value = 'success'
-    } catch {
+    } catch (err) {
       status.value = 'error'
+      // Surface the real cause for diagnosis (the UI stays generic). The thrown
+      // error carries the server status + statusMessage, e.g. "Feedback service
+      // is not configured" (500), "Verification failed" (403).
+      console.error('[feedback] submission failed:', err)
     } finally {
       // Turnstile tokens are single-use; clear so a retry re-solves (U5 risk).
       token.value = ''

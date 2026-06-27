@@ -51,9 +51,11 @@ export default defineEventHandler(async (event) => {
           await emailBinding.send(email)
           return { ok: true, status: 200 }
         } catch (err) {
-          // CF errors carry a .code (e.g. E_RATE_LIMIT_EXCEEDED). Log the code
-          // for diagnostics; never surface it to the client.
-          console.error('[feedback] email send failed:', (err as { code?: string })?.code)
+          // CF Email Service throws on send (e.g. unverified destination, or a
+          // `from` not on an Email-Routing domain). Log code + message for
+          // diagnostics (`wrangler tail`); never surface it to the client.
+          const e = err as { code?: string, message?: string }
+          console.error('[feedback] email send failed:', e?.code, e?.message)
           return { ok: false, status: 502 }
         }
       }
