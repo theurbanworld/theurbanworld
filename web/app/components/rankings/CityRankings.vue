@@ -9,11 +9,21 @@
 import type { YearEpoch } from '../../../types/h3'
 import { formatCompactNumber, formatDensity, formatArea, formatGrowthRate, formatGrowthAbs } from '~/utils/formatNumber'
 import { toAnnualRate, YEAR_EPOCHS } from '~/composables/useGlobalStats'
+import { isClimateStat, CLIMATE_STAT_KEYS } from '~/composables/useRankingFilters'
+import { useCityClimate } from '~/composables/useCityClimate'
+import { getMetricDescriptor } from '../../../types/climate'
+import { formatClimateValue } from '~/utils/climateFormat'
 
 const { activeStat, growthMode, countryFilter, sortDirection } = useRankingFilters()
 const { selectedYear } = useSelectedYear()
 const { allCities } = useCitiesIndex()
 const { getCityPopulationData } = useCityPopulations()
+const { loadSummary, getHeadline, climateCities } = useCityClimate()
+
+// Load the climate summary whenever a climate stat becomes active.
+watch(activeStat, (stat) => {
+  if (isClimateStat(stat)) loadSummary()
+}, { immediate: true })
 
 const displayCount = ref(100)
 
@@ -26,9 +36,39 @@ interface RankedCity {
   area: number
   growthRate: number | null
   growthAbs: number | null
+  climateValue: number | null
+}
+
+/** Build the ranked list for a climate headline stat, over the climate-city subset only. */
+function buildClimateRanked(): RankedCity[] {
+  const key = CLIMATE_STAT_KEYS[activeStat.value as keyof typeof CLIMATE_STAT_KEYS]
+  const subset = climateCities.value
+  const cities: RankedCity[] = []
+  for (const city of allCities.value) {
+    if (!subset.has(city.id)) continue
+    if (countryFilter.value && city.country !== countryFilter.value) continue
+    const value = getHeadline(city.id, key)
+    if (value == null) continue
+    cities.push({
+      id: city.id,
+      name: city.name,
+      country: city.country,
+      population: 0,
+      density: 0,
+      area: 0,
+      growthRate: null,
+      growthAbs: null,
+      climateValue: value
+    })
+  }
+  const asc = sortDirection.value === 'asc'
+  cities.sort((a, b) => asc ? a.climateValue! - b.climateValue! : b.climateValue! - a.climateValue!)
+  return cities
 }
 
 const rankedCities = computed<RankedCity[]>(() => {
+  if (isClimateStat(activeStat.value)) return buildClimateRanked()
+
   const cities: RankedCity[] = []
   const currentYear = selectedYear.value as YearEpoch
   const currentIndex = YEAR_EPOCHS.indexOf(currentYear)
@@ -58,7 +98,8 @@ const rankedCities = computed<RankedCity[]>(() => {
       density: popData.density_per_km2,
       area: popData.area_km2,
       growthRate,
-      growthAbs
+      growthAbs,
+      climateValue: null
     })
   }
 
@@ -80,8 +121,21 @@ const rankedCities = computed<RankedCity[]>(() => {
   return cities
 })
 
+const climateUnit = computed(() =>
+  isClimateStat(activeStat.value)
+    ? getMetricDescriptor(CLIMATE_STAT_KEYS[activeStat.value])?.unit ?? null
+    : null
+)
+
 const maxValue = computed(() => {
   if (!rankedCities.value.length) return 1
+  if (isClimateStat(activeStat.value)) {
+    let max = 0
+    for (const city of rankedCities.value) {
+      if (city.climateValue !== null) max = Math.max(max, city.climateValue)
+    }
+    return max || 1
+  }
   if (activeStat.value === 'growth') {
     const field = growthMode.value === 'rate' ? 'growthRate' as const : 'growthAbs' as const
     let max = 0
@@ -107,6 +161,9 @@ const hasMore = computed(() =>
 )
 
 function formatValue(city: RankedCity): string {
+  if (isClimateStat(activeStat.value)) {
+    return formatClimateValue(city.climateValue, climateUnit.value)
+  }
   switch (activeStat.value) {
     case 'density': return formatDensity(city.density)
     case 'area': return formatArea(city.area)
@@ -123,12 +180,16 @@ function growthValue(city: RankedCity): number | null {
 }
 
 function barPercent(city: RankedCity): string {
+  if (isClimateStat(activeStat.value)) {
+    if (city.climateValue === null) return '0%'
+    return `${(city.climateValue / maxValue.value) * 100}%`
+  }
   if (activeStat.value === 'growth') {
     const v = growthValue(city)
     if (v === null) return '0%'
     return `${(Math.abs(v) / maxValue.value) * 50}%`
   }
-  return `${(city[activeStat.value] / maxValue.value) * 100}%`
+  return `${(city[activeStat.value as 'population' | 'density' | 'area'] / maxValue.value) * 100}%`
 }
 
 function growthBarStyle(city: RankedCity): Record<string, string> {
@@ -164,6 +225,24 @@ watch([activeStat, growthMode, countryFilter, sortDirection], () => {
 
 <template>
   <div>
+    <!-- Climate coverage count -->
+    <p
+      v-if="isClimateStat(activeStat)"
+      data-testid="climate-ranking-count"
+      class="px-5 py-2 text-[11px] text-body/50 dark:text-cream/50"
+    >
+      {{ rankedCities.length.toLocaleString() }} cities with climate data
+    </p>
+
+    <!-- Empty state (e.g. country filter yields no climate-covered cities) -->
+    <p
+      v-if="isClimateStat(activeStat) && rankedCities.length === 0"
+      data-testid="climate-ranking-empty"
+      class="px-5 py-4 text-xs italic text-body/40 dark:text-cream/40"
+    >
+      No cities with climate data match this filter.
+    </p>
+
     <button
       v-for="(city, index) in displayedCities"
       :key="city.id"

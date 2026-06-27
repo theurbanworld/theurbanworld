@@ -6,8 +6,17 @@
  */
 
 import type { YearEpoch } from '../../types/h3'
+import { HEADLINE_KEYS, type HeadlineKey } from '../../types/climate'
+import { useCityClimate } from './useCityClimate'
 
-export type DistributionMetric = 'population' | 'density_per_km2' | 'area_km2'
+/** Population metrics rank over all cities; climate headline metrics rank over the climate subset. */
+export type DistributionMetric = 'population' | 'density_per_km2' | 'area_km2' | HeadlineKey
+
+const CLIMATE_METRIC_SET = new Set<string>(HEADLINE_KEYS)
+
+function isClimateMetric(m: DistributionMetric): m is HeadlineKey {
+  return CLIMATE_METRIC_SET.has(m)
+}
 
 export interface DistributionEntry {
   cityId: string
@@ -21,16 +30,28 @@ export function useDistributionData(
   const { populationsMap } = useCityPopulations()
   const { selectedYear } = useSelectedYear()
   const { getCityName } = useCitiesIndex()
+  const { summary: climateSummary } = useCityClimate()
 
   // Sorted distribution of all cities for this metric at the current epoch
   const sortedDistribution = computed((): DistributionEntry[] => {
-    const map = populationsMap.value
-    if (!map) return []
-
-    const epoch = selectedYear.value as YearEpoch
     const m = toValue(metric)
     const entries: DistributionEntry[] = []
 
+    // Climate headline metrics rank over the climate-city subset only.
+    if (isClimateMetric(m)) {
+      const summary = climateSummary.value
+      if (!summary) return []
+      for (const [id, headline] of Object.entries(summary)) {
+        const val = headline[m]
+        if (val != null && val > 0) entries.push({ cityId: id, value: val })
+      }
+      entries.sort((a, b) => a.value - b.value)
+      return entries
+    }
+
+    const map = populationsMap.value
+    if (!map) return []
+    const epoch = selectedYear.value as YearEpoch
     for (const [id, epochs] of map) {
       const val = epochs[epoch]?.[m]
       if (val != null && val > 0) {
