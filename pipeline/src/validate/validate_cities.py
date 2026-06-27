@@ -137,6 +137,29 @@ class RadialProfileSchema(DataFrameModel):
         coerce = True
 
 
+class ExponentialFitSchema(DataFrameModel):
+    """Schema for radial_fits_h3_r8.parquet - Standard Urban Model exponential fits.
+
+    Unfittable city-epochs (coastal/clipped/tiny) keep their row with null D0/beta/r2
+    and reliable=false (honest-null, KTD4). Reliable rows are guaranteed non-null
+    D0/beta/r2 by the compute stage's reliability rule; that cross-column invariant is
+    enforced separately in check_fit_reliability_consistency (Pandera field checks
+    cannot express conditional nullability).
+    """
+
+    city_id: str = Field(nullable=False)
+    epoch: int = Field(ge=1975, le=2030, nullable=False)
+    D0: float = Field(gt=0, nullable=True)  # null when unfittable
+    beta: float = Field(nullable=True)  # null when unfittable
+    r2: float = Field(le=1.0, nullable=True)  # null when unfittable; <= 1.0 by construction
+    n_rings: int = Field(ge=0, nullable=False)
+    reliable: bool = Field(nullable=False)
+
+    class Config:
+        strict = False
+        coerce = True
+
+
 VALID_SOURCES = ("h3-r8", "grid-1km")
 
 
@@ -300,6 +323,31 @@ def check_growth_regimes(tables: dict) -> list[str]:
 
     if invalid:
         warnings.append(f"growth: invalid growth_regime values: {invalid}")
+
+    return warnings
+
+
+def check_fit_reliability_consistency(tables: dict) -> list[str]:
+    """Check that reliable exponential fits carry non-null D0/beta/r2.
+
+    The compute stage guarantees this (a fit is only reliable when it produced
+    finite metrics), so any violation indicates a bug upstream.
+    """
+    warnings = []
+
+    if "fits" not in tables:
+        return warnings
+
+    fits = tables["fits"]
+    bad = fits.filter(
+        fits["reliable"] & (fits["D0"].isnull() | fits["beta"].isnull() | fits["r2"].isnull())
+    )
+    n_bad = bad.count().execute()
+
+    if n_bad > 0:
+        warnings.append(
+            f"fits: {n_bad} reliable rows with null D0/beta/r2 (compute stage should prevent this)"
+        )
 
     return warnings
 
@@ -671,9 +719,10 @@ def main(
         "peers": f"city_density_peers_{slug}.parquet",
     }
 
-    # Also validate radial profiles if they exist (H3 only)
+    # Also validate radial profiles and exponential fits if they exist (H3 only)
     radial_dir = get_processed_path("radial_profiles")
     radial_path = radial_dir / "radial_profiles_h3_r8.parquet"
+    fits_path = radial_dir / "radial_fits_h3_r8.parquet"
 
     tables = {}
     missing_files = []
@@ -692,6 +741,12 @@ def main(
     elif not output_json:
         print("  SKIP: radial_profiles_h3_r8.parquet (not found)")
 
+    # Load exponential fits if available
+    if fits_path.exists():
+        tables["fits"] = con.read_parquet(str(fits_path))
+    elif not output_json:
+        print("  SKIP: radial_fits_h3_r8.parquet (not found)")
+
     schemas = {
         "cities": CitySchema,
         "populations": CityPopulationSchema,
@@ -699,6 +754,7 @@ def main(
         "growth": CityGrowthSchema,
         "peers": CityDensityPeersSchema,
         "radial_profiles": RadialProfileSchema,
+        "fits": ExponentialFitSchema,
     }
 
     # Validate each table against its schema
@@ -762,6 +818,13 @@ def main(
     if count_warnings:
         all_quality_warnings["row_count_match"] = count_warnings
     for warn in count_warnings:
+        if not output_json:
+            print(f"  WARN: {warn}")
+
+    fit_warnings = check_fit_reliability_consistency(tables)
+    if fit_warnings:
+        all_quality_warnings["fit_reliability_consistency"] = fit_warnings
+    for warn in fit_warnings:
         if not output_json:
             print(f"  WARN: {warn}")
 
@@ -868,6 +931,7 @@ def main(
         + len(regime_warnings)
         + len(epoch_warnings)
         + len(count_warnings)
+        + len(fit_warnings)
         + sum(len(r.warnings) for r in results)
     )
     total_outliers = sum(len(v) for v in statistical_checks.values())

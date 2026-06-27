@@ -19,6 +19,7 @@ dependencies = [
     "polars>=1.0.0",
     "pandas>=2.2.0",
     "numpy>=1.26.0",
+    "scipy>=1.11.0",
     "pyarrow>=15.0.0",
     # Database
     "duckdb>=1.1.0",
@@ -70,6 +71,7 @@ merge-h3-timeseries = "src.h3.merge_h3_r8_timeseries:main"
 
 # Radial domain
 compute-radial = "src.radial.generate_radial_profiles:main"
+compute-exponential-fits = "src.radial.compute_exponential_fits:main"
 
 # Tiles domain
 generate-boundaries = "src.tiles.generate_boundaries:main"
