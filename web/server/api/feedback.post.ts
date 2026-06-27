@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
             method: 'POST',
             headers: {
               // Never logged — keeps the API key out of error output.
-              authorization: `Bearer ${config.resendApiKey}`,
+              'authorization': `Bearer ${config.resendApiKey}`,
               'content-type': 'application/json'
             },
             body: email

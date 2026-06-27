@@ -46,7 +46,8 @@ onMounted(() => {
       </NuxtLayout>
     </div>
 
-    <!-- Global modal — outside layouts so it's always available -->
+    <!-- Global modals — outside layouts so they're always available -->
     <InfoModal />
+    <FeedbackModal />
   </UApp>
 </template>
