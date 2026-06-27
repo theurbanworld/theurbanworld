@@ -8,11 +8,37 @@
  */
 
 import type { YearEpoch } from '../../../types/h3'
+import { useDataset } from '~/composables/useDataset'
+import {
+  COMPACTNESS_LABEL_VALUES,
+  STRUCTURE_LABEL_VALUES,
+  type CompactnessLabel,
+  type StructureLabel
+} from '~/utils/urbanModelLabels'
 
-const { countryFilter, sortDirection } = useRankingFilters()
+const { countryFilter, sortDirection, compactnessFilter, structureFilter } = useRankingFilters()
 const { selectedYear } = useSelectedYear()
 const { allCities } = useCitiesIndex()
 const { getCityPopulationData } = useCityPopulations()
+
+// City-type chips only apply where the fit data exists (radial dataset).
+const { hasFeatureComputed } = useDataset()
+const showCityType = hasFeatureComputed('radialProfiles')
+
+const compactnessOptions = COMPACTNESS_LABEL_VALUES
+const structureOptions = STRUCTURE_LABEL_VALUES
+
+function toggleCompactness(label: CompactnessLabel) {
+  compactnessFilter.value = compactnessFilter.value.includes(label)
+    ? compactnessFilter.value.filter(l => l !== label)
+    : [...compactnessFilter.value, label]
+}
+
+function toggleStructure(label: StructureLabel) {
+  structureFilter.value = structureFilter.value.includes(label)
+    ? structureFilter.value.filter(l => l !== label)
+    : [...structureFilter.value, label]
+}
 
 // Unique countries sorted
 const countries = computed(() => {
@@ -55,6 +81,37 @@ const cityCount = computed(() => {
         {{ c }}
       </option>
     </select>
+
+    <!-- City-type filter (Standard Urban Model) -->
+    <div
+      v-if="showCityType"
+      data-testid="city-type-filter"
+      class="mt-2 flex flex-wrap items-center gap-1"
+    >
+      <button
+        v-for="label in compactnessOptions"
+        :key="label"
+        class="px-2 py-0.5 text-[11px] rounded-full border transition-colors cursor-pointer"
+        :class="compactnessFilter.includes(label)
+          ? 'bg-ink-700 text-white border-ink-700 dark:bg-ink-400 dark:text-ink-950 dark:border-ink-400'
+          : 'text-body/60 dark:text-cream/60 border-ink-200/60 dark:border-ink-800/60 hover:bg-ink-100/50 dark:hover:bg-ink-900/30'"
+        @click="toggleCompactness(label)"
+      >
+        {{ label }}
+      </button>
+      <span class="mx-1 text-ink-200 dark:text-ink-800">·</span>
+      <button
+        v-for="label in structureOptions"
+        :key="label"
+        class="px-2 py-0.5 text-[11px] rounded-full border transition-colors cursor-pointer"
+        :class="structureFilter.includes(label)
+          ? 'bg-ink-700 text-white border-ink-700 dark:bg-ink-400 dark:text-ink-950 dark:border-ink-400'
+          : 'text-body/60 dark:text-cream/60 border-ink-200/60 dark:border-ink-800/60 hover:bg-ink-100/50 dark:hover:bg-ink-900/30'"
+        @click="toggleStructure(label)"
+      >
+        {{ label }}
+      </button>
+    </div>
 
     <!-- Count + sort toggle -->
     <div class="flex items-center justify-between mt-2">
