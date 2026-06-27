@@ -11,3 +11,7 @@ directory = ".output/public"
 binding = "DB"
 database_name = "theurbanworld-db"
 database_id = "64e8c8c4-5619-4c17-8ef6-41dec33dacaf"
+
+# Cloudflare Email Service — the feedback widget sends via this binding (env.EMAIL).
+[[send_email]]
+name = "EMAIL"

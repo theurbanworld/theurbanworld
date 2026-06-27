@@ -4,10 +4,11 @@
 # All keys are NUXT_-prefixed so useRuntimeConfig() picks them up under the
 # cloudflare_module preset (see web/nuxt.config.ts runtimeConfig).
 
-# Resend (https://resend.com) — transactional email for the feedback widget.
-# The sending domain for NUXT_RESEND_FROM must be verified in Resend first.
-NUXT_RESEND_API_KEY="re_xxxxxxxxxxxxxxxxxxxxxxxx"
-NUXT_RESEND_FROM="Urban World Feedback <feedback@theurban.world>"
+# Feedback widget delivery via the Cloudflare Email Service.
+# The email send itself uses the `send_email` binding named EMAIL (see
+# wrangler.toml) — no API key here. The `from` address must be a verified
+# sender on a domain onboarded to the Email Service.
+NUXT_FEEDBACK_FROM_EMAIL="Urban World Feedback <feedback@theurban.world>"
 NUXT_FEEDBACK_TO_EMAIL="you@example.com"
 
 # Cloudflare Turnstile — secret key is server-only; site key is public.

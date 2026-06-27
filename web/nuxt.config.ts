@@ -54,10 +54,10 @@ export default defineNuxtConfig({
     r2SecretAccessKey: '',
     r2Bucket: '',
 
-    // Feedback widget — server-only secrets/config for Resend delivery.
-    // Overridden by NUXT_RESEND_API_KEY / NUXT_RESEND_FROM / NUXT_FEEDBACK_TO_EMAIL.
-    resendApiKey: '',
-    resendFrom: '',
+    // Feedback widget — sender/recipient for Cloudflare Email Service delivery
+    // (the EMAIL binding handles auth, so no API key here). Overridden by
+    // NUXT_FEEDBACK_FROM_EMAIL / NUXT_FEEDBACK_TO_EMAIL.
+    feedbackFromEmail: '',
     feedbackToEmail: '',
 
     // Client-side (exposed via useRuntimeConfig)

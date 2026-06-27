@@ -2,9 +2,9 @@
  * Feedback submission core logic.
  *
  * Pure, dependency-injected request handling so the validate → verify → send
- * flow can be unit-tested without Nitro, Turnstile, or Resend. The Nitro
- * handler (server/api/feedback.post.ts) is a thin wrapper that supplies the
- * real Turnstile verify and Resend send implementations.
+ * flow can be unit-tested without Nitro, Turnstile, or the email service. The
+ * Nitro handler (server/api/feedback.post.ts) is a thin wrapper that supplies
+ * the real Turnstile verify and Cloudflare Email Service send implementations.
  */
 
 import type { FeedbackContext } from '../../types/feedback'
@@ -30,24 +30,25 @@ export interface FeedbackPayload {
   context?: FeedbackContext
 }
 
-export interface ResendEmail {
+/** Shape matches the Cloudflare Email Service send() structured message. */
+export interface FeedbackEmail {
   from: string
   to: string
-  reply_to: string
+  replyTo: string
   subject: string
   text: string
 }
 
 export interface FeedbackConfig {
-  resendFrom: string
-  feedbackToEmail: string
+  fromEmail: string
+  toEmail: string
 }
 
 export interface FeedbackDeps {
   /** Resolve true only when the Turnstile token verifies (R13). */
   verifyToken: (token: string) => Promise<boolean>
   /** Deliver the email; ok=false signals a delivery failure. */
-  sendEmail: (email: ResendEmail) => Promise<{ ok: boolean, status: number }>
+  sendEmail: (email: FeedbackEmail) => Promise<{ ok: boolean, status: number }>
 }
 
 export interface FeedbackResult {
@@ -158,7 +159,7 @@ export function buildEmailText(payload: FeedbackPayload): string {
 }
 
 /**
- * Validate → verify Turnstile → send via Resend. Returns a status + body
+ * Validate → verify Turnstile → send the email. Returns a status + body
  * instead of throwing, so both the handler and tests consume one shape.
  */
 export async function handleFeedbackRequest(
@@ -184,10 +185,10 @@ export async function handleFeedbackRequest(
     return { status: 403, body: { error: 'Verification failed' } }
   }
 
-  const email: ResendEmail = {
-    from: config.resendFrom,
-    to: config.feedbackToEmail,
-    reply_to: payload.email,
+  const email: FeedbackEmail = {
+    from: config.fromEmail,
+    to: config.toEmail,
+    replyTo: payload.email,
     subject: buildSubject(payload.category, payload.message),
     text: buildEmailText(payload)
   }

@@ -2,28 +2,44 @@
  * POST /api/feedback
  *
  * Validates a feedback submission, verifies its Cloudflare Turnstile token,
- * and emails it to the maintainer via Resend. No persistence — the inbox is
- * the system of record. Core flow lives in server/utils/feedback.ts; this
- * handler just supplies the real Turnstile + Resend implementations and reads
- * config/secrets via useRuntimeConfig (KTD5).
+ * and emails it to the maintainer via the Cloudflare Email Service `send_email`
+ * binding (configured as `EMAIL` in wrangler.toml). No persistence — the inbox
+ * is the system of record. Core flow lives in server/utils/feedback.ts; this
+ * handler supplies the real Turnstile verify + email send and reads config via
+ * useRuntimeConfig (KTD5).
  */
+
+/** Minimal shape of the Cloudflare Email Service `send_email` binding. */
+interface SendEmailBinding {
+  send: (message: {
+    from: string
+    to: string
+    replyTo?: string
+    subject: string
+    text?: string
+    html?: string
+  }) => Promise<{ messageId: string }>
+}
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const config = useRuntimeConfig(event)
 
-  // Operator misconfiguration (missing secrets) — fail loudly server-side
-  // rather than silently 502-ing every submission at the Resend call.
-  if (!config.resendApiKey || !config.resendFrom || !config.feedbackToEmail) {
-    console.error('[feedback] missing Resend configuration; submission rejected')
+  const cloudflare = event.context.cloudflare as { env?: Record<string, unknown> } | undefined
+  const emailBinding = cloudflare?.env?.EMAIL as SendEmailBinding | undefined
+
+  // Operator misconfiguration (missing binding or sender/recipient) — fail
+  // loudly server-side rather than silently 502-ing every submission.
+  if (!emailBinding || !config.feedbackFromEmail || !config.feedbackToEmail) {
+    console.error('[feedback] email service not configured; submission rejected')
     throw createError({ statusCode: 500, statusMessage: 'Feedback service is not configured' })
   }
 
   const result = await handleFeedbackRequest(
     body,
     {
-      resendFrom: config.resendFrom,
-      feedbackToEmail: config.feedbackToEmail
+      fromEmail: config.feedbackFromEmail,
+      toEmail: config.feedbackToEmail
     },
     {
       verifyToken: async (token) => {
@@ -32,23 +48,13 @@ export default defineEventHandler(async (event) => {
       },
       sendEmail: async (email) => {
         try {
-          await $fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            // Bound the wait so a slow Resend can't tie up the Worker.
-            timeout: 10000,
-            headers: {
-              // Never logged — keeps the API key out of error output.
-              'authorization': `Bearer ${config.resendApiKey}`,
-              'content-type': 'application/json'
-            },
-            body: email
-          })
+          await emailBinding.send(email)
           return { ok: true, status: 200 }
         } catch (err) {
-          const status = (err as { statusCode?: number, status?: number })?.statusCode
-            ?? (err as { status?: number })?.status
-            ?? 502
-          return { ok: false, status }
+          // CF errors carry a .code (e.g. E_RATE_LIMIT_EXCEEDED). Log the code
+          // for diagnostics; never surface it to the client.
+          console.error('[feedback] email send failed:', (err as { code?: string })?.code)
+          return { ok: false, status: 502 }
         }
       }
     }

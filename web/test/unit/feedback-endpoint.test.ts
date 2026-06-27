@@ -15,7 +15,7 @@ import {
   isValidEmail
 } from '../../server/utils/feedback'
 
-const CONFIG = { resendFrom: 'feedback@theurban.world', feedbackToEmail: 'maintainer@example.com' }
+const CONFIG = { fromEmail: 'feedback@theurban.world', toEmail: 'maintainer@example.com' }
 
 function validBody(overrides: Record<string, unknown> = {}) {
   return {
@@ -36,7 +36,7 @@ function deps(opts: { verify?: boolean, send?: { ok: boolean, status: number } }
 }
 
 describe('handleFeedbackRequest', () => {
-  // Covers AE4 — valid submission delivers with category in subject + reply_to.
+  // Covers AE4 — valid submission delivers with category in subject + replyTo.
   it('happy path: verifies, sends once, returns 200', async () => {
     const d = deps()
     const res = await handleFeedbackRequest(validBody(), CONFIG, d)
@@ -48,7 +48,8 @@ describe('handleFeedbackRequest', () => {
 
     const email = d.sendEmail.mock.calls[0]![0]
     expect(email.to).toBe('maintainer@example.com')
-    expect(email.reply_to).toBe('reporter@example.com')
+    expect(email.from).toBe('feedback@theurban.world')
+    expect(email.replyTo).toBe('reporter@example.com')
     expect(email.subject).toContain('Data issue')
   })
 
@@ -159,13 +160,14 @@ describe('handleFeedbackRequest', () => {
     expect(d.verifyToken).not.toHaveBeenCalled()
   })
 
-  it('returns 502 without leaking details when Resend fails', async () => {
+  it('returns 502 with a generic message when the email send fails', async () => {
     const d = deps({ send: { ok: false, status: 422 } })
     const res = await handleFeedbackRequest(validBody(), CONFIG, d)
 
     expect(res.status).toBe(502)
-    expect(JSON.stringify(res.body)).not.toContain('resend')
-    expect(JSON.stringify(res.body)).not.toContain('Bearer')
+    // No internal/provider detail leaks to the client.
+    expect(JSON.stringify(res.body)).not.toMatch(/E_[A-Z_]+/)
+    expect(JSON.stringify(res.body)).not.toContain('422')
   })
 })
 
