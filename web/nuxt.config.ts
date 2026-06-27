@@ -8,8 +8,15 @@ export default defineNuxtConfig({
     '@nuxt/content',
     '@nuxt/eslint',
     '@nuxt/ui',
-    '@nuxt/fonts'
+    '@nuxt/fonts',
+    '@nuxtjs/turnstile'
   ],
+
+  // Cloudflare Turnstile — site key is public; the secret key is read
+  // server-side from runtimeConfig.turnstile.secretKey (NUXT_TURNSTILE_SECRET_KEY).
+  turnstile: {
+    siteKey: ''
+  },
 
   components: [
     {
@@ -52,6 +59,12 @@ export default defineNuxtConfig({
     r2AccessKeyId: '',
     r2SecretAccessKey: '',
     r2Bucket: '',
+
+    // Feedback widget — server-only secrets/config for Resend delivery.
+    // Overridden by NUXT_RESEND_API_KEY / NUXT_RESEND_FROM / NUXT_FEEDBACK_TO_EMAIL.
+    resendApiKey: '',
+    resendFrom: '',
+    feedbackToEmail: '',
 
     // Client-side (exposed via useRuntimeConfig)
     public: {
