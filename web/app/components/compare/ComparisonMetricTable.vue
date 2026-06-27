@@ -9,7 +9,7 @@
 import { useCityStats } from '~/composables/useCityStats'
 import { useCityClimate } from '~/composables/useCityClimate'
 import { CITY_A_COLOR, CITY_B_COLOR } from '~/utils/comparisonColors'
-import { headlineMetrics } from '../../../types/climate'
+import { headlineMetrics, type HeadlineKey } from '../../../types/climate'
 import { formatClimateValue } from '~/utils/climateFormat'
 
 const props = defineProps<{
@@ -64,8 +64,8 @@ const populationMetrics = computed<MetricRow[]>(() => [
 const climateMetrics = computed<MetricRow[]>(() => {
   const rows: MetricRow[] = []
   for (const metric of headlineMetrics()) {
-    const a = getHeadline(props.cityIdA, metric.key) ?? null
-    const b = getHeadline(props.cityIdB, metric.key) ?? null
+    const a = getHeadline(props.cityIdA, metric.key as HeadlineKey) ?? null
+    const b = getHeadline(props.cityIdB, metric.key as HeadlineKey) ?? null
     if (a === null && b === null) continue
     rows.push({
       label: metric.label,

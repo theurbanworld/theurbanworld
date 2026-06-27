@@ -24,7 +24,7 @@ function r2Url(runtimeConfig: ReturnType<typeof useRuntimeConfig>, file: string)
 
 async function fetchOrEmpty<T extends object>(url: string, empty: T): Promise<T> {
   try {
-    return await $fetch<T>(url)
+    return (await $fetch(url)) as T
   } catch (e: unknown) {
     // 404/empty degrades to empty, not error — data may not be deployed yet.
     if (e && typeof e === 'object' && 'statusCode' in e && e.statusCode === 404) {
