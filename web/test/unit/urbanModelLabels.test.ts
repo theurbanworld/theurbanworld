@@ -15,7 +15,8 @@ import {
   compactnessLabel,
   structureLabel,
   classifyFit,
-  betaBarFraction
+  betaBarFraction,
+  fitBadgeState
 } from '../../app/utils/urbanModelLabels'
 
 describe('compactnessLabel', () => {
@@ -96,6 +97,21 @@ describe('classifyFit', () => {
       compactness: COMPACTNESS_LABELS.COMPACT,
       structure: null
     })
+  })
+})
+
+describe('fitBadgeState', () => {
+  it('returns loading when no fit entry exists (pending or absent), not unreliable', () => {
+    expect(fitBadgeState(null)).toBe('loading')
+    expect(fitBadgeState(undefined)).toBe('loading')
+  })
+
+  it('returns unreliable for a reliable:false entry', () => {
+    expect(fitBadgeState({ reliable: false })).toBe('unreliable')
+  })
+
+  it('returns reliable for a reliable:true entry', () => {
+    expect(fitBadgeState({ reliable: true })).toBe('reliable')
   })
 })
 

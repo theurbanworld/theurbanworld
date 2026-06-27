@@ -87,6 +87,20 @@ export function structureLabel(r2: number | null | undefined): StructureLabel | 
     : STRUCTURE_LABELS.MULTI_CENTERED
 }
 
+/**
+ * The three explicit badge states, kept distinct so a still-loading fit (null) is
+ * never confused with an unreliable one:
+ *   - 'loading'    — no entry yet (fetch pending or city-epoch absent): placeholder, no note
+ *   - 'unreliable' — entry present, reliable === false: honest-null note
+ *   - 'reliable'   — entry present, reliable === true: show both labels
+ */
+export type FitBadgeState = 'loading' | 'unreliable' | 'reliable'
+
+export function fitBadgeState(fit: { reliable: boolean } | null | undefined): FitBadgeState {
+  if (!fit) return 'loading'
+  return fit.reliable ? 'reliable' : 'unreliable'
+}
+
 /** Both axes at once. Either field is null when its input is missing. */
 export function classifyFit(
   beta: number | null | undefined,
