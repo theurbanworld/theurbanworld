@@ -1,9 +1,19 @@
-ignoredBuiltDependencies:
-  - '@parcel/watcher'
-  - '@tailwindcss/oxide'
-  - esbuild
-  - unrs-resolver
-  - vue-demi
-
-onlyBuiltDependencies:
-  - '@vaadin/vaadin-usage-statistics'
+# Build-script approvals (pnpm 10.28+ / v11 `allowBuilds` format, which replaced
+# onlyBuiltDependencies / ignoredBuiltDependencies). pnpm refuses to install
+# until every dependency that has an install/build script is explicitly allowed
+# (true) or denied (false) here.
+#
+# better-sqlite3 is the only dependency that must compile from source —
+# @nuxt/content's local D1 database needs its native binding. Everything else
+# ships working prebuilt binaries (or is telemetry), so its build script is
+# denied to keep installs fast and non-interactive.
+allowBuilds:
+  better-sqlite3: true
+  '@parcel/watcher': false
+  '@tailwindcss/oxide': false
+  '@vaadin/vaadin-usage-statistics': false
+  esbuild: false
+  sharp: false
+  unrs-resolver: false
+  vue-demi: false
+  workerd: false

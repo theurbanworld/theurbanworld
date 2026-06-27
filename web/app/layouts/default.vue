@@ -56,7 +56,7 @@ function handleCityClose() {
         <CityRankings v-if="isRankingsRoute" />
         <div
           v-else-if="selectedCityId"
-          class="p-5"
+          class="px-5 pt-2 pb-5"
         >
           <CityInfoPanel
             :city-id="selectedCityId"

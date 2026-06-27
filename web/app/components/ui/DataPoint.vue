@@ -6,37 +6,18 @@
     ]"
   >
     <!-- Label row -->
-    <div class="flex items-baseline justify-between">
+    <div class="flex items-center justify-between gap-2">
       <span
         data-testid="datapoint-label"
-        class="text-sm text-body/70 dark:text-cream/70"
+        class="text-xs font-semibold uppercase tracking-wider text-body/60 dark:text-cream/60"
       >
         {{ label }}
       </span>
-      <div
-        v-if="toggleLabelA"
-        class="flex gap-2"
-      >
-        <button
-          class="text-[10px] font-mono transition-colors cursor-pointer"
-          :class="chartMode === 'a'
-            ? 'text-ink-600 dark:text-ink-400'
-            : 'text-body/30 dark:text-cream/30 hover:text-body/50 dark:hover:text-cream/50'"
-          @click="chartMode = 'a'"
-        >
-          {{ toggleLabelA }}
-        </button>
-        <button
-          class="text-[10px] font-mono transition-colors cursor-pointer"
-          :class="chartMode === 'b'
-            ? 'text-ink-600 dark:text-ink-400'
-            : 'text-body/30 dark:text-cream/30 hover:text-body/50 dark:hover:text-cream/50'"
-          @click="chartMode = 'b'"
-        >
-          {{ toggleLabelB }}
-        </button>
-      </div>
+      <slot name="header-action" />
     </div>
+
+    <!-- Optional content directly under the header (e.g. legend) -->
+    <slot name="subheader" />
 
     <!-- Value row with optional trend indicator -->
     <div class="flex items-center gap-2">
@@ -117,14 +98,46 @@
     </template>
     <slot v-else />
 
-    <!-- Source link -->
-    <span
-      data-testid="datapoint-source"
-      class="text-xs text-body/50 dark:text-cream/50 hover:text-ink-600 dark:hover:text-ink-400 cursor-pointer transition-colors"
-      @click="onSourceClick"
-    >
-      {{ sourceLabel || 'Source' }}
-    </span>
+    <!-- Source link + chart toggle -->
+    <div class="flex items-baseline justify-between gap-2">
+      <span
+        data-testid="datapoint-source"
+        class="text-xs text-body/50 dark:text-cream/50 hover:text-ink-600 dark:hover:text-ink-400 cursor-pointer transition-colors"
+        @click="onSourceClick"
+      >
+        {{ sourceLabel || 'Source' }}
+      </span>
+      <div
+        v-if="toggleLabelA"
+        class="flex gap-2"
+      >
+        <button
+          class="text-[10px] font-mono transition-colors cursor-pointer"
+          :class="chartMode === 'a'
+            ? 'text-ink-600 dark:text-ink-400'
+            : 'text-body/30 dark:text-cream/30 hover:text-body/50 dark:hover:text-cream/50'"
+          @click="chartMode = 'a'"
+        >
+          {{ toggleLabelA }}
+        </button>
+        <!-- Static connector (e.g. "vs") — never highlighted -->
+        <span
+          v-if="toggleSeparator"
+          class="text-[10px] font-mono text-body/30 dark:text-cream/30"
+        >
+          {{ toggleSeparator }}
+        </span>
+        <button
+          class="text-[10px] font-mono transition-colors cursor-pointer"
+          :class="chartMode === 'b'
+            ? 'text-ink-600 dark:text-ink-400'
+            : 'text-body/30 dark:text-cream/30 hover:text-body/50 dark:hover:text-cream/50'"
+          @click="chartMode = 'b'"
+        >
+          {{ toggleLabelB }}
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -168,8 +181,10 @@ interface Props {
   contentPath?: string
   /** Label for chart toggle option A (e.g., 'over time'). Enables toggle when set. */
   toggleLabelA?: string
-  /** Label for chart toggle option B (e.g., 'vs all cities') */
+  /** Label for chart toggle option B (e.g., 'all cities') */
   toggleLabelB?: string
+  /** Static connector shown between the two toggles (e.g., 'vs') — never highlighted */
+  toggleSeparator?: string
 }
 
 const props = defineProps<Props>()

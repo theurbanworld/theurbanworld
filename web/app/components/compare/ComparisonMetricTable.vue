@@ -77,15 +77,15 @@ function isLarger(rawA: number, rawB: number, side: 'A' | 'B'): boolean {
     <!-- Metric rows -->
     <div
       v-else
-      class="space-y-2"
+      class="divide-y divide-border/30 dark:divide-border/20"
     >
       <div
         v-for="metric in metrics"
         :key="metric.label"
-        class="grid grid-cols-[auto_1fr_1fr] gap-x-3 items-baseline"
+        class="grid grid-cols-[auto_1fr_1fr] gap-x-3 items-baseline py-2"
       >
         <!-- Row label -->
-        <span class="text-xs text-body/60 dark:text-cream/60 w-16">
+        <span class="text-xs font-semibold uppercase tracking-wider text-body/60 dark:text-cream/60 w-20">
           {{ metric.label }}
         </span>
 

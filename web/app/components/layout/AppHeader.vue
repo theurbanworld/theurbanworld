@@ -92,6 +92,7 @@ const route = useRoute()
         >
           {{ link.label }}
         </NuxtLink>
+        <DarkModeToggle />
       </nav>
     </div>
 

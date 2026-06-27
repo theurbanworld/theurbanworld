@@ -49,7 +49,7 @@ watch([() => props.cityIdA, () => props.cityIdB], () => setComparisonRadialActiv
   <div class="p-5 flex flex-col gap-5">
     <!-- Column headers (city names with identity color dots) -->
     <div class="grid grid-cols-[auto_1fr_1fr] gap-x-3 items-center">
-      <span class="w-16" />
+      <span class="w-20" />
       <button
         class="flex items-center justify-end gap-1.5 cursor-pointer rounded px-1 -mx-1
                hover:bg-sand-100/60 dark:hover:bg-forest-900/30 transition-colors"
@@ -94,7 +94,7 @@ watch([() => props.cityIdA, () => props.cityIdB], () => setComparisonRadialActiv
 
     <!-- Population sparkline overlay -->
     <div class="flex flex-col gap-1">
-      <h3 class="text-xs font-medium text-body/70 dark:text-cream/70">
+      <h3 class="text-xs font-semibold uppercase tracking-wider text-body/60 dark:text-cream/60">
         Population
       </h3>
       <EpochSparkline
@@ -112,7 +112,7 @@ watch([() => props.cityIdA, () => props.cityIdB], () => setComparisonRadialActiv
 
     <!-- Density sparkline overlay -->
     <div class="flex flex-col gap-1">
-      <h3 class="text-xs font-medium text-body/70 dark:text-cream/70">
+      <h3 class="text-xs font-semibold uppercase tracking-wider text-body/60 dark:text-cream/60">
         Density
       </h3>
       <EpochSparkline
@@ -130,7 +130,7 @@ watch([() => props.cityIdA, () => props.cityIdB], () => setComparisonRadialActiv
 
     <!-- Area sparkline overlay -->
     <div class="flex flex-col gap-1">
-      <h3 class="text-xs font-medium text-body/70 dark:text-cream/70">
+      <h3 class="text-xs font-semibold uppercase tracking-wider text-body/60 dark:text-cream/60">
         Area
       </h3>
       <EpochSparkline
@@ -147,10 +147,10 @@ watch([() => props.cityIdA, () => props.cityIdB], () => setComparisonRadialActiv
     </div>
 
     <!-- Radial density profile -->
-    <div class="border-t border-border/30 dark:border-border/20 pt-4 flex flex-col gap-1">
+    <div class="flex flex-col gap-1">
       <div class="flex items-center justify-between mb-2">
         <div class="flex items-center gap-1.5">
-          <h3 class="text-sm font-medium text-forest-700 dark:text-forest-300">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-body/60 dark:text-cream/60">
             Radial Profile
           </h3>
           <button

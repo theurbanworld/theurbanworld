@@ -209,12 +209,19 @@ watch([radialLayer, populationLayer], ([radial, population]) => {
   setLayers(layers)
 })
 
-// Toggle boundary layer visibility when overlay layers are active
+// Toggle boundary layer visibility when overlay layers are active.
+// When the population layer is active (and radial is not), keep the city
+// outline visible so it frames the population numbers — the population layer
+// uses beforeId to render beneath this line. The fill pattern and labels are
+// still hidden to avoid clutter.
 watch([isRadialLayerActive, isPopulationLayerActive], ([radialActive, popActive]) => {
   const mapInstance = map.value
   if (!mapInstance) return
-  const visibility = (radialActive || popActive) ? 'none' : 'visible'
+  const anyActive = radialActive || popActive
+  const keepOutline = popActive && !radialActive
   for (const layerId of BOUNDARY_LAYERS) {
+    const keepVisible = layerId === 'city-boundaries-line' && keepOutline
+    const visibility = (anyActive && !keepVisible) ? 'none' : 'visible'
     if (mapInstance.getLayer(layerId)) {
       mapInstance.setLayoutProperty(layerId, 'visibility', visibility)
     }
