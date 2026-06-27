@@ -92,9 +92,11 @@
   --color-dark-data: #C8C0B5;
 }
 
-/* Prose heading typography — use Crimson Pro for content pages */
+/* Prose heading typography — use Crimson Pro for content pages.
+   scroll-margin-top leaves breathing room when jumping in from the TOC. */
 .prose :is(h1, h2, h3, h4) {
   font-family: var(--font-heading);
+  scroll-margin-top: 2rem;
 }
 
 /* Dark mode variable overrides */

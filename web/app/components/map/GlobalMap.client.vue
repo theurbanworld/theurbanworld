@@ -97,7 +97,11 @@ const mapContainer = ref<HTMLElement | null>(null)
 
 // Initialize MapLibre map (includes city boundaries layer)
 const { map, isLoading: isMapLoading, error: mapError } = useMap({
-  container: mapContainer as ShallowRef<HTMLElement | null>
+  container: mapContainer as ShallowRef<HTMLElement | null>,
+  // Center selected cities within the map section itself. The EyebrowPanel
+  // only covers the top-right corner, so reserving the full right edge would
+  // bias the city toward the viewport centre (behind the left sidebar).
+  rightPanelWidth: 0
 })
 
 // Initialize deck.gl overlay (waits for map to be ready)
@@ -209,12 +213,19 @@ watch([radialLayer, populationLayer], ([radial, population]) => {
   setLayers(layers)
 })
 
-// Toggle boundary layer visibility when overlay layers are active
+// Toggle boundary layer visibility when overlay layers are active.
+// When the population layer is active (and radial is not), keep the city
+// outline visible so it frames the population numbers — the population layer
+// uses beforeId to render beneath this line. The fill pattern and labels are
+// still hidden to avoid clutter.
 watch([isRadialLayerActive, isPopulationLayerActive], ([radialActive, popActive]) => {
   const mapInstance = map.value
   if (!mapInstance) return
-  const visibility = (radialActive || popActive) ? 'none' : 'visible'
+  const anyActive = radialActive || popActive
+  const keepOutline = popActive && !radialActive
   for (const layerId of BOUNDARY_LAYERS) {
+    const keepVisible = layerId === 'city-boundaries-line' && keepOutline
+    const visibility = (anyActive && !keepVisible) ? 'none' : 'visible'
     if (mapInstance.getLayer(layerId)) {
       mapInstance.setLayoutProperty(layerId, 'visibility', visibility)
     }

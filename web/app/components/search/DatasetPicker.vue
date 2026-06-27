@@ -39,6 +39,13 @@ function viewDatasetInfo(contentPath: string) {
       </span>
     </button>
 
+    <template #close="{ ui }">
+      <CloseButton
+        :class="ui.close()"
+        aria-label="Close"
+      />
+    </template>
+
     <template #body>
       <div class="flex flex-col gap-3">
         <button

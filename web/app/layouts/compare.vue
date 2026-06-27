@@ -61,20 +61,10 @@ function goToRankings() {
             <h2 class="text-4xl font-bold font-heading text-forest-700 dark:text-forest-300">
               Comparison
             </h2>
-            <button
-              class="shrink-0 p-1 rounded-md cursor-pointer
-                   text-body/50 dark:text-cream/50
-                   hover:bg-forest-100/50 dark:hover:bg-forest-900/30
-                   hover:text-forest-700 dark:hover:text-forest-300
-                   transition-colors"
+            <CloseButton
               aria-label="Close comparison"
               @click="goToRankings"
-            >
-              <UIcon
-                name="i-lucide-x"
-                class="w-4 h-4"
-              />
-            </button>
+            />
           </div>
         </template>
         <slot />

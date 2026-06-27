@@ -18,7 +18,7 @@ const { isExpanded, toggle } = useGlobalPopulationPanel()
     :title="isExpanded ? 'Hide global stats' : 'Show global stats'"
     @click="toggle"
   >
-    <span class="text-[10px] leading-tight text-body/50 dark:text-cream/50">World Population</span>
+    <span class="text-[10px] font-semibold uppercase tracking-wider leading-tight text-body/60 dark:text-cream/60">World Population</span>
     <span class="flex items-center gap-1">
       <span class="font-mono text-sm font-bold leading-tight text-ink-700 dark:text-ink-300 tracking-wide">
         {{ worldPopulation }}

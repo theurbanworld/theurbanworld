@@ -33,24 +33,31 @@ const parentLabel = computed(() => {
 <template>
   <UModal v-model:open="isOpen">
     <template #content>
-      <div class="p-6 max-h-[80vh] overflow-y-auto">
-        <ContentRenderer
-          v-if="content"
-          :value="content"
-          class="prose dark:prose-invert prose-sm max-w-none"
+      <div class="relative">
+        <CloseButton
+          class="absolute top-3 right-3 z-10"
+          aria-label="Close"
+          @click="close"
         />
+        <div class="p-6 max-h-[80vh] overflow-y-auto">
+          <ContentRenderer
+            v-if="content"
+            :value="content"
+            class="prose dark:prose-invert prose-sm max-w-none"
+          />
 
-        <div
-          v-if="parentPage"
-          class="mt-6 pt-4 border-t border-ink-200/40 dark:border-ink-800/40"
-        >
-          <NuxtLink
-            :to="parentPage"
-            class="text-sm text-ink-600 dark:text-ink-400 hover:underline"
-            @click="close"
+          <div
+            v-if="parentPage"
+            class="mt-6 pt-4 border-t border-ink-200/40 dark:border-ink-800/40"
           >
-            Read more on the {{ parentLabel }}
-          </NuxtLink>
+            <NuxtLink
+              :to="parentPage"
+              class="text-sm text-ink-600 dark:text-ink-400 hover:underline"
+              @click="close"
+            >
+              Read more on the {{ parentLabel }}
+            </NuxtLink>
+          </div>
         </div>
       </div>
     </template>

@@ -110,6 +110,9 @@ export function usePopulationLayer(options: UsePopulationLayerOptions = {}) {
 
     return new H3HexagonLayer({
       id: 'city-population-layer',
+      // Render beneath the city boundary line so the outline stays visible
+      // above the population numbers (interleaved deck.gl + MapLibre).
+      beforeId: 'city-boundaries-line',
       data: cityHexagons.value,
       getHexagon: (d: H3Hexagon) => d.h3Index,
       getFillColor: (d: H3Hexagon) => getColorForPopulation(d.population, darkMode),
