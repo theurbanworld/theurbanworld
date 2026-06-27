@@ -106,13 +106,8 @@ const svgPathB = ref('')
 svgPathA.value = await loadOutline(props.cityAOutlineUrl)
 svgPathB.value = await loadOutline(props.cityBOutlineUrl)
 
-// Small-caps emulation for the footer wordmark (Satori doesn't render
-// `font-variant: small-caps`), matching the web app header (AppLogo.vue).
-const WORDMARK = [
-  { lead: 'T', rest: 'HE' },
-  { lead: 'U', rest: 'RBAN' },
-  { lead: 'W', rest: 'ORLD' }
-]
+// Footer wordmark is an outlined SVG path (from ~/utils/ogWordmark) so Satori
+// renders real small-caps geometry rather than unsupported font-variant.
 </script>
 
 <template>
@@ -126,7 +121,7 @@ const WORDMARK = [
       fontFamily: 'Inter, sans-serif',
       position: 'relative',
       overflow: 'hidden',
-      padding: '28px 64px 104px'
+      padding: '96px 64px 40px'
     }"
   >
     <!-- Content row: city A (left), overlaid maps (center), city B (right) -->
@@ -326,11 +321,11 @@ const WORDMARK = [
       </div>
     </div>
 
-    <!-- Branding footer: icon + wordmark, centered at bottom -->
+    <!-- Brand lockup: icon + wordmark, centered at top -->
     <div
       :style="{
         position: 'absolute',
-        bottom: '52px',
+        top: '48px',
         left: '0px',
         width: '1200px',
         display: 'flex',
@@ -386,30 +381,15 @@ const WORDMARK = [
           />
         </g>
       </svg>
-      <div
-        :style="{
-          display: 'flex',
-          alignItems: 'baseline',
-          gap: '11px',
-          fontFamily: 'Crimson Pro, serif',
-          fontWeight: 600,
-          color: '#3A4856',
-          letterSpacing: '0.01em'
-        }"
+      <svg
+        :viewBox="WORDMARK_VIEWBOX"
+        :style="{ width: '328px', height: '28px' }"
       >
-        <div
-          v-for="w in WORDMARK"
-          :key="w.lead"
-          :style="{ display: 'flex', alignItems: 'baseline' }"
-        >
-          <div :style="{ fontSize: '46px', lineHeight: '1' }">
-            {{ w.lead }}
-          </div>
-          <div :style="{ fontSize: '34px', lineHeight: '1' }">
-            {{ w.rest }}
-          </div>
-        </div>
-      </div>
+        <path
+          :d="WORDMARK_PATH"
+          fill="#3A4856"
+        />
+      </svg>
     </div>
   </div>
 </template>

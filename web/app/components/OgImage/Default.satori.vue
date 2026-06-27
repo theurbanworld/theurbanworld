@@ -6,15 +6,8 @@
  * background, matching the city-page aesthetic. Uses Satori (edge-compatible).
  */
 
-// Small-caps emulation for the wordmark: Satori parses `font-variant: small-caps`
-// but doesn't render it, so we render each word as a full-size leading capital
-// followed by the rest as smaller capitals — matching the web app header
-// (AppLogo.vue: Crimson Pro semibold, small-caps).
-const WORDMARK = [
-  { lead: 'T', rest: 'HE' },
-  { lead: 'U', rest: 'RBAN' },
-  { lead: 'W', rest: 'ORLD' }
-]
+// Wordmark is an outlined SVG path (WORDMARK_PATH / WORDMARK_VIEWBOX from
+// ~/utils/ogWordmark) so Satori renders real small-caps geometry.
 </script>
 
 <template>
@@ -82,50 +75,24 @@ const WORDMARK = [
       </g>
     </svg>
 
-    <!-- Wordmark (large, small-caps emulation) -->
-    <div
-      :style="{
-        display: 'flex',
-        alignItems: 'baseline',
-        gap: '30px',
-        fontFamily: 'Crimson Pro, serif',
-        fontWeight: 600,
-        color: '#3A4856',
-        letterSpacing: '0.01em',
-        marginTop: '12px'
-      }"
+    <!-- Wordmark (large) — outlined Crimson Pro 600 small-caps -->
+    <svg
+      :viewBox="WORDMARK_VIEWBOX"
+      :style="{ width: '844px', height: '72px', marginTop: '12px' }"
     >
-      <div
-        v-for="w in WORDMARK"
-        :key="w.lead"
-        :style="{ display: 'flex', alignItems: 'baseline' }"
-      >
-        <div :style="{ fontSize: '120px', lineHeight: '1' }">
-          {{ w.lead }}
-        </div>
-        <div :style="{ fontSize: '88px', lineHeight: '1' }">
-          {{ w.rest }}
-        </div>
-      </div>
-    </div>
-
-    <!-- Divider -->
-    <div
-      :style="{
-        width: '140px',
-        height: '2px',
-        backgroundColor: 'rgba(58, 72, 86, 0.2)',
-        marginTop: '12px',
-        marginBottom: '14px'
-      }"
-    />
+      <path
+        :d="WORDMARK_PATH"
+        fill="#3A4856"
+      />
+    </svg>
 
     <!-- Tagline -->
     <div
       :style="{
-        fontSize: '30px',
+        fontSize: '36px',
         color: '#4A4238',
-        lineHeight: '1.4'
+        lineHeight: '1.4',
+        marginTop: '20px'
       }"
     >
       an observatory of urban complexity
