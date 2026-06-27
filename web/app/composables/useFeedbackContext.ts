@@ -10,16 +10,9 @@
  * parseComparisonParam helper in useComparisonState).
  */
 
-export interface FeedbackContext {
-  /** Always present — the page the user submitted from. */
-  url: string
-  /** Present only when a city is selected; name omitted if unresolved. */
-  city?: { id: string, name?: string }
-  /** Active dataset display label (e.g. "Urban World v1"). */
-  dataset?: string
-  /** Selected year epoch. */
-  epoch?: number
-}
+import type { FeedbackContext } from '../../types/feedback'
+
+export type { FeedbackContext }
 
 export interface FeedbackContextInput {
   url: string

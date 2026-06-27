@@ -7,7 +7,7 @@
  * real Turnstile verify and Resend send implementations.
  */
 
-import type { FeedbackContext } from '../../app/composables/useFeedbackContext'
+import type { FeedbackContext } from '../../types/feedback'
 
 /** Allowed feedback categories (R4). Server never trusts the client. */
 export const FEEDBACK_CATEGORIES = ['Data issue', 'Question', 'Suggestion', 'Other'] as const

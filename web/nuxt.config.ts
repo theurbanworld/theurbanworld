@@ -12,12 +12,6 @@ export default defineNuxtConfig({
     '@nuxtjs/turnstile'
   ],
 
-  // Cloudflare Turnstile — site key is public; the secret key is read
-  // server-side from runtimeConfig.turnstile.secretKey (NUXT_TURNSTILE_SECRET_KEY).
-  turnstile: {
-    siteKey: ''
-  },
-
   components: [
     {
       path: '~/components',
@@ -152,5 +146,11 @@ export default defineNuxtConfig({
     },
     defaultSitemapsChunkSize: 1000,
     cacheMaxAgeSeconds: 3600
+  },
+
+  // Cloudflare Turnstile — site key is public; the secret key is read
+  // server-side from runtimeConfig.turnstile.secretKey (NUXT_TURNSTILE_SECRET_KEY).
+  turnstile: {
+    siteKey: ''
   }
 })
