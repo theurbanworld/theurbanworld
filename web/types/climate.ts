@@ -97,18 +97,37 @@ export type HeadlineKey = (typeof HEADLINE_KEYS)[number]
 
 // --- Lens metadata (section grouping + order) --------------------------------
 
-export interface LensMeta {
-  lens: ClimateLens
-  label: string
+export const LENS_LABELS: Record<ClimateLens, string> = {
+  heat: 'Heat',
+  flood: 'Water & flood',
+  climate_type: 'Climate type & morphology',
+  energy: 'Energy resource',
+  footprint: 'Footprint',
+  greenness: 'Greenness & livability',
+  urban_form: 'Urban form',
+  hazard: 'Hazard occurrence'
 }
 
-/** Supporting lenses render as collapsible groups, in this order. */
-export const SUPPORTING_LENSES: LensMeta[] = [
-  { lens: 'climate_type', label: 'Climate type & morphology' },
-  { lens: 'greenness', label: 'Greenness & livability' },
-  { lens: 'urban_form', label: 'Urban form' },
-  { lens: 'hazard', label: 'Hazard occurrence' }
+/** Order in which supporting lens groups render below the headline four. */
+export const LENS_ORDER: ClimateLens[] = [
+  'heat',
+  'flood',
+  'climate_type',
+  'energy',
+  'footprint',
+  'greenness',
+  'urban_form',
+  'hazard'
 ]
+
+/**
+ * Supporting (non-headline) metrics for a lens. Excludes the headline metrics
+ * (they lead the section) and the sector fingerprint (composed inline under the
+ * per-capita CO₂ headline).
+ */
+export function supportingMetrics(lens: ClimateLens): ClimateMetricDescriptor[] {
+  return CLIMATE_METRICS.filter(m => m.lens === lens && !m.headline && !m.sectorFingerprint)
+}
 
 // --- Methodology content paths (mirror catalog) ------------------------------
 

@@ -30,6 +30,7 @@ const compareModalOpen = ref(false)
 const { hasFeatureComputed } = useDataset()
 const showRadialProfiles = hasFeatureComputed('radialProfiles')
 const showH3Overlay = hasFeatureComputed('h3Overlay')
+const showClimate = hasFeatureComputed('climate')
 
 // Get reactive city statistics
 const {
@@ -271,6 +272,13 @@ const {
       <!-- Radial Profile Section (Urban World only) -->
       <RadialProfileSection
         v-if="showRadialProfiles"
+        :city-id="cityId"
+        class="mt-4"
+      />
+
+      <!-- Climate & Energy Section (per-city coverage gated inside) -->
+      <ClimateEnergySection
+        v-if="showClimate"
         :city-id="cityId"
         class="mt-4"
       />
