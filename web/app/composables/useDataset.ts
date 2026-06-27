@@ -17,7 +17,9 @@ export const DATASETS: Dataset[] = [
     description: 'Curated dataset using H3 hexagonal grids with density outlier filtering and radial profiles. Our improved subset of GHSL for analysis and storytelling.',
     dataSource: 'h3-r8',
     slug: 'h3_r8',
-    features: ['radialProfiles', 'h3Overlay'],
+    // Climate attaches to the city, not the population grid — available on both datasets,
+    // gated per-city by hasCityClimate.
+    features: ['radialProfiles', 'h3Overlay', 'climate'],
     contentPath: '/data/urban-world-v1',
     epochs: YEAR_EPOCHS
   },
@@ -28,7 +30,7 @@ export const DATASETS: Dataset[] = [
     description: 'Raw Global Human Settlement Layer on its native 1 km grid. Explore the full dataset as published by the EU Joint Research Centre, including outliers.',
     dataSource: 'grid-1km',
     slug: 'grid_1km',
-    features: [],
+    features: ['climate'],
     contentPath: '/data/ghsl-r2024',
     epochs: YEAR_EPOCHS
   }
