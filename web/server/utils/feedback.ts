@@ -16,6 +16,12 @@ export type FeedbackCategory = (typeof FEEDBACK_CATEGORIES)[number]
 /** Pragmatic syntactic email check — local@domain.tld with no spaces. */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+/** Bound the message so a single submission can't bloat the email or burn quota. */
+const MAX_MESSAGE_LENGTH = 5000
+
+/** Cap for any single user-supplied context string rendered into the email. */
+const MAX_CONTEXT_FIELD = 2000
+
 export interface FeedbackPayload {
   category: FeedbackCategory
   message: string
@@ -71,6 +77,9 @@ export function validateFeedbackPayload(
   if (typeof message !== 'string' || message.trim().length === 0) {
     return { ok: false, error: 'Message is required' }
   }
+  if (message.trim().length > MAX_MESSAGE_LENGTH) {
+    return { ok: false, error: 'Message is too long' }
+  }
   if (!isValidEmail(email)) {
     return { ok: false, error: 'A valid email is required' }
   }
@@ -96,16 +105,40 @@ export function buildSubject(category: FeedbackCategory, message: string): strin
   return `[Feedback · ${category}] ${snippet}`
 }
 
-/** Render the optional page context as readable lines (only present fields). */
+/** Coerce a user-supplied context value to a bounded string, or drop it. */
+function safeField(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+  const trimmed = value.trim()
+  return trimmed ? trimmed.slice(0, MAX_CONTEXT_FIELD) : undefined
+}
+
+/**
+ * Render the optional page context as readable lines (only present fields).
+ * Context is fully user-controlled, so every field is type-checked and length-
+ * capped at runtime — the TypeScript shape is not a runtime guarantee.
+ */
 export function renderContextText(context?: FeedbackContext): string {
-  if (!context) return ''
+  if (!context || typeof context !== 'object') return ''
   const lines: string[] = []
-  if (context.url) lines.push(`Page: ${context.url}`)
-  if (context.city) {
-    lines.push(`City: ${context.city.name ? `${context.city.name} (${context.city.id})` : context.city.id}`)
+
+  const url = safeField(context.url)
+  if (url) lines.push(`Page: ${url}`)
+
+  if (context.city && typeof context.city === 'object') {
+    const id = safeField(context.city.id)
+    const name = safeField(context.city.name)
+    if (id || name) {
+      lines.push(`City: ${name && id ? `${name} (${id})` : (name ?? id)}`)
+    }
   }
-  if (context.dataset) lines.push(`Dataset: ${context.dataset}`)
-  if (typeof context.epoch === 'number') lines.push(`Epoch: ${context.epoch}`)
+
+  const dataset = safeField(context.dataset)
+  if (dataset) lines.push(`Dataset: ${dataset}`)
+
+  if (typeof context.epoch === 'number' && Number.isFinite(context.epoch)) {
+    lines.push(`Epoch: ${context.epoch}`)
+  }
+
   return lines.join('\n')
 }
 
@@ -139,8 +172,14 @@ export async function handleFeedbackRequest(
   }
   const payload = validated.payload
 
-  // R13 / AE5 — reject before any email is sent.
-  const verified = await deps.verifyToken(payload.token)
+  // R13 / AE5 — reject before any email is sent. Fail closed: a verification
+  // error (e.g. Cloudflare unreachable) never falls through to sending.
+  let verified = false
+  try {
+    verified = await deps.verifyToken(payload.token)
+  } catch {
+    return { status: 503, body: { error: 'Could not verify your submission. Please try again.' } }
+  }
   if (!verified) {
     return { status: 403, body: { error: 'Verification failed' } }
   }

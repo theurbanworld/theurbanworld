@@ -12,6 +12,13 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const config = useRuntimeConfig(event)
 
+  // Operator misconfiguration (missing secrets) — fail loudly server-side
+  // rather than silently 502-ing every submission at the Resend call.
+  if (!config.resendApiKey || !config.resendFrom || !config.feedbackToEmail) {
+    console.error('[feedback] missing Resend configuration; submission rejected')
+    throw createError({ statusCode: 500, statusMessage: 'Feedback service is not configured' })
+  }
+
   const result = await handleFeedbackRequest(
     body,
     {

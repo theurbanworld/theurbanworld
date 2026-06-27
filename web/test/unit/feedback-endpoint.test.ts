@@ -115,6 +115,38 @@ describe('handleFeedbackRequest', () => {
     expect(res.status).toBe(400)
   })
 
+  it('rejects an over-long message with 400 and never sends', async () => {
+    const d = deps()
+    const res = await handleFeedbackRequest(validBody({ message: 'x'.repeat(5001) }), CONFIG, d)
+    expect(res.status).toBe(400)
+    expect(d.sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('fails closed with 503 (no send) when Turnstile verification throws', async () => {
+    const d = {
+      verifyToken: vi.fn(async () => { throw new Error('cloudflare unreachable') }),
+      sendEmail: vi.fn(async () => ({ ok: true, status: 200 }))
+    }
+    const res = await handleFeedbackRequest(validBody(), CONFIG, d)
+    expect(res.status).toBe(503)
+    expect(d.sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('does not crash or leak garbage when context fields are non-string', async () => {
+    const d = deps()
+    const res = await handleFeedbackRequest(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      validBody({ context: { url: { evil: true }, city: 'not-an-object', epoch: Infinity } as any }),
+      CONFIG,
+      d
+    )
+    expect(res.status).toBe(200)
+    const text = d.sendEmail.mock.calls[0]![0].text
+    expect(text).not.toContain('[object Object]')
+    expect(text).not.toContain('Infinity')
+    expect(text).not.toContain('City:')
+  })
+
   it('rejects unknown category with 400', async () => {
     const res = await handleFeedbackRequest(validBody({ category: 'Spam' }), CONFIG, deps())
     expect(res.status).toBe(400)
