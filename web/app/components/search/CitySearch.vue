@@ -106,7 +106,7 @@ const shortcutHint = computed(() => `${getKbdKey('meta')}K`)
 
     <ul
       v-if="open && items.length"
-      class="absolute z-50 mt-1 w-full max-h-80 overflow-y-auto rounded-md
+      class="absolute z-110 mt-1 w-full max-h-80 overflow-y-auto rounded-md
              bg-white dark:bg-ink-900
              border border-ink-200 dark:border-ink-700
              shadow-lg py-1"

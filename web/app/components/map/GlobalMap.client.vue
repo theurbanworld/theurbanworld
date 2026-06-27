@@ -97,7 +97,11 @@ const mapContainer = ref<HTMLElement | null>(null)
 
 // Initialize MapLibre map (includes city boundaries layer)
 const { map, isLoading: isMapLoading, error: mapError } = useMap({
-  container: mapContainer as ShallowRef<HTMLElement | null>
+  container: mapContainer as ShallowRef<HTMLElement | null>,
+  // Center selected cities within the map section itself. The EyebrowPanel
+  // only covers the top-right corner, so reserving the full right edge would
+  // bias the city toward the viewport centre (behind the left sidebar).
+  rightPanelWidth: 0
 })
 
 // Initialize deck.gl overlay (waits for map to be ready)
