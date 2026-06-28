@@ -82,6 +82,17 @@ def _dump(data: dict) -> str:
     return json.dumps(data, separators=(",", ":"), ensure_ascii=False)
 
 
+def _upload_one(s3_client, bucket: str, local_path: Path, r2_key: str) -> str:
+    """Upload a single JSON file to R2. Returns the r2_key on success."""
+    s3_client.upload_file(
+        str(local_path),
+        bucket,
+        r2_key,
+        ExtraArgs={"ContentType": "application/json"},
+    )
+    return r2_key
+
+
 def write_outputs(
     df: pl.DataFrame,
     out_dir: Path,
@@ -160,13 +171,31 @@ def main(local_only: bool = False, split_threshold_mb: float = PROFILE_SPLIT_MB)
             print(f"  Output: {path}")
         return
 
-    from ..utils.r2_upload import upload_to_r2
+    import os
+    from concurrent.futures import ThreadPoolExecutor, as_completed
 
-    print()
-    for path, r2_key in manifest["written"]:
-        upload_to_r2(path, r2_key, content_type="application/json")
+    from ..utils.r2_upload import get_r2_client
 
-    print("\nDone!")
+    s3 = get_r2_client()
+    bucket = os.environ.get("R2_BUCKET_NAME")
+    if not bucket:
+        raise ValueError("R2_BUCKET_NAME not set in environment")
+
+    written = manifest["written"]
+    print(f"\nUploading {len(written):,} files to R2 (20 threads)...")
+    uploaded = 0
+    with ThreadPoolExecutor(max_workers=20) as pool:
+        futures = {
+            pool.submit(_upload_one, s3, bucket, path, r2_key): r2_key
+            for path, r2_key in written
+        }
+        for future in as_completed(futures):
+            future.result()  # raises on error
+            uploaded += 1
+            if uploaded % 1000 == 0 or uploaded == len(written):
+                print(f"  {uploaded:,}/{len(written):,} uploaded")
+
+    print(f"\nDone — {uploaded:,} files uploaded.")
 
 
 if __name__ == "__main__":
