@@ -129,6 +129,58 @@ export function supportingMetrics(lens: ClimateLens): ClimateMetricDescriptor[] 
   return CLIMATE_METRICS.filter(m => m.lens === lens && !m.headline && !m.sectorFingerprint)
 }
 
+// --- Categorical value labels ------------------------------------------------
+
+/**
+ * Köppen-Geiger 30-class legend (Beck et al. 2018). UCDB stores the integer
+ * class code, not the letter class; this maps the code to "Xxx — name" for
+ * display. The raw code stays in the data; only rendering changes.
+ */
+export const KOPPEN_CLASSES: Record<number, string> = {
+  1: 'Af — Tropical rainforest',
+  2: 'Am — Tropical monsoon',
+  3: 'Aw — Tropical savanna',
+  4: 'BWh — Hot desert',
+  5: 'BWk — Cold desert',
+  6: 'BSh — Hot semi-arid',
+  7: 'BSk — Cold semi-arid',
+  8: 'Csa — Hot-summer Mediterranean',
+  9: 'Csb — Warm-summer Mediterranean',
+  10: 'Csc — Cold-summer Mediterranean',
+  11: 'Cwa — Monsoon humid subtropical',
+  12: 'Cwb — Subtropical highland',
+  13: 'Cwc — Cold subtropical highland',
+  14: 'Cfa — Humid subtropical',
+  15: 'Cfb — Oceanic',
+  16: 'Cfc — Subpolar oceanic',
+  17: 'Dsa — Mediterranean hot-summer continental',
+  18: 'Dsb — Mediterranean warm-summer continental',
+  19: 'Dsc — Dry-summer subarctic',
+  20: 'Dsd — Dry-summer extreme continental',
+  21: 'Dwa — Monsoon hot-summer continental',
+  22: 'Dwb — Monsoon warm-summer continental',
+  23: 'Dwc — Monsoon subarctic',
+  24: 'Dwd — Monsoon extreme continental',
+  25: 'Dfa — Hot-summer humid continental',
+  26: 'Dfb — Warm-summer humid continental',
+  27: 'Dfc — Subarctic',
+  28: 'Dfd — Extreme continental',
+  29: 'ET — Tundra',
+  30: 'EF — Ice cap'
+}
+
+/** Map a Köppen class code (e.g. "14.0") to its labelled class, or echo the raw value. */
+export function koppenLabel(value: number | string | null): string {
+  if (value === null || value === '') return '—'
+  const code = Math.round(Number(value))
+  return KOPPEN_CLASSES[code] ?? String(value)
+}
+
+/** Per-metric display formatters for categorical metrics (keyed by metric key). */
+export const CATEGORICAL_LABELERS: Record<string, (value: number | string | null) => string> = {
+  koppen_class: koppenLabel
+}
+
 // --- Methodology content paths (mirror catalog) ------------------------------
 
 const M_EDGAR = '/data/source-edgar'

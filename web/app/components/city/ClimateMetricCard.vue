@@ -19,6 +19,7 @@ import type {
   SnapshotValue,
   CompositionValue
 } from '../../../types/climate'
+import { CATEGORICAL_LABELERS } from '../../../types/climate'
 import {
   formatClimateValue,
   latestValue,
@@ -43,6 +44,9 @@ const seriesLatest = computed(() => formatClimateValue(latestValue(seriesPoints.
 const projection = computed(() =>
   props.descriptor.temporalClass === 'projection' ? (props.value as ProjectionValue) : null
 )
+
+// Categorical metrics (e.g. Köppen) format their code via a per-metric labeler.
+const categoricalFormat = computed(() => CATEGORICAL_LABELERS[props.descriptor.key])
 
 const snapshotText = computed(() =>
   formatClimateValue((props.value as SnapshotValue)?.value ?? null, props.descriptor.unit)
@@ -86,6 +90,7 @@ const showModeledQualifier = computed(
       :future="projection.future"
       :future-label="descriptor.futureLabel"
       :unit="descriptor.unit"
+      :format="categoricalFormat"
     />
 
     <!-- Series -->

@@ -17,12 +17,16 @@ const props = defineProps<{
   futureLabel?: string
   unit?: string | null
   nowLabel?: string
+  /** Optional value formatter (e.g. a categorical code → label map). */
+  format?: (value: number | string | null) => string
 }>()
 
 const mode = ref<'now' | 'future'>('now')
 
 const activeValue = computed(() => (mode.value === 'now' ? props.now : props.future))
-const display = computed(() => formatClimateValue(activeValue.value, props.unit ?? null))
+const display = computed(() =>
+  props.format ? props.format(activeValue.value) : formatClimateValue(activeValue.value, props.unit ?? null)
+)
 const futureText = computed(() => props.futureLabel ?? 'projected')
 </script>
 
