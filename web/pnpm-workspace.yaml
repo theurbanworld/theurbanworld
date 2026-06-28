@@ -1,9 +1,14 @@
-ignoredBuiltDependencies:
-  - '@parcel/watcher'
-  - '@tailwindcss/oxide'
-  - esbuild
-  - unrs-resolver
-  - vue-demi
-
-onlyBuiltDependencies:
-  - '@vaadin/vaadin-usage-statistics'
+# pnpm build-script approvals (allowBuilds is the format pnpm 10.28+ writes and
+# reads in every context, including a standalone `web` install for CI/Cloudflare,
+# where onlyBuiltDependencies/ignoredBuiltDependencies are NOT honored).
+# Only better-sqlite3 (Nuxt Content's native binding) needs to build; the rest
+# ship prebuilt binaries.
+allowBuilds:
+  better-sqlite3: true
+  '@vaadin/vaadin-usage-statistics': true
+  '@parcel/watcher': false
+  esbuild: false
+  sharp: false
+  unrs-resolver: false
+  vue-demi: false
+  workerd: false

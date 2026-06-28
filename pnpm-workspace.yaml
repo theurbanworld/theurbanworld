@@ -1,2 +1,15 @@
 packages:
   - web
+
+# pnpm build-script approvals (allowBuilds is the format pnpm 10.28+ reads in
+# every context; kept identical to web/pnpm-workspace.yaml). Only better-sqlite3
+# (Nuxt Content's native binding) needs to build; the rest ship prebuilt.
+allowBuilds:
+  better-sqlite3: true
+  '@vaadin/vaadin-usage-statistics': true
+  '@parcel/watcher': false
+  esbuild: false
+  sharp: false
+  unrs-resolver: false
+  vue-demi: false
+  workerd: false
