@@ -83,6 +83,13 @@ watch(searchTerm, () => {
     title="Compare with..."
     description="Search for a city to compare"
   >
+    <template #close="{ ui }">
+      <CloseButton
+        :class="ui.close()"
+        aria-label="Close"
+      />
+    </template>
+
     <template #body>
       <div class="relative">
         <div class="relative">

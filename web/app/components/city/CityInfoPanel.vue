@@ -8,6 +8,7 @@
 
 import { useCityStats } from '../../composables/useCityStats'
 import { useDataset } from '../../composables/useDataset'
+import { getGradientColors, getPopulationRangeLabel } from '~/utils/colorScale'
 
 interface Props {
   /** City ID to display statistics for */
@@ -31,6 +32,39 @@ const { hasFeatureComputed } = useDataset()
 const showRadialProfiles = hasFeatureComputed('radialProfiles')
 const showH3Overlay = hasFeatureComputed('h3Overlay')
 const showClimate = hasFeatureComputed('climate')
+
+// Population heatmap "Show on map" toggle (H3 datasets only)
+const { isPopulationLayerActive, isLoadingH3, setPopulationLayerActive } = usePopulationHighlight()
+const { isRadialLayerActive, setRadialLayerActive } = useRadialHighlight()
+
+function togglePopulationLayer() {
+  const next = !isPopulationLayerActive.value
+  // Deactivate radial layer when activating population layer (they overlap)
+  if (next && isRadialLayerActive.value) {
+    setRadialLayerActive(false)
+  }
+  setPopulationLayerActive(next)
+}
+
+// Deactivate when the panel unmounts or the city changes
+onUnmounted(() => {
+  setPopulationLayerActive(false)
+})
+watch(() => props.cityId, () => {
+  setPopulationLayerActive(false)
+})
+
+// Dark mode detection for correct legend gradient direction
+const colorMode = useColorMode()
+const isDark = computed(() => colorMode.value === 'dark')
+
+// Population heatmap legend colors
+const legendColors = computed(() => {
+  return getGradientColors(isDark.value).map((rgba, i) => ({
+    color: `rgb(${rgba[0]}, ${rgba[1]}, ${rgba[2]})`,
+    label: getPopulationRangeLabel(i)
+  }))
+})
 
 // Get reactive city statistics
 const {
@@ -100,21 +134,12 @@ const {
           >
             {{ cityName }}
           </h1>
-          <button
+          <CloseButton
             data-testid="sidebar-close-button"
-            class="shrink-0 flex items-center justify-center p-1 rounded-md cursor-pointer
-                   text-body/50 dark:text-cream/50
-                   hover:bg-ink-100/50 dark:hover:bg-ink-900/30
-                   hover:text-ink-700 dark:hover:text-ink-300
-                   transition-colors"
+            class="mt-1.5"
             aria-label="Close sidebar"
             @click="emit('close')"
-          >
-            <UIcon
-              name="i-lucide-x"
-              class="w-4 h-4 block"
-            />
-          </button>
+          />
         </div>
         <p
           data-testid="country-name"
@@ -124,16 +149,13 @@ const {
         </p>
       </header>
 
-      <!-- Action bar -->
-      <div class="flex items-center gap-1.5 mb-4 -mt-3">
+      <!-- Actions row (room for future city modes) -->
+      <div class="flex items-center flex-wrap gap-1 mb-4 -mt-3">
         <button
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer
-                 text-ink-600 dark:text-cream/70
-                 border border-ink-200 dark:border-ink-800/60
-                 bg-white dark:bg-forest-900/30
-                 shadow-sm
-                 hover:bg-ink-50 dark:hover:bg-forest-800/40
-                 hover:text-ink-700 dark:hover:text-forest-300
+          class="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium cursor-pointer
+                 text-body/60 dark:text-cream/60
+                 hover:bg-ink-100/50 dark:hover:bg-ink-900/30
+                 hover:text-ink-700 dark:hover:text-ink-300
                  transition-colors"
           @click="compareModalOpen = true"
         >
@@ -141,8 +163,9 @@ const {
             name="i-lucide-columns-2"
             class="w-3.5 h-3.5"
           />
-          Compare
+          Compare to another city
         </button>
+        <!-- future mode actions go here, same button pattern -->
       </div>
 
       <!-- Compare search modal -->
@@ -165,9 +188,12 @@ const {
       <!-- DataPoints -->
       <div
         data-testid="datapoint-grid"
-        class="flex flex-col gap-4"
+        class="flex flex-col gap-6"
       >
-        <div data-testid="population-datapoint">
+        <div
+          data-testid="population-datapoint"
+          class="border-l-2 border-ink-400/60 dark:border-brass-500/50 pl-4"
+        >
           <DataPoint
             id="city-population"
             label="Population"
@@ -178,8 +204,48 @@ const {
             source-label="Source: GHSL"
             content-path="/data/source-ghsl"
             toggle-label-a="over time"
-            toggle-label-b="vs all cities"
+            toggle-label-b="all cities"
+            toggle-separator="vs"
           >
+            <template
+              v-if="showH3Overlay"
+              #header-action
+            >
+              <button
+                class="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs cursor-pointer
+                       transition-colors"
+                :class="isPopulationLayerActive
+                  ? 'bg-ink-600 text-white dark:bg-ink-500'
+                  : 'text-body/60 dark:text-cream/60 hover:bg-ink-100/50 dark:hover:bg-ink-900/30'"
+                :disabled="isLoadingH3"
+                @click="togglePopulationLayer"
+              >
+                <UIcon
+                  :name="isLoadingH3 ? 'i-lucide-loader-2' : 'i-lucide-map'"
+                  :class="['w-3.5 h-3.5', isLoadingH3 && 'animate-spin']"
+                />
+                <span>{{ isLoadingH3 ? 'Loading...' : isPopulationLayerActive ? 'On map' : 'Show on map' }}</span>
+              </button>
+            </template>
+            <!-- Population heatmap legend, directly under the header (visible while layer is active) -->
+            <template
+              v-if="showH3Overlay && isPopulationLayerActive"
+              #subheader
+            >
+              <div class="flex items-center gap-1 mt-1 mb-0.5">
+                <span class="text-[10px] text-body/50 dark:text-cream/50 shrink-0">Low</span>
+                <div class="flex flex-1 h-2 rounded-sm overflow-hidden">
+                  <div
+                    v-for="(stop, i) in legendColors"
+                    :key="i"
+                    class="flex-1"
+                    :style="{ backgroundColor: stop.color }"
+                    :title="stop.label"
+                  />
+                </div>
+                <span class="text-[10px] text-body/50 dark:text-cream/50 shrink-0">High</span>
+              </div>
+            </template>
             <template #chart-a>
               <EpochSparkline
                 :city-id="cityId"
@@ -200,6 +266,7 @@ const {
         <div
           v-if="isActiveCity"
           data-testid="density-datapoint"
+          class="border-l-2 border-ink-400/60 dark:border-brass-500/50 pl-4"
         >
           <DataPoint
             id="city-density"
@@ -211,7 +278,8 @@ const {
             source-label="Source: GHSL"
             content-path="/data/source-ghsl"
             toggle-label-a="over time"
-            toggle-label-b="vs all cities"
+            toggle-label-b="all cities"
+            toggle-separator="vs"
           >
             <template #chart-a>
               <EpochSparkline
@@ -233,6 +301,7 @@ const {
         <div
           v-if="isActiveCity"
           data-testid="area-datapoint"
+          class="border-l-2 border-ink-400/60 dark:border-brass-500/50 pl-4"
         >
           <DataPoint
             id="city-area"
@@ -242,7 +311,8 @@ const {
             source-label="Source: GHSL"
             content-path="/data/source-ghsl"
             toggle-label-a="over time"
-            toggle-label-b="vs all cities"
+            toggle-label-b="all cities"
+            toggle-separator="vs"
           >
             <template #chart-a>
               <EpochSparkline
@@ -260,21 +330,14 @@ const {
             </template>
           </DataPoint>
         </div>
+
+        <!-- Radial Profile Section (Urban World only) -->
+        <RadialProfileSection
+          v-if="showRadialProfiles"
+          :city-id="cityId"
+          class="border-l-2 border-ink-400/60 dark:border-brass-500/50 pl-4"
+        />
       </div>
-
-      <!-- Population Heatmap (H3 datasets only) -->
-      <PopulationHeatmapSection
-        v-if="showH3Overlay"
-        :city-id="cityId"
-        class="mt-4"
-      />
-
-      <!-- Radial Profile Section (Urban World only) -->
-      <RadialProfileSection
-        v-if="showRadialProfiles"
-        :city-id="cityId"
-        class="mt-4"
-      />
 
       <!-- Climate & Energy Section (per-city coverage gated inside) -->
       <ClimateEnergySection

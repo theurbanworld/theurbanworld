@@ -56,8 +56,23 @@ function onKeydown(e: KeyboardEvent) {
 
 watch(searchTerm, (val) => {
   open.value = val.trim().length >= 2
-  highlightedIndex.value = -1
 })
+
+// Auto-highlight the first result so Enter selects it immediately
+watch(items, (list) => {
+  highlightedIndex.value = list.length ? 0 : -1
+})
+
+// ⌘K / Ctrl+K focuses the search input
+defineShortcuts({
+  meta_k: () => {
+    inputRef.value?.focus()
+  }
+})
+
+// Platform-aware hint: ⌘K on macOS, CtrlK elsewhere
+const { getKbdKey } = useKbd()
+const shortcutHint = computed(() => `${getKbdKey('meta')}K`)
 </script>
 
 <template>
@@ -72,7 +87,7 @@ watch(searchTerm, (val) => {
         v-model="searchTerm"
         type="text"
         placeholder="Search cities..."
-        class="w-full pl-9 pr-3 py-2 text-sm rounded-md
+        class="w-full pl-9 pr-12 py-2 text-sm rounded-md
                bg-white dark:bg-ink-900
                border border-ink-200 dark:border-ink-700
                text-ink-700 dark:text-ink-200
@@ -83,11 +98,15 @@ watch(searchTerm, (val) => {
         @blur="onBlur"
         @keydown="onKeydown"
       >
+      <UKbd
+        :value="shortcutHint"
+        class="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
+      />
     </div>
 
     <ul
       v-if="open && items.length"
-      class="absolute z-50 mt-1 w-full max-h-80 overflow-y-auto rounded-md
+      class="absolute z-110 mt-1 w-full max-h-80 overflow-y-auto rounded-md
              bg-white dark:bg-ink-900
              border border-ink-200 dark:border-ink-700
              shadow-lg py-1"

@@ -37,7 +37,11 @@ export function useRadialProfiles() {
     },
     {
       immediate: false,
-      server: true,
+      // Client-only: this dataset covers ALL cities (~4.5 MB) and is only used
+      // by .client.vue components (map, radial chart). With server: true it was
+      // fetched during SSR and serialized into the hydration payload, bloating
+      // every city/compare page's HTML past 5 MB.
+      server: false,
       default: () => ({})
     }
   )

@@ -9,14 +9,16 @@ useSeoMeta({
 const { data: page } = await useAsyncData('about', () =>
   queryCollection('pages').path('/about').first()
 )
+
+const tocLinks = computed(() => buildToc(page.value?.body))
 </script>
 
 <template>
-  <div>
+  <ContentTocLayout :links="tocLinks">
     <ContentRenderer
       v-if="page"
       :value="page"
       class="prose prose-forest dark:prose-invert max-w-none"
     />
-  </div>
+  </ContentTocLayout>
 </template>

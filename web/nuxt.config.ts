@@ -8,7 +8,8 @@ export default defineNuxtConfig({
     '@nuxt/content',
     '@nuxt/eslint',
     '@nuxt/ui',
-    '@nuxt/fonts'
+    '@nuxt/fonts',
+    '@nuxtjs/turnstile'
   ],
 
   components: [
@@ -52,6 +53,12 @@ export default defineNuxtConfig({
     r2AccessKeyId: '',
     r2SecretAccessKey: '',
     r2Bucket: '',
+
+    // Feedback widget — sender/recipient for Cloudflare Email Service delivery
+    // (the EMAIL binding handles auth, so no API key here). Overridden by
+    // NUXT_FEEDBACK_FROM_EMAIL / NUXT_FEEDBACK_TO_EMAIL.
+    feedbackFromEmail: '',
+    feedbackToEmail: '',
 
     // Client-side (exposed via useRuntimeConfig)
     public: {
@@ -139,5 +146,11 @@ export default defineNuxtConfig({
     },
     defaultSitemapsChunkSize: 1000,
     cacheMaxAgeSeconds: 3600
+  },
+
+  // Cloudflare Turnstile — site key is public; the secret key is read
+  // server-side from runtimeConfig.turnstile.secretKey (NUXT_TURNSTILE_SECRET_KEY).
+  turnstile: {
+    siteKey: ''
   }
 })

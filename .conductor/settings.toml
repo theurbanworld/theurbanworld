@@ -1,0 +1,19 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+# Files to copy: Conductor copies these gitignored files from the main repo
+# checkout into each new workspace at creation. The built-in default only copies
+# root-level .env*, so this explicit glob is needed for the nested web/.env.
+file_include_globs = "web/.env\n"
+
+[scripts]
+# Install the web app's deps the same way CI does (from inside web/, against
+# web/pnpm-lock.yaml) so the lockfile and allowBuilds rules apply and the native
+# better-sqlite3 binding builds.
+setup = "cd web && pnpm install"
+
+# Nuxt dev server with HMR, on this workspace's assigned port.
+run = "cd web && pnpm dev --port $CONDUCTOR_PORT"
+
+# Each workspace runs on its own CONDUCTOR_PORT with its own per-workspace
+# web/.data, so multiple workspaces can run at the same time.
+run_mode = "concurrent"

@@ -14,6 +14,13 @@ const navLinks = [
 
 const navDrawerOpen = ref(false)
 const route = useRoute()
+
+const { open: openFeedback } = useFeedback()
+
+function openFeedbackFromDrawer() {
+  navDrawerOpen.value = false
+  openFeedback()
+}
 </script>
 
 <template>
@@ -92,6 +99,7 @@ const route = useRoute()
         >
           {{ link.label }}
         </NuxtLink>
+        <DarkModeToggle />
       </nav>
     </div>
 
@@ -194,6 +202,15 @@ const route = useRoute()
         >
           {{ link.label }}
         </NuxtLink>
+        <button
+          type="button"
+          class="px-3 py-2.5 rounded-md text-base font-medium text-left transition-colors
+                 text-body/70 dark:text-cream/70 hover:text-ink-600 dark:hover:text-ink-400
+                 hover:bg-ink-50 dark:hover:bg-ink-900/20"
+          @click="openFeedbackFromDrawer"
+        >
+          Feedback
+        </button>
       </nav>
       <div class="mt-6 pt-4 border-t border-ink-200/40 dark:border-ink-800/40 px-3">
         <DarkModeToggle />

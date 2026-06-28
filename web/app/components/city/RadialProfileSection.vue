@@ -35,11 +35,11 @@ watch(() => props.cityId, () => {
 </script>
 
 <template>
-  <div class="border-t border-border/30 dark:border-border/20 pt-4">
+  <div>
     <div class="flex items-center justify-between mb-3">
       <div class="flex items-center gap-1.5">
-        <h2 class="text-sm font-medium text-ink-700 dark:text-ink-300">
-          Radial Profile
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-body/60 dark:text-cream/60">
+          Density Profile
         </h2>
         <button
           class="text-body/40 dark:text-cream/40 hover:text-ink-600 dark:hover:text-ink-400 transition-colors cursor-pointer"

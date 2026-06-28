@@ -33,7 +33,7 @@ const DataPointTest = defineComponent({
       // Label
       h('span', {
         'data-testid': 'datapoint-label',
-        'class': 'text-xs text-body/70 dark:text-cream/70'
+        'class': 'text-xs font-semibold uppercase tracking-wider text-body/60 dark:text-cream/60'
       }, props.label),
       // Value with tooltip wrapper
       h(UTooltipStub, { text: formattedRawValue }, {
@@ -114,11 +114,12 @@ describe('DataPoint', () => {
       }
     })
 
-    // Find the label element (should NOT have font-mono or font-serif)
+    // Labels use the default sans-serif font, not the mono value font or serif heading
     const labelElement = wrapper.find('[data-testid="datapoint-label"]')
     expect(labelElement.exists()).toBe(true)
     expect(labelElement.classes()).not.toContain('font-mono')
     expect(labelElement.classes()).not.toContain('font-serif')
+    expect(labelElement.classes()).not.toContain('font-heading')
   })
 
   it('passes formatted raw value to tooltip', () => {

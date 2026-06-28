@@ -7,6 +7,7 @@
  * Parses city IDs from URL, handles redirects (canonical ordering,
  * same-city), loads data, and renders the comparison layout.
  */
+import { humanizeNumber } from '~/composables/useGlobalStats'
 
 definePageMeta({
   layout: 'compare'
@@ -25,28 +26,39 @@ if (parseError.value) {
   await navigateTo('/', { replace: true })
 }
 
-// Load data (client-only, same pattern as city page)
+// Load the large interactive datasets (populations ~14 MB, radial ~5 MB,
+// index ~2 MB) on the CLIENT only. They feed the client-only map and comparison
+// panel; fetching them during SSR would serialize every dataset into the
+// hydration payload and push the HTML past the 5 MB limit that crawlers and OG
+// scrapers enforce.
 const { execute: loadCitiesIndex } = useCitiesIndex()
 const { execute: loadPopulations } = useCityPopulations()
 const { execute: loadRadialProfiles } = useRadialProfiles()
 
-await Promise.all([
-  loadCitiesIndex(),
-  loadPopulations(),
+if (import.meta.client) {
+  loadCitiesIndex()
+  loadPopulations()
   loadRadialProfiles()
-])
+}
 
-// After data loads, check if cities are valid
+// After the index loads (client-side), redirect away from unknown cities.
 watchEffect(() => {
   if (hasInvalidCities.value) {
     navigateTo('/', { replace: true })
   }
 })
 
-// SEO meta
-const { getCity } = useCitiesIndex()
-const cityAData = computed(() => cityA.value ? getCity(cityA.value) : undefined)
-const cityBData = computed(() => cityB.value ? getCity(cityB.value) : undefined)
+// SSR-compatible per-city metadata (name/country + current stats) for SEO and
+// the OG image. Served by the lightweight /api/city endpoint so SSR doesn't
+// need the full datasets.
+const { data: cityAData } = await useAsyncData(
+  `compare-meta-a-${cityA.value ?? 'none'}`,
+  () => cityA.value ? $fetch(`/api/city/${cityA.value}`).catch(() => null) : Promise.resolve(null)
+)
+const { data: cityBData } = await useAsyncData(
+  `compare-meta-b-${cityB.value ?? 'none'}`,
+  () => cityB.value ? $fetch(`/api/city/${cityB.value}`).catch(() => null) : Promise.resolve(null)
+)
 
 useSeoMeta({
   title: () => {
@@ -61,6 +73,39 @@ useSeoMeta({
     }
     return 'Compare cities by population, density, area, and growth patterns.'
   }
+})
+
+// OG image — City A stats (left), City B stats (right), outlines overlaid in
+// the center. Stats come from the per-city metadata resolved above.
+function ogStatsFor(meta: { stats?: { population: number, area_km2: number, density_per_km2: number } } | null | undefined) {
+  const pop = meta?.stats
+  return {
+    population: pop ? humanizeNumber(pop.population) : '',
+    density: pop
+      ? (pop.density_per_km2 >= 1000
+          ? `${Math.round(pop.density_per_km2 / 100) / 10} K/km2`
+          : `${Math.round(pop.density_per_km2)}/km2`)
+      : '',
+    area: pop ? `${Math.round(pop.area_km2).toLocaleString()} km2` : ''
+  }
+}
+
+const ogA = ogStatsFor(cityAData.value)
+const ogB = ogStatsFor(cityBData.value)
+
+defineOgImage('Comparison', {
+  cityAName: cityAData.value?.name ?? '',
+  cityACountry: cityAData.value?.country ?? '',
+  cityAPopulation: ogA.population,
+  cityADensity: ogA.density,
+  cityAArea: ogA.area,
+  cityAOutlineUrl: cityA.value ? `https://data.theurban.world/data/outlines/${cityA.value}.json` : '',
+  cityBName: cityBData.value?.name ?? '',
+  cityBCountry: cityBData.value?.country ?? '',
+  cityBPopulation: ogB.population,
+  cityBDensity: ogB.density,
+  cityBArea: ogB.area,
+  cityBOutlineUrl: cityB.value ? `https://data.theurban.world/data/outlines/${cityB.value}.json` : ''
 })
 
 // Layout reads useComparisonState() directly (layout is parent, can't inject from child)

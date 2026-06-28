@@ -16,5 +16,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'City not found' })
   }
 
-  return city
+  // Current-epoch stats for OG image / SEO. Fetched server-side from a cached
+  // lookup so pages don't need to load the full ~14 MB populations dataset
+  // during SSR (which would bloat the hydration payload past 5 MB).
+  const stats = await getCityStats(id)
+
+  return { ...city, stats }
 })
