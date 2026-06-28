@@ -12,8 +12,8 @@ import { toAnnualRate, YEAR_EPOCHS } from '~/composables/useGlobalStats'
 
 const { activeStat, growthMode, countryFilter, sortDirection } = useRankingFilters()
 const { selectedYear } = useSelectedYear()
-const { allCities } = useCitiesIndex()
-const { getCityPopulationData } = useCityPopulations()
+const { allCities, isLoaded: citiesLoaded } = useCitiesIndex()
+const { getCityPopulationData, isLoaded: populationsLoaded } = useCityPopulations()
 
 const displayCount = ref(100)
 
@@ -106,6 +106,15 @@ const hasMore = computed(() =>
   rankedCities.value.length > displayCount.value
 )
 
+// The rankings need both the cities index and population data, which now load
+// on the client. Show a skeleton until both resolve, then fall back to an empty
+// state if the active filter matches no cities.
+const isLoading = computed(() => !citiesLoaded.value || !populationsLoaded.value)
+
+// Placeholder rows for the loading skeleton (descending widths echo a ranked
+// list tapering off).
+const SKELETON_WIDTHS = ['92%', '88%', '81%', '76%', '70%', '64%', '58%', '52%', '47%', '43%', '38%', '34%']
+
 function formatValue(city: RankedCity): string {
   switch (activeStat.value) {
     case 'density': return formatDensity(city.density)
@@ -164,58 +173,96 @@ watch([activeStat, growthMode, countryFilter, sortDirection], () => {
 
 <template>
   <div>
-    <button
-      v-for="(city, index) in displayedCities"
-      :key="city.id"
-      class="w-full text-left relative py-2 px-5
-             hover:bg-ink-100/30 dark:hover:bg-ink-900/20
-             transition-colors cursor-pointer"
-      @click="selectCity(city.id)"
-    >
-      <!-- Bar background — centered for growth, left-aligned for other stats -->
-      <template v-if="activeStat === 'growth'">
-        <div
-          class="absolute inset-y-0 left-1/2 w-px bg-ink-200/50 dark:bg-ink-700/50"
-        />
-        <div
-          class="absolute inset-y-0"
-          :class="growthBarColorClass(city)"
-          :style="growthBarStyle(city)"
-        />
-      </template>
-      <div
-        v-else
-        class="absolute inset-y-0 left-0 bg-ink-100/60 dark:bg-ink-800/30"
-        :style="{ width: barPercent(city) }"
-      />
-      <!-- Content -->
-      <div class="relative flex items-baseline gap-2">
-        <span class="text-xs text-body/40 dark:text-cream/40 w-6 text-right shrink-0 tabular-nums">
-          {{ index + 1 }}
-        </span>
-        <span class="text-sm font-medium text-espresso dark:text-dark-espresso truncate flex-1">
-          {{ city.name }}
-        </span>
-        <span class="text-[11px] text-body/50 dark:text-cream/50 shrink-0 max-w-20 truncate">
-          {{ city.country }}
-        </span>
-        <span class="text-xs font-mono font-semibold text-ink-700 dark:text-ink-300 shrink-0 tabular-nums">
-          {{ formatValue(city) }}
-        </span>
-      </div>
-    </button>
-
-    <!-- Show more -->
+    <!-- Loading skeleton — shown while the index + population datasets stream in -->
     <div
-      v-if="hasMore"
-      class="px-5 py-3 text-center"
+      v-if="isLoading"
+      aria-busy="true"
+      aria-label="Loading city rankings"
+      class="animate-pulse"
     >
-      <button
-        class="text-xs text-ink-600 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-300 transition-colors cursor-pointer"
-        @click="showMore"
+      <div
+        v-for="(width, i) in SKELETON_WIDTHS"
+        :key="i"
+        class="relative py-2 px-5"
       >
-        Show more ({{ (rankedCities.length - displayCount).toLocaleString() }} remaining)
-      </button>
+        <!-- Faint bar echoing the ranked value bar -->
+        <div
+          class="absolute inset-y-0 left-0 bg-ink-100/40 dark:bg-ink-800/20"
+          :style="{ width }"
+        />
+        <div class="relative flex items-baseline gap-2">
+          <span class="w-6 shrink-0" />
+          <span class="h-3 rounded bg-ink-200/50 dark:bg-ink-700/40 flex-1 max-w-32" />
+          <span class="h-3 w-12 rounded bg-ink-200/40 dark:bg-ink-700/30 shrink-0 ml-auto" />
+        </div>
+      </div>
     </div>
+
+    <!-- Empty state — data loaded but the active filter matches nothing -->
+    <div
+      v-else-if="!displayedCities.length"
+      class="px-5 py-10 text-center"
+    >
+      <p class="text-sm text-body/50 dark:text-cream/50">
+        No cities match this filter.
+      </p>
+    </div>
+
+    <!-- Ranked list -->
+    <template v-else>
+      <button
+        v-for="(city, index) in displayedCities"
+        :key="city.id"
+        class="w-full text-left relative py-2 px-5
+               hover:bg-ink-100/30 dark:hover:bg-ink-900/20
+               transition-colors cursor-pointer"
+        @click="selectCity(city.id)"
+      >
+        <!-- Bar background — centered for growth, left-aligned for other stats -->
+        <template v-if="activeStat === 'growth'">
+          <div
+            class="absolute inset-y-0 left-1/2 w-px bg-ink-200/50 dark:bg-ink-700/50"
+          />
+          <div
+            class="absolute inset-y-0"
+            :class="growthBarColorClass(city)"
+            :style="growthBarStyle(city)"
+          />
+        </template>
+        <div
+          v-else
+          class="absolute inset-y-0 left-0 bg-ink-100/60 dark:bg-ink-800/30"
+          :style="{ width: barPercent(city) }"
+        />
+        <!-- Content -->
+        <div class="relative flex items-baseline gap-2">
+          <span class="text-xs text-body/40 dark:text-cream/40 w-6 text-right shrink-0 tabular-nums">
+            {{ index + 1 }}
+          </span>
+          <span class="text-sm font-medium text-espresso dark:text-dark-espresso truncate flex-1">
+            {{ city.name }}
+          </span>
+          <span class="text-[11px] text-body/50 dark:text-cream/50 shrink-0 max-w-20 truncate">
+            {{ city.country }}
+          </span>
+          <span class="text-xs font-mono font-semibold text-ink-700 dark:text-ink-300 shrink-0 tabular-nums">
+            {{ formatValue(city) }}
+          </span>
+        </div>
+      </button>
+
+      <!-- Show more -->
+      <div
+        v-if="hasMore"
+        class="px-5 py-3 text-center"
+      >
+        <button
+          class="text-xs text-ink-600 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-300 transition-colors cursor-pointer"
+          @click="showMore"
+        >
+          Show more ({{ (rankedCities.length - displayCount).toLocaleString() }} remaining)
+        </button>
+      </div>
+    </template>
   </div>
 </template>

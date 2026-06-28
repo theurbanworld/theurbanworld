@@ -26,28 +26,39 @@ if (parseError.value) {
   await navigateTo('/', { replace: true })
 }
 
-// Load data (client-only, same pattern as city page)
+// Load the large interactive datasets (populations ~14 MB, radial ~5 MB,
+// index ~2 MB) on the CLIENT only. They feed the client-only map and comparison
+// panel; fetching them during SSR would serialize every dataset into the
+// hydration payload and push the HTML past the 5 MB limit that crawlers and OG
+// scrapers enforce.
 const { execute: loadCitiesIndex } = useCitiesIndex()
 const { execute: loadPopulations } = useCityPopulations()
 const { execute: loadRadialProfiles } = useRadialProfiles()
 
-await Promise.all([
-  loadCitiesIndex(),
-  loadPopulations(),
+if (import.meta.client) {
+  loadCitiesIndex()
+  loadPopulations()
   loadRadialProfiles()
-])
+}
 
-// After data loads, check if cities are valid
+// After the index loads (client-side), redirect away from unknown cities.
 watchEffect(() => {
   if (hasInvalidCities.value) {
     navigateTo('/', { replace: true })
   }
 })
 
-// SEO meta
-const { getCity } = useCitiesIndex()
-const cityAData = computed(() => cityA.value ? getCity(cityA.value) : undefined)
-const cityBData = computed(() => cityB.value ? getCity(cityB.value) : undefined)
+// SSR-compatible per-city metadata (name/country + current stats) for SEO and
+// the OG image. Served by the lightweight /api/city endpoint so SSR doesn't
+// need the full datasets.
+const { data: cityAData } = await useAsyncData(
+  `compare-meta-a-${cityA.value ?? 'none'}`,
+  () => cityA.value ? $fetch(`/api/city/${cityA.value}`).catch(() => null) : Promise.resolve(null)
+)
+const { data: cityBData } = await useAsyncData(
+  `compare-meta-b-${cityB.value ?? 'none'}`,
+  () => cityB.value ? $fetch(`/api/city/${cityB.value}`).catch(() => null) : Promise.resolve(null)
+)
 
 useSeoMeta({
   title: () => {
@@ -65,12 +76,9 @@ useSeoMeta({
 })
 
 // OG image — City A stats (left), City B stats (right), outlines overlaid in
-// the center. Mirrors the city-page formatting; data is awaited above so these
-// resolve during SSR.
-const { getCityPopulationData } = useCityPopulations()
-
-function ogStatsFor(cityId: string | null | undefined) {
-  const pop = cityId ? getCityPopulationData(cityId, 2025) : undefined
+// the center. Stats come from the per-city metadata resolved above.
+function ogStatsFor(meta: { stats?: { population: number, area_km2: number, density_per_km2: number } } | null | undefined) {
+  const pop = meta?.stats
   return {
     population: pop ? humanizeNumber(pop.population) : '',
     density: pop
@@ -82,8 +90,8 @@ function ogStatsFor(cityId: string | null | undefined) {
   }
 }
 
-const ogA = ogStatsFor(cityA.value)
-const ogB = ogStatsFor(cityB.value)
+const ogA = ogStatsFor(cityAData.value)
+const ogB = ogStatsFor(cityBData.value)
 
 defineOgImage('Comparison', {
   cityAName: cityAData.value?.name ?? '',

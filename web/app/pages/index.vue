@@ -23,10 +23,14 @@ onMounted(() => {
 const { execute: loadCitiesIndex } = useCitiesIndex()
 const { execute: loadPopulations } = useCityPopulations()
 
-await Promise.all([
-  loadCitiesIndex(),
+// Load the large datasets (index ~2 MB, populations ~14 MB) on the CLIENT only.
+// They feed the interactive map and rankings sidebar (client-only components);
+// fetching them during SSR would serialize both into the hydration payload and
+// bloat the HTML past the 5 MB limit crawlers and OG scrapers enforce.
+if (import.meta.client) {
+  loadCitiesIndex()
   loadPopulations()
-])
+}
 </script>
 
 <template>

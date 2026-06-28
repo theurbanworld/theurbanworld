@@ -28,18 +28,23 @@ const cityId = computed(() => {
   return Array.isArray(id) ? id[0] : id
 })
 
-// SSR-compatible city metadata (lightweight, ~200 bytes)
+// SSR-compatible city metadata (lightweight: name/country/centroid + current
+// stats for SEO and the OG image).
 const { data: cityMeta } = await useAsyncData(
   `city-meta-${cityId.value}`,
   () => $fetch(`/api/city/${cityId.value}`)
 )
 
-// Load interactive data (client-only, deduped via useAsyncData keys)
-await Promise.all([
-  loadCitiesIndex(),
-  loadPopulations(),
+// Load the large interactive datasets (populations ~14 MB, radial ~5 MB,
+// index ~2 MB) on the CLIENT only. The map and sidebar are client-only
+// components, so they don't need this data during SSR. Fetching it server-side
+// would serialize every dataset into the hydration payload and push the HTML
+// past the 5 MB limit that crawlers and OG scrapers enforce.
+if (import.meta.client) {
+  loadCitiesIndex()
+  loadPopulations()
   loadRadialProfiles()
-])
+}
 
 // SEO meta tags — use SSR-compatible cityMeta
 useSeoMeta({
@@ -51,10 +56,10 @@ useSeoMeta({
     : 'Explore urban density, population, and growth patterns.'
 })
 
-// OG image — uses cityMeta (available during SSR) for name/country,
-// and population data for stats (resolved by awaits above)
-const { getCityPopulationData } = useCityPopulations()
-const popData = cityId.value ? getCityPopulationData(cityId.value, 2025) : undefined
+// OG image — all fields come from cityMeta (available during SSR), including
+// current-epoch stats served by the /api/city endpoint. This keeps the OG
+// image populated without loading the full populations dataset server-side.
+const popData = cityMeta.value?.stats
 
 defineOgImage('City', {
   cityName: cityMeta.value?.name ?? '',
