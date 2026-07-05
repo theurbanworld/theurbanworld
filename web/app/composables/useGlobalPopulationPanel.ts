@@ -1,9 +1,9 @@
 /**
  * Persistent open/close state for the global population panel.
- * Survives navigation — the panel stays open as the user moves around.
+ * Survives navigation — the panel stays collapsed until the user opens it.
  */
 
-const isExpanded = ref(true)
+const isExpanded = ref(false)
 
 export function useGlobalPopulationPanel() {
   function toggle() {
