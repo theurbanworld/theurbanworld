@@ -20,17 +20,39 @@ const {
   datasetUrbanPopulation
 } = useGlobalStats()
 
-const { isExpanded } = useGlobalPopulationPanel()
+const { isExpanded, toggle } = useGlobalPopulationPanel()
 </script>
 
 <template>
+  <!-- Mobile-only floating toggle — the controls-strip dropdown is off-screen on mobile -->
+  <button
+    class="sm:hidden absolute z-110 left-0 top-0 flex flex-col items-start py-1.5 px-3
+           bg-parchment/95 dark:bg-ink-950/95 backdrop-blur-sm
+           border-r border-b border-ink-200/40 dark:border-ink-800/40
+           rounded-br-xl shadow-lg
+           active:scale-95 transition-transform cursor-pointer"
+    :title="isExpanded ? 'Hide global stats' : 'Show global stats'"
+    @click="toggle"
+  >
+    <span class="text-[10px] font-semibold uppercase tracking-wider leading-tight text-body/60 dark:text-cream/60">World Population</span>
+    <span class="flex items-center gap-1">
+      <span class="font-mono text-sm font-bold leading-tight text-ink-700 dark:text-ink-300 tracking-wide">
+        {{ worldPopulation }}
+      </span>
+      <UIcon
+        :name="isExpanded ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+        class="w-3.5 h-3.5 block text-body/50 dark:text-cream/50"
+      />
+    </span>
+  </button>
+
   <div
     v-if="isExpanded"
     class="absolute z-100 left-0 top-0 w-72
            bg-parchment/95 dark:bg-ink-950/95 backdrop-blur-sm
            border-r border-b border-ink-200/40 dark:border-ink-800/40
            rounded-br-xl shadow-lg px-4 py-5
-           max-sm:w-auto max-sm:min-w-40"
+           max-sm:top-12 max-sm:w-auto max-sm:min-w-40"
   >
     <DataPoint
       id="world-population"
