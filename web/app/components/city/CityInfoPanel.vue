@@ -9,6 +9,7 @@
 import { useCityStats } from '../../composables/useCityStats'
 import { useDataset } from '../../composables/useDataset'
 import { getGradientColors, getPopulationRangeLabel } from '~/utils/colorScale'
+import { formatDensity } from '../../utils/formatNumber'
 
 interface Props {
   /** City ID to display statistics for */
@@ -87,6 +88,17 @@ const {
   isActiveCity,
   cityStateMessage
 } = useCityStats(cityIdRef)
+
+// Standard Urban Model fit metrics for the selected epoch (progressive disclosure:
+// R² is the headline, with β / D₀ in the detail line). Honest-null when unreliable.
+const { selectedYear } = useSelectedYear()
+const { getFit } = useUrbanModelFit()
+const fit = computed(() => getFit(props.cityId, selectedYear.value))
+const fitReliable = computed(() => !!fit.value?.reliable)
+const fitR2Display = computed(() => (fitReliable.value ? fit.value!.r2!.toFixed(2) : '—'))
+const fitR2Raw = computed(() => (fitReliable.value ? fit.value!.r2! : 0))
+const fitBeta = computed(() => (fitReliable.value ? fit.value!.beta : null))
+const fitD0 = computed(() => (fitReliable.value ? fit.value!.D0 : null))
 </script>
 
 <template>
@@ -327,6 +339,36 @@ const {
                 metric="area_km2"
               />
             </template>
+          </DataPoint>
+        </div>
+
+        <!-- Standard Urban Model fit (Urban World radial dataset only) -->
+        <div
+          v-if="showRadialProfiles"
+          data-testid="model-fit-datapoint"
+          class="border-l-2 border-ink-400/60 dark:border-brass-500/50 pl-4"
+        >
+          <DataPoint
+            id="city-model-fit"
+            label="Model fit (R²)"
+            :value="fitR2Display"
+            :raw-value="fitR2Raw"
+            source-label="Methodology: Standard Urban Model"
+            content-path="/methodology/bertaud-radial"
+          >
+            <div
+              data-testid="model-fit-detail"
+              class="flex flex-wrap gap-x-4 gap-y-0.5 font-mono text-xs text-body/60 dark:text-cream/60"
+            >
+              <span v-if="fitReliable && fitBeta !== null">β {{ fitBeta.toFixed(3) }}/km</span>
+              <span v-if="fitReliable && fitD0 !== null">D₀ {{ formatDensity(fitD0) }}</span>
+              <span
+                v-if="!fitReliable"
+                class="italic text-body/50 dark:text-cream/50"
+              >
+                Fit not reliable at this epoch
+              </span>
+            </div>
           </DataPoint>
         </div>
 

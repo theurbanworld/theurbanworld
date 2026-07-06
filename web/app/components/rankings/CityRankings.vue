@@ -8,14 +8,26 @@
 
 import type { YearEpoch } from '../../../types/h3'
 import { formatCompactNumber, formatDensity, formatArea, formatGrowthRate, formatGrowthAbs } from '~/utils/formatNumber'
+import {
+  COMPACTNESS_LABEL_VALUES,
+  STRUCTURE_LABEL_VALUES,
+  compactnessLabel,
+  structureLabel,
+  betaBarFraction
+} from '~/utils/urbanModelLabels'
 import { toAnnualRate, YEAR_EPOCHS } from '~/composables/useGlobalStats'
 
-const { activeStat, growthMode, countryFilter, sortDirection } = useRankingFilters()
+const { activeStat, growthMode, countryFilter, sortDirection, compactnessFilter, structureFilter } = useRankingFilters()
 const { selectedYear } = useSelectedYear()
 const { allCities, isLoaded: citiesLoaded } = useCitiesIndex()
 const { getCityPopulationData, isLoaded: populationsLoaded } = useCityPopulations()
+const { getFit } = useUrbanModelFit()
 
 const displayCount = ref(100)
+
+// β / R² are the Standard Urban Model "fit stats" — null-excluded and bar-encoded
+// differently from the column-max stats.
+const isFitStat = computed(() => activeStat.value === 'beta' || activeStat.value === 'r2')
 
 interface RankedCity {
   id: string
@@ -26,6 +38,22 @@ interface RankedCity {
   area: number
   growthRate: number | null
   growthAbs: number | null
+  /** Fit metrics for the selected epoch; null when the city's fit is unreliable. */
+  beta: number | null
+  r2: number | null
+}
+
+/** Whether a city passes the active city-type chips (all-selected ⇒ no constraint). */
+function passesCityTypeFilter(beta: number | null, r2: number | null): boolean {
+  if (compactnessFilter.value.length < COMPACTNESS_LABEL_VALUES.length) {
+    const label = compactnessLabel(beta)
+    if (!label || !compactnessFilter.value.includes(label)) return false
+  }
+  if (structureFilter.value.length < STRUCTURE_LABEL_VALUES.length) {
+    const label = structureLabel(r2)
+    if (!label || !structureFilter.value.includes(label)) return false
+  }
+  return true
 }
 
 const rankedCities = computed<RankedCity[]>(() => {
@@ -50,6 +78,14 @@ const rankedCities = computed<RankedCity[]>(() => {
       }
     }
 
+    // Fit metrics are null unless the city's fit is reliable at this epoch (R16).
+    const fit = getFit(city.id, currentYear)
+    const reliable = !!fit?.reliable
+    const beta = reliable ? fit!.beta : null
+    const r2 = reliable ? fit!.r2 : null
+
+    if (!passesCityTypeFilter(beta, r2)) continue
+
     cities.push({
       id: city.id,
       name: city.name,
@@ -58,30 +94,56 @@ const rankedCities = computed<RankedCity[]>(() => {
       density: popData.density_per_km2,
       area: popData.area_km2,
       growthRate,
-      growthAbs
+      growthAbs,
+      beta,
+      r2
     })
   }
+
+  // Metric sorts exclude cities without a reliable fit at this epoch (R16).
+  let result = cities
+  if (activeStat.value === 'beta') result = cities.filter(c => c.beta !== null)
+  else if (activeStat.value === 'r2') result = cities.filter(c => c.r2 !== null)
 
   const asc = sortDirection.value === 'asc'
 
   if (activeStat.value === 'growth') {
     const field = growthMode.value === 'rate' ? 'growthRate' as const : 'growthAbs' as const
-    cities.sort((a, b) => {
+    result.sort((a, b) => {
       if (a[field] === null && b[field] === null) return 0
       if (a[field] === null) return 1
       if (b[field] === null) return -1
       return asc ? a[field]! - b[field]! : b[field]! - a[field]!
     })
+  } else if (activeStat.value === 'beta' || activeStat.value === 'r2') {
+    const stat = activeStat.value
+    result.sort((a, b) => asc ? a[stat]! - b[stat]! : b[stat]! - a[stat]!)
   } else {
     const stat = activeStat.value
-    cities.sort((a, b) => asc ? a[stat] - b[stat] : b[stat] - a[stat])
+    result.sort((a, b) => asc ? a[stat] - b[stat] : b[stat] - a[stat])
   }
 
-  return cities
+  return result
+})
+
+// How many cities are hidden from a metric sort because they lack a reliable fit
+// (so the visible-count shrink is explained, not silent).
+const unreliableHiddenCount = computed(() => {
+  if (!isFitStat.value) return 0
+  const year = selectedYear.value as YearEpoch
+  let n = 0
+  for (const city of allCities.value) {
+    if (!getCityPopulationData(city.id, year)) continue
+    if (countryFilter.value && city.country !== countryFilter.value) continue
+    if (!getFit(city.id, year)?.reliable) n++
+  }
+  return n
 })
 
 const maxValue = computed(() => {
   if (!rankedCities.value.length) return 1
+  // Fit stats are bar-encoded against their own scales, not the column max.
+  if (isFitStat.value) return 1
   if (activeStat.value === 'growth') {
     const field = growthMode.value === 'rate' ? 'growthRate' as const : 'growthAbs' as const
     let max = 0
@@ -90,7 +152,8 @@ const maxValue = computed(() => {
     }
     return max || 1
   }
-  const stat = activeStat.value
+  // Only population/density/area reach here (fit + growth handled above).
+  const stat = activeStat.value as 'population' | 'density' | 'area'
   let max = 0
   for (const city of rankedCities.value) {
     if (city[stat] > max) max = city[stat]
@@ -123,6 +186,8 @@ function formatValue(city: RankedCity): string {
       return growthMode.value === 'rate'
         ? formatGrowthRate(city.growthRate)
         : formatGrowthAbs(city.growthAbs)
+    case 'beta': return city.beta != null ? city.beta.toFixed(3) : '—'
+    case 'r2': return city.r2 != null ? city.r2.toFixed(2) : '—'
     default: return formatCompactNumber(city.population)
   }
 }
@@ -137,7 +202,12 @@ function barPercent(city: RankedCity): string {
     if (v === null) return '0%'
     return `${(Math.abs(v) / maxValue.value) * 50}%`
   }
-  return `${(city[activeStat.value] / maxValue.value) * 100}%`
+  // β: scaled within the compactness band range (column max is meaningless here).
+  if (activeStat.value === 'beta') return `${betaBarFraction(city.beta) * 100}%`
+  // R²: a direct 0–1 fill.
+  if (activeStat.value === 'r2') return `${Math.max(0, Math.min(1, city.r2 ?? 0)) * 100}%`
+  const stat = activeStat.value as 'population' | 'density' | 'area'
+  return `${(city[stat] / maxValue.value) * 100}%`
 }
 
 function growthBarStyle(city: RankedCity): Record<string, string> {
@@ -166,13 +236,27 @@ function selectCity(id: string) {
 }
 
 // Reset display count when filter, stat, or growth mode changes
-watch([activeStat, growthMode, countryFilter, sortDirection], () => {
-  displayCount.value = 100
-})
+watch(
+  [activeStat, growthMode, countryFilter, sortDirection, compactnessFilter, structureFilter, selectedYear],
+  () => {
+    displayCount.value = 100
+  }
+)
 </script>
 
 <template>
   <div>
+    <!-- Fit-stat affordance: epoch scope + explained shrink -->
+    <p
+      v-if="isFitStat"
+      data-testid="fit-stat-note"
+      class="px-5 pt-2 pb-1 text-[11px] text-body/50 dark:text-cream/50"
+    >
+      {{ activeStat === 'beta' ? 'Compactness' : 'Monocentricity' }} (at {{ selectedYear }})<span
+        v-if="unreliableHiddenCount > 0"
+      > · {{ unreliableHiddenCount.toLocaleString() }} without a reliable fit hidden</span>
+    </p>
+
     <!-- Loading skeleton — shown while the index + population datasets stream in -->
     <div
       v-if="isLoading"
@@ -198,13 +282,15 @@ watch([activeStat, growthMode, countryFilter, sortDirection], () => {
       </div>
     </div>
 
-    <!-- Empty state — data loaded but the active filter matches nothing -->
+    <!-- Empty state — data loaded but the active filter matches nothing (e.g. a
+         city-type chip + epoch matching no reliable city) -->
     <div
       v-else-if="!displayedCities.length"
+      data-testid="rankings-empty"
       class="px-5 py-10 text-center"
     >
       <p class="text-sm text-body/50 dark:text-cream/50">
-        No cities match this filter.
+        No cities match these filters at {{ selectedYear }}.
       </p>
     </div>
 

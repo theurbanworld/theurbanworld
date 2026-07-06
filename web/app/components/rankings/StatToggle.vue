@@ -8,15 +8,34 @@
  */
 
 import type { RankingStat, GrowthMode } from '~/composables/useRankingFilters'
+import { useDataset } from '~/composables/useDataset'
 
 const { activeStat, growthMode } = useRankingFilters()
 
-const stats: { key: RankingStat, label: string }[] = [
+// Urban Model sorts only make sense where the fit data exists (radial dataset).
+const { hasFeatureComputed } = useDataset()
+const showFitStats = hasFeatureComputed('radialProfiles')
+
+const stats = computed<{ key: RankingStat, label: string }[]>(() => [
   { key: 'population', label: 'Population' },
   { key: 'density', label: 'Density' },
   { key: 'area', label: 'Area' },
-  { key: 'growth', label: 'Growth' }
-]
+  { key: 'growth', label: 'Growth' },
+  ...(showFitStats.value
+    ? ([
+        { key: 'beta', label: 'Compactness' },
+        { key: 'r2', label: 'Monocentricity' }
+      ] as { key: RankingStat, label: string }[])
+    : [])
+])
+
+// If the dataset loses the fit feature while a fit stat is active, fall back to
+// population so the list can't get stuck on a sort with no pill to leave it.
+watch(showFitStats, (canShow) => {
+  if (!canShow && (activeStat.value === 'beta' || activeStat.value === 'r2')) {
+    activeStat.value = 'population'
+  }
+})
 
 const growthModes: { key: GrowthMode, label: string }[] = [
   { key: 'rate', label: '%/yr' },
@@ -25,7 +44,7 @@ const growthModes: { key: GrowthMode, label: string }[] = [
 </script>
 
 <template>
-  <div class="flex items-center gap-1 px-4 py-3 border-b border-ink-200/40 dark:border-ink-800/40">
+  <div class="flex flex-wrap items-center gap-1 px-4 py-3 border-b border-ink-200/40 dark:border-ink-800/40">
     <template
       v-for="stat in stats"
       :key="stat.key"

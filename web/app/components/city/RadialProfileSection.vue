@@ -67,6 +67,10 @@ watch(() => props.cityId, () => {
         <span>{{ isRadialLayerActive ? 'On map' : 'Show on map' }}</span>
       </button>
     </div>
+    <CityTypeBadge
+      :city-id="cityId"
+      class="mb-3"
+    />
     <RadialProfileChart :city-id="cityId" />
   </div>
 </template>

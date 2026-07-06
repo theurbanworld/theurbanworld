@@ -25,6 +25,30 @@ import { CITY_A_COLOR, CITY_B_COLOR } from '~/utils/comparisonColors'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip, Legend)
 
+/** Dashed model-curve color — cool blue, distinct from the sepia observed line. */
+const MODEL_CURVE_COLOR = '#3A7CA5'
+
+/** Build the dashed Standard Urban Model dataset from a per-ring fitted array. */
+function buildFittedDataset(
+  fitted: (number | null)[],
+  labelCount: number,
+  borderColor: string,
+  label = 'Model fit'
+) {
+  return {
+    label,
+    data: Array.from({ length: labelCount }, (_, i) => fitted[i] ?? null),
+    fill: false,
+    borderColor,
+    borderWidth: 1.5,
+    borderDash: [5, 4],
+    pointRadius: 0,
+    pointHoverRadius: 0,
+    tension: 0.3,
+    spanGaps: false
+  }
+}
+
 const props = defineProps<{
   cityId: string
   /** Optional: overlay two cities' radial profiles on the same chart */
@@ -33,10 +57,18 @@ const props = defineProps<{
 
 const { selectedYear } = useSelectedYear()
 const { getProfile, getMaxDensity } = useRadialProfiles()
+const { getFit } = useUrbanModelFit()
 const { highlightedRing, setHighlightedRing } = useRadialHighlight()
 const { getCityName } = useCitiesIndex()
 
 const isComparisonMode = computed(() => !!props.cityIds && props.cityIds.length === 2)
+
+// Standard Urban Model fits for the selected epoch (null while loading / unreliable).
+const fitA = computed(() => getFit(props.cityId, selectedYear.value))
+const fitB = computed(() => isComparisonMode.value ? getFit(props.cityIds![1]!, selectedYear.value) : null)
+/** Fitted curve renders only when the fit is reliable (fitted is null otherwise). */
+const fittedA = computed(() => (fitA.value?.reliable ? fitA.value.fitted : null))
+const fittedB = computed(() => (fitB.value?.reliable ? fitB.value.fitted : null))
 
 // Current profile data
 const profile = computed(() => getProfile(props.cityId, selectedYear.value))
@@ -46,6 +78,14 @@ const maxDensity = computed(() => {
   if (!isComparisonMode.value) return maxA
   const maxB = getMaxDensity(props.cityIds![1]!, selectedYear.value) ?? 0
   return Math.max(maxA, maxB)
+})
+
+/** Max across observed and fitted curves, so a high model intercept does not clip. */
+const axisMaxDensity = computed(() => {
+  const fittedPeaks = [fittedA.value, fitB.value?.reliable ? fitB.value.fitted : null]
+    .filter((f): f is (number | null)[] => !!f)
+    .map(f => Math.max(0, ...f.map(v => v ?? 0)))
+  return Math.max(maxDensity.value, 0, ...fittedPeaks)
 })
 
 // Chart data
@@ -67,24 +107,29 @@ const chartData = computed<ChartData<'line'>>(() => {
     // Single city mode — density-intensity sepia gradient
     const maxDen = maxDensity.value || 1
     const pointColors = data.map(d => getDensityColorHex(d, maxDen))
-    return {
-      labels,
-      datasets: [{
-        data,
-        fill: true,
-        backgroundColor: 'rgba(139, 115, 85, 0.08)',
-        borderColor: pointColors,
-        borderWidth: 2,
-        pointBackgroundColor: pointColors,
-        pointBorderColor: pointColors,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-        tension: 0.3,
-        segment: {
-          borderColor: (ctx: { p0DataIndex: number }) => getDensityColorHex(data[ctx.p0DataIndex] ?? 0, maxDen)
-        }
-      }]
+    const observed = {
+      data,
+      fill: true,
+      backgroundColor: 'rgba(139, 115, 85, 0.08)',
+      borderColor: pointColors,
+      borderWidth: 2,
+      pointBackgroundColor: pointColors,
+      pointBorderColor: pointColors,
+      pointRadius: 0,
+      pointHoverRadius: 5,
+      tension: 0.3,
+      segment: {
+        borderColor: (ctx: { p0DataIndex: number }) => getDensityColorHex(data[ctx.p0DataIndex] ?? 0, maxDen)
+      }
     }
+
+    // Overlay the dashed model curve when the fit is reliable; otherwise just the
+    // observed line (honest-null — no curve, no extra dataset).
+    const datasets: ChartData<'line'>['datasets'] = [observed]
+    if (fittedA.value && fittedA.value.length > 0) {
+      datasets.push(buildFittedDataset(fittedA.value, labels.length, MODEL_CURVE_COLOR))
+    }
+    return { labels, datasets }
   }
 
   // Comparison mode — two solid-color datasets
@@ -117,7 +162,19 @@ const chartData = computed<ChartData<'line'>>(() => {
     tension: 0.3
   }
 
-  return { labels, datasets: [datasetA, datasetB] }
+  // Overlay each city's dashed model curve, color-matched to its A/B identity, only
+  // when that city's fit is reliable (≤ 4 lines total).
+  const datasets: ChartData<'line'>['datasets'] = [datasetA, datasetB]
+  if (fittedA.value && fittedA.value.length > 0) {
+    const nameA = getCityName(props.cityIds![0]!) ?? 'City A'
+    datasets.push(buildFittedDataset(fittedA.value, labels.length, CITY_A_COLOR.primary, `${nameA} model`))
+  }
+  if (fittedB.value && fittedB.value.length > 0) {
+    const nameB = getCityName(props.cityIds![1]!) ?? 'City B'
+    datasets.push(buildFittedDataset(fittedB.value, labels.length, CITY_B_COLOR.primary, `${nameB} model`))
+  }
+
+  return { labels, datasets }
 })
 
 // Chart options
@@ -171,7 +228,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
       grid: {
         color: 'rgba(139, 115, 85, 0.15)'
       },
-      suggestedMax: maxDensity.value * 1.1 || undefined
+      suggestedMax: axisMaxDensity.value * 1.1 || undefined
     }
   },
   plugins: {
