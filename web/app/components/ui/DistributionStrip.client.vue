@@ -23,6 +23,8 @@ import {
 } from 'chart.js'
 import type { DistributionMetric } from '../../composables/useDistributionData'
 import { formatCompactNumber, formatDensity, formatArea } from '../../utils/formatNumber'
+import { getMetricDescriptor } from '../../../types/climate'
+import { formatClimateValue } from '../../utils/climateFormat'
 
 ChartJS.register(CategoryScale, LinearScale, LogarithmicScale, PointElement, LineElement, Filler, Tooltip)
 
@@ -49,6 +51,11 @@ function formatTooltipValue(value: number): string {
       return formatDensity(value)
     case 'area_km2':
       return formatArea(value)
+    default: {
+      // Climate headline metric — format by its catalog unit.
+      const descriptor = getMetricDescriptor(props.metric)
+      return descriptor ? formatClimateValue(value, descriptor.unit) : String(value)
+    }
   }
 }
 

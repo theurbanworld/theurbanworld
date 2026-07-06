@@ -7,7 +7,10 @@
  */
 
 import { useCityStats } from '~/composables/useCityStats'
+import { useCityClimate } from '~/composables/useCityClimate'
 import { CITY_A_COLOR, CITY_B_COLOR } from '~/utils/comparisonColors'
+import { headlineMetrics, type HeadlineKey } from '../../../types/climate'
+import { formatClimateValue } from '~/utils/climateFormat'
 
 const props = defineProps<{
   cityIdA: string
@@ -17,17 +20,22 @@ const props = defineProps<{
 const statsA = useCityStats(computed(() => props.cityIdA))
 const statsB = useCityStats(computed(() => props.cityIdB))
 
+const { loadSummary, getHeadline } = useCityClimate()
+onMounted(() => {
+  loadSummary()
+})
+
 const isLoading = computed(() => statsA.isLoading.value || statsB.isLoading.value)
 
 interface MetricRow {
   label: string
   valueA: string
   valueB: string
-  rawA: number
-  rawB: number
+  rawA: number | null
+  rawB: number | null
 }
 
-const metrics = computed<MetricRow[]>(() => [
+const populationMetrics = computed<MetricRow[]>(() => [
   {
     label: 'Population',
     valueA: statsA.populationHumanized.value,
@@ -51,8 +59,30 @@ const metrics = computed<MetricRow[]>(() => [
   }
 ])
 
-function isLarger(rawA: number, rawB: number, side: 'A' | 'B'): boolean {
-  if (rawA === rawB) return false
+// Headline-four climate rows. One side covered / other not -> value + "N/A";
+// neither covered -> row hidden.
+const climateMetrics = computed<MetricRow[]>(() => {
+  const rows: MetricRow[] = []
+  for (const metric of headlineMetrics()) {
+    const a = getHeadline(props.cityIdA, metric.key as HeadlineKey) ?? null
+    const b = getHeadline(props.cityIdB, metric.key as HeadlineKey) ?? null
+    if (a === null && b === null) continue
+    rows.push({
+      label: metric.label,
+      valueA: a === null ? 'N/A' : formatClimateValue(a, metric.unit),
+      valueB: b === null ? 'N/A' : formatClimateValue(b, metric.unit),
+      rawA: a,
+      rawB: b
+    })
+  }
+  return rows
+})
+
+const metrics = computed<MetricRow[]>(() => [...populationMetrics.value, ...climateMetrics.value])
+
+function isLarger(rawA: number | null, rawB: number | null, side: 'A' | 'B'): boolean {
+  // Don't highlight when either side is missing (incomparable).
+  if (rawA === null || rawB === null || rawA === rawB) return false
   return side === 'A' ? rawA > rawB : rawB > rawA
 }
 </script>

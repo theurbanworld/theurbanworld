@@ -11,6 +11,7 @@ Input:
   - data/processed/cities/city_growth_{source}.parquet
   - data/processed/cities/city_density_peers_{source}.parquet
   - data/processed/radial_profiles/radial_profiles_h3_r8.parquet (optional)
+  - data/processed/climate/city_climate.parquet (optional)
 
 Output:
   - Console validation report with PASS/FAIL/WARN status
@@ -137,6 +138,32 @@ class RadialProfileSchema(DataFrameModel):
         coerce = True
 
 
+class CityClimateSchema(DataFrameModel):
+    """Schema for city_climate.parquet - per-city climate & energy profile.
+
+    Flat headline/snapshot columns are the validatable surface; ``climate_json``
+    holds the full per-metric reshape. Partial coverage is the norm, so metric
+    columns are nullable. Built by src/climate/build_city_climate.py.
+    """
+
+    city_id: str = Field(nullable=False)
+    heat_warm_days_now: float = Field(ge=0, nullable=True)
+    # UCDB exposure shares are stored as percentages (0–100), not fractions.
+    flood_100yr_share_latest: float = Field(ge=0, le=100, nullable=True)
+    solar_pv_potential: float = Field(ge=0, nullable=True)
+    co2_per_capita_latest: float = Field(ge=0, nullable=True)
+    wind_speed_100m: float = Field(ge=0, nullable=True)
+    canopy_height: float = Field(ge=0, nullable=True)
+    sea_level_rise: float = Field(nullable=True)  # signed (rise or fall)
+    heatwave_events: int = Field(ge=0, nullable=True)
+    drought_events: int = Field(ge=0, nullable=True)
+    climate_json: str = Field(nullable=False)
+
+    class Config:
+        strict = False
+        coerce = True
+
+
 VALID_SOURCES = ("h3-r8", "grid-1km")
 
 
@@ -257,7 +284,7 @@ def check_foreign_keys(tables: dict) -> list[str]:
     cities = tables["cities"]
     valid_ids = set(cities.select("city_id").distinct().execute()["city_id"].tolist())
 
-    child_tables = ["populations", "rankings", "growth", "peers"]
+    child_tables = ["populations", "rankings", "growth", "peers", "climate"]
     for name in child_tables:
         if name not in tables:
             continue
@@ -692,6 +719,13 @@ def main(
     elif not output_json:
         print("  SKIP: radial_profiles_h3_r8.parquet (not found)")
 
+    # Load climate profile if available (source-independent: keyed on city)
+    climate_path = get_processed_path("climate") / "city_climate.parquet"
+    if climate_path.exists():
+        tables["climate"] = con.read_parquet(str(climate_path))
+    elif not output_json:
+        print("  SKIP: city_climate.parquet (not found)")
+
     schemas = {
         "cities": CitySchema,
         "populations": CityPopulationSchema,
@@ -699,6 +733,7 @@ def main(
         "growth": CityGrowthSchema,
         "peers": CityDensityPeersSchema,
         "radial_profiles": RadialProfileSchema,
+        "climate": CityClimateSchema,
     }
 
     # Validate each table against its schema

@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "setup": "pnpm install && ([ -f \"$CONDUCTOR_ROOT_PATH/web/.env\" ] && ln -sf \"$CONDUCTOR_ROOT_PATH/web/.env\" web/.env || true)",
+    "run": "PORT=$CONDUCTOR_PORT pnpm --filter app dev"
+  },
+  "runScriptMode": "nonconcurrent"
+}

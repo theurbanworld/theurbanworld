@@ -31,6 +31,7 @@ const compareModalOpen = ref(false)
 const { hasFeatureComputed } = useDataset()
 const showRadialProfiles = hasFeatureComputed('radialProfiles')
 const showH3Overlay = hasFeatureComputed('h3Overlay')
+const showClimate = hasFeatureComputed('climate')
 
 // Population heatmap "Show on map" toggle (H3 datasets only)
 const { isPopulationLayerActive, isLoadingH3, setPopulationLayerActive } = usePopulationHighlight()
@@ -337,6 +338,13 @@ const {
           class="border-l-2 border-ink-400/60 dark:border-brass-500/50 pl-4"
         />
       </div>
+
+      <!-- Climate & Energy Section (per-city coverage gated inside) -->
+      <ClimateEnergySection
+        v-if="showClimate"
+        :city-id="cityId"
+        class="mt-4"
+      />
 
       <!-- Media Resources (deferred — CityMediaSection component exists but content not yet populated) -->
     </template>

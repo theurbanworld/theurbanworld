@@ -174,6 +174,8 @@ graph TD
 | `data/cities_index.json` | `web_export/generate_city_index.py` | `application/json` | `useCitiesIndex` | Static city metadata, search/lookup |
 | `data/city_populations_grid_1km.json` | `web_export/generate_city_populations.py --source grid-1km` | `application/json` | `useCityPopulations` | Per-epoch pop/area/density (grid) |
 | `data/city_populations_h3_r8.json` | `web_export/generate_city_populations.py --source h3-r8` | `application/json` | `useCityPopulations` | Per-epoch pop/area/density (H3) |
+| `data/climate_summary.json` | `web_export/generate_climate.py` | `application/json` | `useCityClimate` | Headline-four latest values per city (rankings/distribution) |
+| `data/climate_profile.json` | `web_export/generate_climate.py` | `application/json` | `useCityClimate` | Full per-metric ClimateRecord per city (splits to `data/climate/{city_id}.json` if >5MB) |
 | `fonts/{fontstack}/{range}.pbf` | `tiles/generate_font_glyphs.py` | `application/x-protobuf` | `useMap` (text labels) | MapLibre glyph protocol |
 | `sprites/patterns*` | `tiles/generate_hover_sprites.py` | `image/png`, `application/json` | `useMap` (hover sprites) | Diagonal stripe patterns |
 
@@ -188,4 +190,5 @@ graph TD
 | City boundaries | GHSL-MTUC R2024A | Multi-temporal urban center boundaries, one polygon per city per epoch. | `useMap` -> boundary layer |
 | Radial density profiles | GHSL-POP + computed centroids | Bertaud-style: population-weighted centroid, 1km concentric rings out to 50km, density per ring. H3 source only. | TBD |
 | City metadata (name, country) | GHSL-UCDB R2024A | Thematic attributes extracted from GeoPackage. ISO country codes via pycountry. | `useCitiesIndex` -> `CitySearch` |
+| Climate & Energy profile | GHSL-UCDB R2024A (Climate/Emissions/Exposure/Greenness/Hazard/Water/SDG themes) | Zero-download: `climate/build_city_climate.py` reshapes attributes already in `ucdb_all.parquet` (the catalog in `climate/catalog.py` maps each metric -> UCDB columns) into `city_climate.parquet`, exported as climate JSON. Upstream sources per metric (EDGAR, Global Solar/Wind Atlas, Köppen-Geiger, C3S, LCZ) cited on methodology pages. | `useCityClimate` -> `ClimateEnergySection` |
 | Density outlier filter | Derived from city populations | Cities with `cell_count < 15` or `density > 25,000/km²` at any epoch are excluded from rankings and web exports. Raw population data is preserved. See `src/cities/density_outliers.py`. | Applied before `compute_rankings`, `generate_city_index`, `generate_city_populations` |

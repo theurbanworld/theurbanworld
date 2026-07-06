@@ -7,7 +7,7 @@
  * Growth has a nested sub-toggle for rate vs absolute mode.
  */
 
-import type { RankingStat, GrowthMode } from '~/composables/useRankingFilters'
+import type { RankingStat, GrowthMode, ClimateRankingStat } from '~/composables/useRankingFilters'
 
 const { activeStat, growthMode } = useRankingFilters()
 
@@ -22,10 +22,18 @@ const growthModes: { key: GrowthMode, label: string }[] = [
   { key: 'rate', label: '%/yr' },
   { key: 'abs', label: 'Abs' }
 ]
+
+// Headline-four climate ranking stats (ranked among cities with climate coverage).
+const climateStats: { key: ClimateRankingStat, label: string }[] = [
+  { key: 'climate_heat', label: 'Heat' },
+  { key: 'climate_flood', label: 'Flood' },
+  { key: 'climate_solar', label: 'Solar' },
+  { key: 'climate_carbon', label: 'CO₂/person' }
+]
 </script>
 
 <template>
-  <div class="flex items-center gap-1 px-4 py-3 border-b border-ink-200/40 dark:border-ink-800/40">
+  <div class="flex flex-wrap items-center gap-1 px-4 py-3 border-b border-ink-200/40 dark:border-ink-800/40">
     <template
       v-for="stat in stats"
       :key="stat.key"
@@ -74,5 +82,19 @@ const growthModes: { key: GrowthMode, label: string }[] = [
         </button>
       </div>
     </template>
+
+    <!-- Climate headline-four stats (ranked among cities with climate data) -->
+    <span class="mx-1 h-4 w-px bg-ink-200/50 dark:bg-ink-700/50" />
+    <button
+      v-for="stat in climateStats"
+      :key="stat.key"
+      class="px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer"
+      :class="activeStat === stat.key
+        ? 'bg-ink-700 text-white dark:bg-ink-400 dark:text-ink-950'
+        : 'text-body/70 dark:text-cream/70 hover:bg-ink-100/50 dark:hover:bg-ink-900/30'"
+      @click="activeStat = stat.key"
+    >
+      {{ stat.label }}
+    </button>
   </div>
 </template>

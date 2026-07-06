@@ -8,7 +8,7 @@
 import type { YearEpoch } from './h3'
 import type { DataSource } from '../app/composables/useDataSource'
 
-export type DatasetFeature = 'radialProfiles' | 'h3Overlay'
+export type DatasetFeature = 'radialProfiles' | 'h3Overlay' | 'climate'
 
 export interface Dataset {
   /** Unique identifier, used as route param and selection key */
